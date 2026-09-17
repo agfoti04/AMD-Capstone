@@ -53,8 +53,8 @@ def configureDepthPostProcessing(stereoDepthNode):
     config.postProcessing.spatialFilter.numIterations = 1
 
     # Depth range
-    config.postProcessing.thresholdFilter.minRange = 700
-    config.postProcessing.thresholdFilter.maxRange = 4000
+    config.postProcessing.thresholdFilter.minRange = 0
+    config.postProcessing.thresholdFilter.maxRange = 2000
 
     # Census transform
     config.censusTransform.enableMeanMode = True
