@@ -27,7 +27,7 @@ class PointCloudVisualizer():
         # Keep points between 0.7m and 4.0m
         distances = np.linalg.norm(points, axis=1)
 
-        mask = (distances >= 0.0) & (distances <= 2.0)
+        mask = (distances >= 0.1) & (distances <= 3.0)
 
         pcd = pcd.select_by_index(
             np.where(mask)[0]
