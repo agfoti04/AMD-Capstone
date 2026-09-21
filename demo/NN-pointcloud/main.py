@@ -3,6 +3,7 @@
 import cv2
 import depthai as dai
 import numpy as np
+from depth_config import configure_depth_post_processing
 
 try:
     from projector_device import PointCloudVisualizer
@@ -23,56 +24,6 @@ resolution = (640, 400)
 downsample_pcl = True
 
 # StereoDepth configuration
-lrcheck = True
-extended = False
-subpixel = True
-
-
-def configureDepthPostProcessing(stereoDepthNode):
-    """
-    Configure StereoDepth post-processing.
-    """
-
-    stereoDepthNode.setDefaultProfilePreset(
-        dai.node.StereoDepth.PresetMode.FAST_DENSITY
-    )
-
-    config = stereoDepthNode.initialConfig
-
-    config.postProcessing.decimationFilter.decimationFactor = 1
-
-    # Speckle filtering
-    config.postProcessing.speckleFilter.enable = True
-    config.postProcessing.speckleFilter.speckleRange = 28
-
-    # Temporal filtering
-    config.postProcessing.temporalFilter.enable = True
-
-    # Spatial filtering
-    config.postProcessing.spatialFilter.holeFillingRadius = 2
-    config.postProcessing.spatialFilter.numIterations = 1
-
-    # Depth range
-    config.postProcessing.thresholdFilter.minRange = 0
-    config.postProcessing.thresholdFilter.maxRange = 2000
-
-    # Census transform
-    config.censusTransform.enableMeanMode = True
-
-    # Cost matching
-    config.costMatching.linearEquationParameters.alpha = 0
-    config.costMatching.linearEquationParameters.beta = 2
-
-
-    # Stereo configuration
-    stereoDepthNode.setLeftRightCheck(lrcheck)
-    stereoDepthNode.setExtendedDisparity(extended)
-    stereoDepthNode.setSubpixel(subpixel)
-
-    # Black fill for invalid rectified pixels
-    stereoDepthNode.setRectifyEdgeFillColor(0)
-
-
 ############################################################################
 # CREATE PIPELINE
 
@@ -98,7 +49,7 @@ right = pipeline.create(dai.node.Camera).build(
 
 stereo = pipeline.create(dai.node.StereoDepth)
 
-configureDepthPostProcessing(stereo)
+configure_depth_post_processing(stereo)
 
 
 # Request 640x400 mono frames
