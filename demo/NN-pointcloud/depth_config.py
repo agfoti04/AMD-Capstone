@@ -1,52 +1,33 @@
 import cv2
-import depthai as dai
 import numpy as np
+import depthai as dai
 
 
-lrcheck = True
-extended = False
-subpixel = True
+LR_CHECK = True
+EXTENDED_DISPARITY = False
+SUBPIXEL = True
 
-def configureDepthPostProcessing(stereoDepthNode):
-    """
-    Configure StereoDepth post-processing.
-    """
 
-    stereoDepthNode.setDefaultProfilePreset(
+def configure_depth_post_processing(stereo_depth_node: dai.node.StereoDepth) -> None:
+    stereo_depth_node.setDefaultProfilePreset(
         dai.node.StereoDepth.PresetMode.FAST_DENSITY
     )
 
-    config = stereoDepthNode.initialConfig
-
+    config = stereo_depth_node.initialConfig
     config.postProcessing.decimationFilter.decimationFactor = 1
-
-    # Speckle filtering
     config.postProcessing.speckleFilter.enable = True
     config.postProcessing.speckleFilter.speckleRange = 28
-
-    # Temporal filtering
     config.postProcessing.temporalFilter.enable = True
-
-    # Spatial filtering
     config.postProcessing.spatialFilter.holeFillingRadius = 2
     config.postProcessing.spatialFilter.numIterations = 1
-
-    # Depth range
-    config.postProcessing.thresholdFilter.minRange = 100
-    config.postProcessing.thresholdFilter.maxRange = 3000
-
-    # Census transform
+    config.postProcessing.thresholdFilter.minRange = 0
+    config.postProcessing.thresholdFilter.maxRange = 2000
     config.censusTransform.enableMeanMode = True
-
-    # Cost matching
     config.costMatching.linearEquationParameters.alpha = 0
     config.costMatching.linearEquationParameters.beta = 2
 
+    stereo_depth_node.setLeftRightCheck(LR_CHECK)
+    stereo_depth_node.setExtendedDisparity(EXTENDED_DISPARITY)
+    stereo_depth_node.setSubpixel(SUBPIXEL)
+    stereo_depth_node.setRectifyEdgeFillColor(0)
 
-    # Stereo configuration
-    stereoDepthNode.setLeftRightCheck(lrcheck)
-    stereoDepthNode.setExtendedDisparity(extended)
-    stereoDepthNode.setSubpixel(subpixel)
-
-    # Black fill for invalid rectified pixels
-    stereoDepthNode.setRectifyEdgeFillColor(0)
