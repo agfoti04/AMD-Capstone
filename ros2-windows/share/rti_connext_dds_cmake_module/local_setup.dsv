@@ -1,0 +1,3 @@
+source;share/rti_connext_dds_cmake_module/environment/ament_prefix_path.bat
+source;share/rti_connext_dds_cmake_module/environment/path.bat
+source;share/rti_connext_dds_cmake_module/environment/rti_connext_dds.bat

@@ -1,0 +1,3 @@
+source;share/rmw_test_fixture_implementation/environment/ament_prefix_path.bat
+source;share/rmw_test_fixture_implementation/environment/path.bat
+source;share/rmw_test_fixture_implementation/environment/pythonpath.bat
