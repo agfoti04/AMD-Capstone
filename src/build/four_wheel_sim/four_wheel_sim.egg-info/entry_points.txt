@@ -1,0 +1,3 @@
+[console_scripts]
+kinematic_sim = four_wheel_sim.sim_kinematic:main
+
