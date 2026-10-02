@@ -28,6 +28,8 @@ setup(
     entry_points={
         'console_scripts': [
             'kinematic_sim = four_wheel_sim.sim_kinematic:main',
+            'base_controller = four_wheel_sim.base_controller:main',
+            'my_teleop = four_wheel_sim.my_teleop:main',
         ],
     },
 )

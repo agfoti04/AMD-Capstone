@@ -1,10 +1,18 @@
 import math
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist, TransformStamped
+from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
 from tf2_ros import TransformBroadcaster
+
+
+WHEEL_NAMES = (
+    'front_left_wheel_joint',
+    'rear_left_wheel_joint',
+    'front_right_wheel_joint',
+    'rear_right_wheel_joint',
+)
 
 
 class KinematicSim(Node):
@@ -18,11 +26,12 @@ class KinematicSim(Node):
         self.sep = self.get_parameter('wheel_separation').value
 
         self.x = self.y = self.th = 0.0
-        self.v = self.w = 0.0
-        self.left_angle = self.right_angle = 0.0
+        self.wheel_speeds = [0.0, 0.0, 0.0, 0.0]
+        self.wheel_angles = [0.0, 0.0, 0.0, 0.0]
 
         # Subscribers and publishers
-        self.create_subscription(Twist, 'cmd_vel', self.cmd_cb, 10)
+        self.create_subscription(
+            JointState, 'wheel_commands', self.wheel_cb, 10)
         self.joint_pub = self.create_publisher(JointState, 'joint_states', 10)
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -31,9 +40,15 @@ class KinematicSim(Node):
         self.create_timer(0.02, self.update)  # 50 Hz
 
 
-    def cmd_cb(self, msg):
-        self.v = msg.linear.x
-        self.w = msg.angular.z
+    def wheel_cb(self, msg):
+        if len(msg.name) != len(msg.velocity):
+            self.get_logger().warning('Wheel command names and velocities differ in length')
+            return
+        speeds_by_name = dict(zip(msg.name, msg.velocity))
+        if not all(name in speeds_by_name for name in WHEEL_NAMES):
+            self.get_logger().warning('Wheel command is missing one or more wheel joints')
+            return
+        self.wheel_speeds = [speeds_by_name[name] for name in WHEEL_NAMES]
 
     
     def update(self):
@@ -41,16 +56,18 @@ class KinematicSim(Node):
         dt = (now - self.last).nanoseconds / 1e9
         self.last = now
 
-        # Integrate pose
-        self.x += self.v * math.cos(self.th) * dt
-        self.y += self.v * math.sin(self.th) * dt
-        self.th += self.w * dt
+        left_w = (self.wheel_speeds[0] + self.wheel_speeds[1]) / 2.0
+        right_w = (self.wheel_speeds[2] + self.wheel_speeds[3]) / 2.0
+        v = self.r * (left_w + right_w) / 2.0
+        w = self.r * (right_w - left_w) / self.sep
 
-        # Wheel angles (skid-steer: both wheels on a side spin together)
-        left_w = (self.v - self.w * self.sep / 2.0) / self.r
-        right_w = (self.v + self.w * self.sep / 2.0) / self.r
-        self.left_angle += left_w * dt
-        self.right_angle += right_w * dt
+        self.x += v * math.cos(self.th) * dt
+        self.y += v * math.sin(self.th) * dt
+        self.th += w * dt
+        self.wheel_angles = [
+            angle + speed * dt
+            for angle, speed in zip(self.wheel_angles, self.wheel_speeds)
+        ]
 
         stamp = now.to_msg()
         qz, qw = math.sin(self.th / 2.0), math.cos(self.th / 2.0)
@@ -75,8 +92,8 @@ class KinematicSim(Node):
         odom.pose.pose.position.y = self.y
         odom.pose.pose.orientation.z = qz
         odom.pose.pose.orientation.w = qw
-        odom.twist.twist.linear.x = self.v
-        odom.twist.twist.angular.z = self.w
+        odom.twist.twist.linear.x = v
+        odom.twist.twist.angular.z = w
         self.odom_pub.publish(odom)
 
         # Joint states so the wheels spin
@@ -84,8 +101,7 @@ class KinematicSim(Node):
         js.header.stamp = stamp
         js.name = ['front_left_wheel_joint', 'rear_left_wheel_joint',
                    'front_right_wheel_joint', 'rear_right_wheel_joint']
-        js.position = [self.left_angle, self.left_angle,
-                       self.right_angle, self.right_angle]
+        js.position = self.wheel_angles
         self.joint_pub.publish(js)
 
 
