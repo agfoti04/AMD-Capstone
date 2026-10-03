@@ -13,6 +13,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
         (os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -27,7 +28,6 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'kinematic_sim = four_wheel_sim.sim_kinematic:main',
             'base_controller = four_wheel_sim.base_controller:main',
             'my_teleop = four_wheel_sim.my_teleop:main',
             'path_runner = four_wheel_sim.path_runner:main',

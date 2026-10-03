@@ -1,6 +1,7 @@
 package.xml
 setup.cfg
 setup.py
+config/controllers.yaml
 four_wheel_sim/__init__.py
 four_wheel_sim/base_controller.py
 four_wheel_sim/maze.py

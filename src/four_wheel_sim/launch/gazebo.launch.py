@@ -6,6 +6,8 @@ from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from four_wheel_sim.maze import WALLS
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 
 
 def make_world(path='/tmp/four_wheel_maze.world'):
@@ -45,13 +47,25 @@ def generate_launch_description():
             get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')),
         launch_arguments={'world': make_world()}.items())
 
+    rsp = Node(package='robot_state_publisher', executable='robot_state_publisher',
+               parameters=[{'robot_description': robot_desc, 'use_sim_time': True}])
+    spawn = Node(package='gazebo_ros', executable='spawn_entity.py', output='screen',
+                 arguments=['-topic', 'robot_description', '-entity', 'four_wheel_bot',
+                            '-x', '0', '-y', '0', '-z', '0.09'])
+    jsb = Node(package='controller_manager', executable='spawner',
+               arguments=['joint_state_broadcaster'])
+    ddc = Node(package='controller_manager', executable='spawner',
+               arguments=['diff_drive_controller'])
+
+    # The Humble diff_drive_controller uses its own topic names; relay them to the standard ones
+    cmd_relay = Node(package='topic_tools', executable='relay', name='cmd_vel_relay',
+                     arguments=['/cmd_vel', '/diff_drive_controller/cmd_vel_unstamped'])
+    odom_relay = Node(package='topic_tools', executable='relay', name='odom_relay',
+                      arguments=['/diff_drive_controller/odom', '/odom'])
+
     return LaunchDescription([
-        gazebo,
-        Node(package='robot_state_publisher', executable='robot_state_publisher',
-             parameters=[{'robot_description': robot_desc, 'use_sim_time': True}]),
-        Node(package='gazebo_ros', executable='spawn_entity.py', output='screen',
-             arguments=['-topic', 'robot_description', '-entity', 'four_wheel_bot',
-                        '-x', '0', '-y', '0', '-z', '0.09']),
-        Node(package='rviz2', executable='rviz2',
-             parameters=[{'use_sim_time': True}]),
+        gazebo, rsp, spawn,
+        RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[jsb])),
+        RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[ddc])),
+        cmd_relay, odom_relay,
     ])
