@@ -18,6 +18,7 @@ four_wheel_sim.egg-info/requires.txt
 four_wheel_sim.egg-info/top_level.txt
 four_wheel_sim.egg-info/zip-safe
 launch/gazebo.launch.py
+launch/rtab_demo.py
 launch/sim.launch.py
 resource/four_wheel_sim
 urdf/robot.urdf.xacro
