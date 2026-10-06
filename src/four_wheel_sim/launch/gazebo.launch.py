@@ -21,7 +21,11 @@ def make_world(path='/tmp/four_wheel_maze.world'):
         <collision name="c"><geometry><box><size>{sx} {sy} 0.3</size></box></geometry></collision>
         <visual name="v">
           <geometry><box><size>{sx} {sy} 0.3</size></box></geometry>
-          <material><ambient>0.7 0.7 0.7 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material>
+          <material><script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Bricks</name>
+            </script>
+        </material>
         </visual>
       </link>
     </model>"""
