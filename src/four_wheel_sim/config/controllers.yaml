@@ -17,7 +17,7 @@ diff_drive_controller:
     odom_frame_id: odom
     base_frame_id: base_link
     publish_rate: 50.0
-    enable_odom_tf: true
+    enable_odom_tf: false
     open_loop: false
     use_stamped_vel: false
     cmd_vel_timeout: 0.5

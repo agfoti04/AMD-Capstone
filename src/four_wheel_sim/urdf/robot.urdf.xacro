@@ -24,8 +24,7 @@
         <material name="black"/>
       </visual>
       <collision>
-        <origin rpy="1.5708 0 0"/>
-        <geometry><cylinder radius="0.05" length="0.04"/></geometry>
+        <geometry><sphere radius="0.05"/></geometry>
       </collision>
       <inertial>
         <mass value="0.3"/>
@@ -35,9 +34,12 @@
     <joint name="${name}_wheel_joint" type="continuous">
       <parent link="base_link"/><child link="${name}_wheel"/>
       <origin xyz="${x} ${y} -0.03"/><axis xyz="0 1 0"/>
+      <limit effort="10" velocity="20"/>
+      <dynamics damping="0.0" friction="0.0"/>
     </joint>
     <gazebo reference="${name}_wheel">
-      <mu1>0.6</mu1><mu2>0.6</mu2>
+      <mu1>1.0</mu1><mu2>0.30</mu2>
+      <fdir1>1 0 0</fdir1>
       <material>Gazebo/Black</material>
       <minDepth>0.001</minDepth>
       <kp>1e6</kp><kd>100</kd>
@@ -72,6 +74,15 @@
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
       <parameters>$(find four_wheel_sim)/config/controllers.yaml</parameters>
+    </plugin>
+    <plugin name="ground_truth" filename="libgazebo_ros_p3d.so">
+      <ros><remapping>odom:=odom_gt</remapping></ros>
+      <body_name>base_link</body_name>
+      <frame_name>world</frame_name>
+      <update_rate>50.0</update_rate>
+      <xyz_offset>0 0 0</xyz_offset>
+      <rpy_offset>0 0 0</rpy_offset>
+      <gaussian_noise>0.0</gaussian_noise>
     </plugin>
   </gazebo>
 </robot>

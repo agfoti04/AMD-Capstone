@@ -60,8 +60,8 @@ def generate_launch_description():
     # The Humble diff_drive_controller uses its own topic names; relay them to the standard ones
     cmd_relay = Node(package='topic_tools', executable='relay', name='cmd_vel_relay',
                      arguments=['/cmd_vel', '/diff_drive_controller/cmd_vel_unstamped'])
-    odom_relay = Node(package='topic_tools', executable='relay', name='odom_relay',
-                      arguments=['/diff_drive_controller/odom', '/odom'])
+    odom_relay = Node(package='four_wheel_sim', executable='odom_gt',
+                   parameters=[{'use_sim_time': True}])
 
     return LaunchDescription([
         gazebo, rsp, spawn,
