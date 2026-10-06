@@ -136,17 +136,18 @@ controller_server:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.15
-      yaw_goal_tolerance: 6.28
+      yaw_goal_tolerance: 0.3
     # DWB parameters
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.26
-      lookahead_dist: 0.5
-      min_lookahead_dist: 0.3
-      max_lookahead_dist: 0.8
-      use_rotate_to_heading: false
+      desired_linear_vel: 0.2
+      lookahead_dist: 0.3
+      min_lookahead_dist: 0.25
+      max_lookahead_dist: 0.6
+      use_rotate_to_heading: true
       use_regulated_linear_velocity_scaling: true
-      regulated_linear_scaling_min_radius: 0.5
+      regulated_linear_scaling_min_radius: 0.6
+      rotate_to_heading_angular_vel: 0.8
       allow_reversing: false
       use_collision_detection: false
       transform_tolerance: 0.2
@@ -202,7 +203,7 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: odom
       robot_base_frame: base_link
-      rolling_window: true
+     
       use_sim_time: True
       robot_radius: 0.22
       resolution: 0.05
@@ -253,8 +254,8 @@ planner_server:
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
-      tolerance: 0.5
-      use_astar: false
+      tolerance: 0.3
+      use_astar: true
       allow_unknown: true
 
 smoother_server:
