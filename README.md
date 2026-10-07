@@ -11,26 +11,6 @@ always writes the maze and passes that file into Gazebo. Rock worlds live in
 `rover_training` and start `gzserver` directly so the maze launch stays as it
 was.
 
-## What this computer can run
-
-Development here is on a Windows laptop. Its WSL Ubuntu is 24.04, but that
-distro is not usable right now: it has no `/etc/passwd`, no home directory,
-and Docker Desktop is not integrated with it. ROS and Gazebo are not installed
-on it. Docker Desktop is installed, and the engine was not running. The GPU
-is an AMD Radeon, not NVIDIA. The C: drive had about 15 GB free, which is
-tight for a ROS image.
-
-The archived build logs show the simulation was built with ROS 2 Humble and
-Gazebo Classic 11 (`/opt/ros/humble`, `gazebo-11` plugins). That stack matches
-Ubuntu 22.04. Ubuntu 24.04, including a Halo installed that way, should run
-the same stack in the container in `docker/Dockerfile` rather than replacing
-the host with 22.04 or rewriting the robot for Jazzy and Gazebo Harmonic.
-
-A Harmonic port would have to replace `libgazebo_ros_camera.so`,
-`libgazebo_ros2_control.so`, and `libgazebo_ros_p3d.so` in
-`robot.urdf.xacro`, plus the `gazebo_ros` launch files. That is a rewrite of
-the existing rover, so it is not started here.
-
 Commands below run inside the container, unless a step says PowerShell.
 
 ## One-time container setup
