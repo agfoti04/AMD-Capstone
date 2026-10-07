@@ -1,0 +1,7 @@
+rock_detector:
+  ros__parameters:
+    use_sim_time: false
+    image_topic: /oak/rgb/image_raw
+    detection_topic: /detections
+    backend: none
+    model_path: ""

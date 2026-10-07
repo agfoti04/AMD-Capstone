@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="falling_rock2">
+    <static>true</static>
+    <pose>0 0 0.1266 0 0 0</pose>
+    <link name="link">
+      <collision name="box">
+        <pose>0.0000 0.0000 0.0000 0 0 0</pose>
+        <geometry><box><size>0.2687 0.3000 0.2533</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>meshes/FallingRock02.dae</uri>
+            <scale>0.302034 0.302034 0.302034</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.35 0.32 0.28 1</ambient>
+          <diffuse>0.45 0.40 0.34 1</diffuse>
+          <script>
+            <uri>model://falling_rock2/materials/scripts</uri>
+            <uri>model://falling_rock2/materials/textures</uri>
+            <name>FallingRocks/FallingRocks_Diffuse</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

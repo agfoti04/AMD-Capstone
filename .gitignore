@@ -1,0 +1,12 @@
+build/
+install/
+log/
+dataset/
+datasets/
+*.pyc
+__pycache__/
+*.pt
+*.onnx
+*.pth
+.pytest_cache/
+*.egg-info/

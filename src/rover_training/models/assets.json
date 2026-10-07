@@ -1,0 +1,125 @@
+{
+  "class_names": [
+    "rock"
+  ],
+  "collision": "axis-aligned box in the mesh frame, not the Fuel collider mesh",
+  "nasa_astromaterials_3d": {
+    "url": "https://ares.jsc.nasa.gov/astromaterials3d/",
+    "retrieved": "2026-10-07",
+    "result": "The public catalog page is an interactive viewer and did not provide a direct OBJ or GLB URL."
+  },
+  "assets": [
+    {
+      "id": "falling_rock1",
+      "fuel_name": "Falling Rock 1",
+      "fuel_owner": "OpenRobotics",
+      "fuel_url": "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Falling%20Rock%201",
+      "mesh": "meshes/FallingRock01.dae",
+      "material_script": "FallingRocks/FallingRocks_Diffuse",
+      "held_out": false,
+      "temporary": false,
+      "position_id": "FallingRock01-POSITION-array",
+      "vertices": 263,
+      "up_axis": "Z_UP",
+      "file_unit_meters": 0.01,
+      "bounds_min_m": [
+        -0.74499386,
+        -0.74079362,
+        -0.69614683
+      ],
+      "bounds_max_m": [
+        0.74499387,
+        0.7407940000000001,
+        0.6961468399999999
+      ],
+      "nominal_scale": 0.2013439399262704,
+      "class_name": "rock",
+      "license": "Creative Commons Attribution 4.0 International",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "falling_rock2",
+      "fuel_name": "Falling Rock 2",
+      "fuel_owner": "OpenRobotics",
+      "fuel_url": "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Falling%20Rock%202",
+      "mesh": "meshes/FallingRock02.dae",
+      "material_script": "FallingRocks/FallingRocks_Diffuse",
+      "held_out": false,
+      "temporary": false,
+      "position_id": "FallingRock02-POSITION-array",
+      "vertices": 91,
+      "up_axis": "Z_UP",
+      "file_unit_meters": 0.01,
+      "bounds_min_m": [
+        -0.44476001,
+        -0.49663348,
+        -0.41927029
+      ],
+      "bounds_max_m": [
+        0.44476001,
+        0.4966335,
+        0.41927029
+      ],
+      "nominal_scale": 0.30203359825774134,
+      "class_name": "rock",
+      "license": "Creative Commons Attribution 4.0 International",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "falling_rock3",
+      "fuel_name": "Falling Rock 3",
+      "fuel_owner": "OpenRobotics",
+      "fuel_url": "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Falling%20Rock%203",
+      "mesh": "meshes/FallingRock03.dae",
+      "material_script": "FallingRocks/FallingRocks_Diffuse",
+      "held_out": false,
+      "temporary": false,
+      "position_id": "FallingRock03-POSITION-array",
+      "vertices": 45,
+      "up_axis": "Z_UP",
+      "file_unit_meters": 0.01,
+      "bounds_min_m": [
+        -0.32451189,
+        -0.31322302,
+        -0.29506997
+      ],
+      "bounds_max_m": [
+        0.32451189,
+        0.31322304,
+        0.29506999
+      ],
+      "nominal_scale": 0.46223267813083824,
+      "class_name": "rock",
+      "license": "Creative Commons Attribution 4.0 International",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "falling_rock4",
+      "fuel_name": "Falling Rock 4",
+      "fuel_owner": "OpenRobotics",
+      "fuel_url": "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Falling%20Rock%204",
+      "mesh": "meshes/FallingRock04.dae",
+      "material_script": "FallingRocks/FallingRocks_Diffuse",
+      "held_out": true,
+      "temporary": false,
+      "position_id": "FallingRock04-POSITION-array",
+      "vertices": 27,
+      "up_axis": "Z_UP",
+      "file_unit_meters": 0.01,
+      "bounds_min_m": [
+        -0.21127381,
+        -0.20690650000000002,
+        -0.22666899000000001
+      ],
+      "bounds_max_m": [
+        0.21127381,
+        0.20690652,
+        0.22666899000000001
+      ],
+      "nominal_scale": 0.6617579228636435,
+      "class_name": "rock",
+      "license": "Creative Commons Attribution 4.0 International",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  ]
+}
