@@ -1,1 +1,0 @@
-/root/Capstone/AMD-Capstone/src/four_wheel_sim/launch/bringup.launch.py
