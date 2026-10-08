@@ -1,0 +1,111 @@
+"""Small deterministic I/O and configuration helpers (no ROS import)."""
+import hashlib
+import json
+import math
+import struct
+import zlib
+from pathlib import Path
+
+import numpy as np
+
+
+def config_path():
+    local = Path(__file__).resolve().parents[1] / 'config' / 'sample.json'
+    if local.exists():
+        return local
+    from ament_index_python.packages import get_package_share_directory
+    return Path(get_package_share_directory('mars_training_environment')) / 'config' / 'sample.json'
+
+
+def read_config(path=None):
+    config = json.loads(config_path().read_text())
+    if path is not None:
+        supplied = json.loads(Path(path).read_text())
+        for section, values in supplied.items():
+            if section not in config or not isinstance(values, dict):
+                raise ValueError(f'Unknown/non-object configuration section: {section}')
+            unknown = set(values) - set(config[section])
+            if unknown:
+                raise ValueError(f'Unknown {section} keys: {sorted(unknown)}')
+            config[section].update(values)
+    t, r, c, cap = (config[k] for k in ('terrain', 'rocks', 'camera', 'capture'))
+    n = t['grid_size']
+    if not isinstance(n, int) or n < 17 or (n - 1) & (n - 2):
+        raise ValueError('grid_size must be 2^n + 1, at least 17')
+    if t['size_m'] < 6 or not 0 < t['spawn_clearance_m'] < t['size_m'] / 4:
+        raise ValueError('Terrain size or spawn clearance is invalid')
+    if t['backend'] not in ('heightmap', 'mesh') or not 0 < t['max_slope_deg'] < 25:
+        raise ValueError('Use heightmap/mesh and a slope limit between 0 and 25 degrees')
+    if not 0 < c['near_m'] < c['far_m'] or not 0.2 < c['horizontal_fov_rad'] < 2.5:
+        raise ValueError('Invalid camera clipping planes or field of view')
+    if min(c['width'], c['height'], c['rate_hz'], cap['views_per_scene']) <= 0:
+        raise ValueError('Camera dimensions, rate and view count must be positive')
+    if not 4 <= r['procedural_count'] <= 64:
+        raise ValueError('procedural_count must be 4..64')
+    for lo, hi in (r['count_range'], r['sampling_size_m'], r['obstacle_size_m'],
+                   r['burial_fraction'], cap['distance_m']):
+        if not 0 <= lo <= hi:
+            raise ValueError('Invalid configuration range')
+    if cap['distance_m'][0] <= c['near_m'] + 0.25 or cap['distance_m'][1] >= c['far_m']:
+        raise ValueError('View distances must lie safely inside camera operating range')
+    if not 0 <= config['labels']['min_visible_fraction'] <= 1:
+        raise ValueError('Invalid visible fraction')
+    seeds = config['dataset']['seeds']
+    if len(set(seeds)) != len(seeds) or any(not isinstance(s, int) or s < 0 for s in seeds):
+        raise ValueError('Seeds must be unique nonnegative integers')
+    return config
+
+
+def stable_numbers(value):
+    # Sub-nanometre differences between Windows/Linux BLAS must not change IDs.
+    if isinstance(value, float):
+        rounded = round(value, 10)
+        return 0.0 if rounded == 0 else rounded
+    if isinstance(value, dict):
+        return {k:stable_numbers(v) for k,v in value.items()}
+    if isinstance(value, (list,tuple)):
+        return [stable_numbers(v) for v in value]
+    return value
+
+
+def canonical(value):
+    return json.dumps(stable_numbers(value), sort_keys=True, separators=(',', ':'), allow_nan=False)
+
+
+def digest(value):
+    return hashlib.sha256(canonical(value).encode()).hexdigest()
+
+
+def write_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(stable_numbers(value), indent=2, sort_keys=True, allow_nan=False) + '\n', encoding='utf-8')
+
+
+def split_for_seed(seed):
+    # Independent of scene count/config: adding seeds cannot move an existing group.
+    bucket = int(hashlib.sha256(f'mars-scene:{seed}'.encode()).hexdigest()[:8], 16) % 10
+    return 'train' if bucket < 6 else ('val' if bucket < 8 else 'test')
+
+
+def png(path, pixels):
+    """Lossless PNG, RGB8 or grayscale8, without an imaging dependency."""
+    pixels = np.asarray(pixels, dtype=np.uint8)
+    h, w = pixels.shape[:2]
+    color = 2 if pixels.ndim == 3 else 0
+    def chunk(tag, data):
+        return struct.pack('!I', len(data)) + tag + data + struct.pack('!I', zlib.crc32(tag + data) & 0xffffffff)
+    data = b''.join(b'\0' + row.tobytes() for row in pixels)
+    Path(path).write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('!2I5B', w, h, 8, color, 0, 0, 0))
+                           + chunk(b'IDAT', zlib.compress(data, 6)) + chunk(b'IEND', b''))
+
+
+def rotation(rpy):
+    from rover_training.geometry import rpy_to_matrix
+    return np.asarray(rpy_to_matrix(*rpy))
+
+
+def quaternion(rpy):
+    r, p, y = (v / 2 for v in rpy)
+    cr, sr, cp, sp, cy, sy = math.cos(r), math.sin(r), math.cos(p), math.sin(p), math.cos(y), math.sin(y)
+    return [sr*cp*cy-cr*sp*sy, cr*sp*cy+sr*cp*sy, cr*cp*sy-sr*sp*cy, cr*cp*cy+sr*sp*sy]

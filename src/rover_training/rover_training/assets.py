@@ -76,7 +76,30 @@ def catalog_path():
     return models_dir() / "assets.json"
 
 
+def read_dae_vertices(path):
+    """Mesh vertices in meters, Z up, in the model frame Gazebo Classic renders."""
+    _, _, _, points = _parse_dae(path)
+    return points
+
+
 def measure_dae(path):
+    position_id, up_axis, meters_per_unit, points = _parse_dae(path)
+    xs, ys, zs = zip(*points)
+    bounds_min = [min(xs), min(ys), min(zs)]
+    bounds_max = [max(xs), max(ys), max(zs)]
+    longest = max(bounds_max[i] - bounds_min[i] for i in range(3))
+    return {
+        "position_id": position_id,
+        "vertices": len(points),
+        "up_axis": up_axis,
+        "file_unit_meters": meters_per_unit,
+        "bounds_min_m": bounds_min,
+        "bounds_max_m": bounds_max,
+        "nominal_scale": TARGET_LONGEST_M / longest,
+    }
+
+
+def _parse_dae(path):
     text = Path(path).read_text(encoding="utf-8", errors="ignore")
     unit = re.search(r'<unit\b[^>]*meter="([^"]+)"', text)
     meters_per_unit = float(unit.group(1)) if unit else 1.0
@@ -104,19 +127,8 @@ def measure_dae(path):
         points = [(-y, z, x) for x, y, z in points]
     elif up_axis != "Z_UP":
         raise ValueError(f"unsupported up_axis {up_axis}")
-    xs, ys, zs = zip(*points)
-    bounds_min = [min(xs) * meters_per_unit, min(ys) * meters_per_unit, min(zs) * meters_per_unit]
-    bounds_max = [max(xs) * meters_per_unit, max(ys) * meters_per_unit, max(zs) * meters_per_unit]
-    longest = max(bounds_max[i] - bounds_min[i] for i in range(3))
-    return {
-        "position_id": chosen[0],
-        "vertices": len(points),
-        "up_axis": up_axis,
-        "file_unit_meters": meters_per_unit,
-        "bounds_min_m": bounds_min,
-        "bounds_max_m": bounds_max,
-        "nominal_scale": TARGET_LONGEST_M / longest,
-    }
+    points = [tuple(value * meters_per_unit for value in point) for point in points]
+    return chosen[0], up_axis, meters_per_unit, points
 
 
 def build_catalog(root=None):
@@ -224,9 +236,14 @@ def _model_sdf(asset):
 
 
 def load_assets(path=None):
+    """Catalog entries plus "vertices_m", the unscaled mesh vertices used for tight boxes."""
     path = Path(path) if path else catalog_path()
     document = json.loads(path.read_text(encoding="utf-8"))
-    return document["assets"]
+    assets = document["assets"]
+    for asset in assets:
+        mesh = path.parent / asset["id"] / asset["mesh"]
+        asset["vertices_m"] = read_dae_vertices(mesh) if mesh.is_file() else None
+    return assets
 
 
 def asset_by_id(assets, asset_id):

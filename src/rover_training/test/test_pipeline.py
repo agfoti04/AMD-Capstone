@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from rover_training.assets import build_catalog, catalog_path, models_dir
+from rover_training.assets import build_catalog, catalog_path, load_assets, models_dir
 from rover_training.geometry import (
     annotate_rocks,
     camera_rigid_from_base,
@@ -75,7 +75,7 @@ class GeometryTests(unittest.TestCase):
         self.assertEqual(len(partial), 1)
         self.assertAlmostEqual(partial[0]["xmin"], clear[0]["xmin"], places=4)
         self.assertAlmostEqual(partial[0]["xmax"], clear[0]["xmax"], places=4)
-        self.assertGreater(partial[0]["visible_fraction"], 0.15)
+        self.assertGreater(partial[0]["visible_fraction"], 0.30)
         self.assertLess(partial[0]["visible_fraction"], 0.85)
 
     def test_empty_scene_writes_an_empty_label_file(self):
@@ -98,6 +98,40 @@ class GeometryTests(unittest.TestCase):
         line = write_and_read(labels, intrinsics)
         self.assertEqual(line[0]["class_id"], 0)
         self.assertLessEqual(line[0]["xmax"], intrinsics["width"])
+
+    def test_rock_hidden_just_behind_another_rock_is_dropped(self):
+        intrinsics = _small_camera()
+        hidden = _front_rock()
+        hidden["name"] = "rock_1"
+        hidden["bounds_min"] = (-0.3, -0.2, 2.05)
+        hidden["bounds_max"] = (0.3, 0.2, 2.3)
+        depth = _flat_depth(intrinsics, 2.0)
+        alone = annotate_rocks([hidden], _identity_camera(), intrinsics, depth=depth)
+        self.assertEqual(len(alone), 1)
+        labels = annotate_rocks([_front_rock(), hidden], _identity_camera(), intrinsics, depth=depth)
+        self.assertEqual([label["model_name"] for label in labels], ["rock_0"])
+
+    def test_mesh_vertices_give_a_tighter_box_inside_the_aabb_box(self):
+        intrinsics = _small_camera()
+        loose = annotate_rocks([_front_rock()], _identity_camera(), intrinsics)[0]
+        rock = _front_rock()
+        rock["vertices"] = [(-0.4, 0.0, 2.3), (0.4, 0.0, 2.3), (0.0, -0.2, 2.3), (0.0, 0.2, 2.3)]
+        tight = annotate_rocks([rock], _identity_camera(), intrinsics)[0]
+        self.assertGreater(tight["xmin"], loose["xmin"])
+        self.assertLess(tight["xmax"], loose["xmax"])
+        self.assertGreater(tight["ymin"], loose["ymin"])
+        self.assertLess(tight["ymax"], loose["ymax"])
+        self.assertAlmostEqual(tight["xmin"], 50.0 * -0.4 / 2.3 + 49.5, places=4)
+        self.assertAlmostEqual(tight["ymax"], 50.0 * 0.2 / 2.3 + 39.5, places=4)
+
+    def test_vertices_behind_the_camera_fall_back_to_the_aabb(self):
+        intrinsics = _small_camera()
+        loose = annotate_rocks([_front_rock()], _identity_camera(), intrinsics)[0]
+        rock = _front_rock()
+        rock["vertices"] = [(0.0, 0.0, -1.0), (0.1, 0.1, 2.3)]
+        fallback = annotate_rocks([rock], _identity_camera(), intrinsics)[0]
+        self.assertAlmostEqual(fallback["xmin"], loose["xmin"], places=6)
+        self.assertAlmostEqual(fallback["ymax"], loose["ymax"], places=6)
 
     def test_unknown_class_is_not_written_as_a_rock(self):
         rock = _front_rock()
@@ -248,6 +282,14 @@ class ExportRoundTripTests(unittest.TestCase):
         self.assertEqual(len(rocks), 3)
         self.assertTrue(all(rock["class_name"] == "rock" for rock in rocks))
         self.assertTrue(math.isfinite(rocks[0]["xyz"][2]))
+
+    def test_loaded_assets_carry_mesh_vertices_inside_the_bounds(self):
+        for asset in load_assets():
+            vertices = asset["vertices_m"]
+            self.assertEqual(len(vertices), asset["vertices"])
+            for axis in range(3):
+                self.assertAlmostEqual(min(v[axis] for v in vertices), asset["bounds_min_m"][axis], places=9)
+                self.assertAlmostEqual(max(v[axis] for v in vertices), asset["bounds_max_m"][axis], places=9)
 
 
 if __name__ == "__main__":

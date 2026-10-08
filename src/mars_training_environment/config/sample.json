@@ -1,0 +1,31 @@
+{
+  "terrain": {
+    "size_m": 20.0, "grid_size": 65, "relief_m": 0.8,
+    "max_slope_deg": 10.0, "spawn_clearance_m": 1.3,
+    "backend": "mesh", "texture_size": 512
+  },
+  "rocks": {
+    "procedural_count": 16, "include_existing": true,
+    "held_out_ids": ["proc_12", "proc_13", "proc_14", "proc_15", "falling_rock4"],
+    "count_range": [38, 55], "sampling_size_m": [0.07, 0.20],
+    "obstacle_size_m": [0.25, 0.70], "sampling_probability": 0.55,
+    "burial_fraction": [0.0, 0.24], "clearance_m": 0.07,
+    "cluster_probability": 0.65, "max_tilt_deg": 22.0
+  },
+  "camera": {
+    "mount_xyz": [0.2, 0.0, 0.12], "tilt_rad": 0.1,
+    "width": 640, "height": 400, "horizontal_fov_rad": 1.22,
+    "rate_hz": 10.0, "near_m": 0.3, "far_m": 8.0,
+    "image_topic": "/oak/image_raw", "depth_topic": "/oak/depth/image_raw",
+    "camera_info_topic": "/oak/camera_info"
+  },
+  "capture": {
+    "views_per_scene": 10, "distance_m": [0.95, 3.2],
+    "settle_sim_sec": 0.7, "timeout_wall_sec": 120.0,
+    "max_pose_gap_sec": 0.06, "save_depth": false, "previews": true,
+    "require_depth_check": true
+  },
+  "labels": {"min_visible_pixels": 24, "min_box_side_px": 5, "min_visible_fraction": 0.30},
+  "dataset": {"seeds": [100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119],
+              "empty_seeds": [100,110,117]}
+}

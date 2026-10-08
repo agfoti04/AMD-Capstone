@@ -85,6 +85,7 @@ def rocks_for_annotation(scene, assets):
             "scale": rock["scale"],
             "bounds_min": asset["bounds_min_m"],
             "bounds_max": asset["bounds_max_m"],
+            "vertices": asset.get("vertices_m"),
         })
     return rocks
 

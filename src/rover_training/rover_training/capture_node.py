@@ -48,7 +48,7 @@ class DatasetCapture(Node):
         self.declare_parameter("robot_name", "four_wheel_bot")
         self.declare_parameter("settle_sec", 0.8)
         self.declare_parameter("ready_timeout_sec", 90.0)
-        self.declare_parameter("min_visible_fraction", 0.15)
+        self.declare_parameter("min_visible_fraction", 0.30)
         self.declare_parameter("occlusion_tolerance_m", 0.08)
         self.declare_parameter("save_depth", True)
 
@@ -73,7 +73,7 @@ class DatasetCapture(Node):
         self.camera_info = None
         self.model_states = None
         self.odom = None
-        self.clients = [
+        self._set_state_clients = [
             self.create_client(SetEntityState, "/gazebo/set_entity_state"),
             self.create_client(SetEntityState, "/set_entity_state"),
         ]
@@ -99,7 +99,7 @@ class DatasetCapture(Node):
             self._settle()
 
     def _wait_ready(self):
-        ready = next((client for client in self.clients if client.service_is_ready()), None)
+        ready = next((client for client in self._set_state_clients if client.service_is_ready()), None)
         if self.image is not None and self.camera_info is not None and ready is not None:
             self.client = ready
             self.get_logger().info(f"camera and {self.client.srv_name} are ready")

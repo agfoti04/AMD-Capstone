@@ -1,8 +1,8 @@
 """Camera geometry and rock boxes for Gazebo Classic.
 
-Gazebo Classic 11 has no bounding-box camera. Labels are the projected
-collision box of each rock, with optional depth-buffer occlusion. They are
-not detector predictions.
+Gazebo Classic 11 has no bounding-box camera. Labels are the projected mesh
+vertices of each rock (the collision AABB as a fallback), with optional
+depth-buffer occlusion. They are not detector predictions.
 """
 
 import math
@@ -152,12 +152,28 @@ def seat_on_ground(bounds_min, bounds_max, scale, roll, pitch, yaw):
     return -lowest
 
 
-def project_box(world_r, world_t, bounds_min, bounds_max, cam_r, cam_t, intrinsics, near=0.05):
-    """Pixel box of a model-frame AABB. cam_r/cam_t is world -> optical."""
-    low, high = bounds_min, bounds_max
-    corners = [transform_point(world_r, world_t, corner) for corner in box_corners(low, high)]
-    camera_points = [transform_point(cam_r, cam_t, point) for point in corners]
-    visible = _visible_edge_points(camera_points, near)
+def project_box(world_r, world_t, bounds_min, bounds_max, cam_r, cam_t, intrinsics,
+                near=0.05, vertices=None):
+    """Pixel box of a rock. cam_r/cam_t is world -> optical.
+
+    With model-frame mesh vertices the box hugs the rendered silhouette. The
+    AABB corners are used when vertices are missing or some cross the near plane.
+    """
+    camera_vertices = None
+    if vertices:
+        camera_vertices = [
+            transform_point(cam_r, cam_t, transform_point(world_r, world_t, vertex))
+            for vertex in vertices
+        ]
+        if any(point[2] < near for point in camera_vertices):
+            camera_vertices = None
+    if camera_vertices is not None:
+        visible = camera_vertices
+    else:
+        corners = [transform_point(world_r, world_t, corner)
+                   for corner in box_corners(bounds_min, bounds_max)]
+        camera_points = [transform_point(cam_r, cam_t, point) for point in corners]
+        visible = _visible_edge_points(camera_points, near)
     if len(visible) < 2:
         return None
     pixels = [_project(point, intrinsics) for point in visible]
@@ -178,11 +194,15 @@ def project_box(world_r, world_t, bounds_min, bounds_max, cam_r, cam_t, intrinsi
 
 
 def visibility_fraction(box, world_r, world_t, bounds_min, bounds_max,
-                        cam_r, cam_t, intrinsics, depth, grid=5, tolerance=0.08):
+                        cam_r, cam_t, intrinsics, depth, grid=5, tolerance=0.08,
+                        others=()):
     """Fraction of box samples whose depth matches the rock, not a closer occluder.
 
     depth is optical-axis Z in meters, the encoding published by
     libgazebo_ros_camera (32FC1). None means the check was not run.
+    others holds (world_r, world_t, bounds_min, bounds_max) of the other rocks;
+    a sample whose depth also fits a rock entered earlier on the ray belongs
+    to that rock.
     """
     if depth is None:
         return None
@@ -193,6 +213,10 @@ def visibility_fraction(box, world_r, world_t, bounds_min, bounds_max,
     cam_from_model_r, cam_from_model_t = _model_pose_in_camera(
         world_r, world_t, cam_r, cam_t)
     inverse_r, inverse_t = invert_rigid(cam_from_model_r, cam_from_model_t)
+    occluders = []
+    for other_r, other_t, other_min, other_max in others:
+        other_cam_r, other_cam_t = _model_pose_in_camera(other_r, other_t, cam_r, cam_t)
+        occluders.append((*invert_rigid(other_cam_r, other_cam_t), other_min, other_max))
     samples = _sample_pixels(box, width, height, grid)
     if not samples:
         return 0.0
@@ -205,27 +229,48 @@ def visibility_fraction(box, world_r, world_t, bounds_min, bounds_max,
         measured = depth[int(v) * width + int(u)]
         if hit is None or not _depth_sees_surface(measured, hit[0], hit[1], tolerance):
             continue
+        if any(_nearer_rock_owns(measured, hit[0], direction, occluder, tolerance)
+               for occluder in occluders):
+            continue
         visible += 1
     return visible / float(len(samples))
 
 
+def _nearer_rock_owns(measured, z_enter, direction, occluder, tolerance):
+    inverse_r, inverse_t, low, high = occluder
+    hit = _ray_aabb(inverse_t, mat_vec(inverse_r, direction), low, high)
+    if hit is None or hit[0] >= z_enter:
+        return False
+    return _depth_sees_surface(measured, hit[0], hit[1], tolerance)
+
+
 def annotate_rocks(rocks, camera_rigid, intrinsics, depth=None,
-                   min_visible_fraction=0.15, tolerance=0.08, near=0.05):
+                   min_visible_fraction=0.30, tolerance=0.08, near=0.05):
     """Project simulator rock poses into YOLO boxes. Unknown classes are skipped."""
     cam_r, cam_t = camera_rigid
+    solids = [
+        (*pose_to_rigid(rock["xyz"], rock["quaternion"]),
+         *scaled_bounds(rock["bounds_min"], rock["bounds_max"], rock["scale"]))
+        for rock in rocks
+    ]
     labels = []
-    for rock in rocks:
+    for index, rock in enumerate(rocks):
         class_id = class_id_for(rock.get("class_name", "rock"))
         if class_id is None:
             continue
-        world_r, world_t = pose_to_rigid(rock["xyz"], rock["quaternion"])
-        low, high = scaled_bounds(rock["bounds_min"], rock["bounds_max"], rock["scale"])
-        box = project_box(world_r, world_t, low, high, cam_r, cam_t, intrinsics, near=near)
+        world_r, world_t, low, high = solids[index]
+        vertices = rock.get("vertices")
+        if vertices:
+            scale = rock["scale"]
+            vertices = [tuple(value * scale for value in vertex) for vertex in vertices]
+        box = project_box(world_r, world_t, low, high, cam_r, cam_t, intrinsics,
+                          near=near, vertices=vertices)
         if box is None:
             continue
         fraction = visibility_fraction(
             box, world_r, world_t, low, high, cam_r, cam_t, intrinsics, depth,
             tolerance=tolerance,
+            others=solids[:index] + solids[index + 1:],
         )
         if fraction is not None and fraction < min_visible_fraction:
             continue

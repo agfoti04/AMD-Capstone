@@ -3,7 +3,9 @@
 This folder is a separate copy of the rover simulation. The original archive
 is unchanged. `main` is a local baseline commit of that simulation.
 `perception/rock-dataset` adds rock scenes, YOLO labels, and a detector.
-Nothing has been pushed.
+`perception/mars-training-environment` adds the Martian terrain and the
+200-image capture tools. Those Mars files are local and not committed.
+Commands for that work are in `src/mars_training_environment/README.md`.
 
 The rover description, maze launch, and controllers are the original files.
 `four_wheel_sim/launch/gazebo.launch.py` does not take a world argument: it
@@ -150,9 +152,11 @@ dataset/rocks/manifest.jsonl
 `dataset/` is gitignored. Neighboring viewpoints of one scene share a split.
 `falling_rock4` appears only in test scenes, never next to a training rock.
 
-The label is the rock's 3D box projected with the camera calibration and the
-simulator pose. A depth check throws away boxes whose pixels are closer than
-the rock, so a fully hidden rock is not labeled. Detector output is not used
+The label is the tightest image box around the rock's mesh vertices, projected
+with the camera calibration and the simulator pose. If part of the rock is
+behind the camera, the corners of its 3D box are used instead. A depth check measures how much of the rock is visible.
+Rocks less than 30% visible are not labeled (`min_visible_fraction`), so
+fully hidden rocks and slivers behind other rocks are skipped. Detector output is not used
 as a label.
 
 ## Detector
