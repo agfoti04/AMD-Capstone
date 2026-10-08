@@ -20,5 +20,6 @@ four_wheel_sim.egg-info/zip-safe
 launch/gazebo.launch.py
 launch/rtab_demo.py
 launch/sim.launch.py
+launch/slam.launch.py
 resource/four_wheel_sim
 urdf/robot.urdf.xacro

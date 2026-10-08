@@ -30,7 +30,7 @@ def main():
     #     pose(nav, 4.0, 2.0, 0.0),
     # ]
     #nav.followWaypoints(route)
-    nav.goToPose(pose(nav, 4.0, 2.0, 0.0))
+    nav.goToPose(pose(nav, 6.0, 3.0, 0.0))
     while not nav.isTaskComplete():
         fb = nav.getFeedback()
         if fb:

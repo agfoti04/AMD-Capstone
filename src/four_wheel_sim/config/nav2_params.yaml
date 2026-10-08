@@ -42,7 +42,7 @@ amcl:
 bt_navigator:
   ros__parameters:
     use_sim_time: True
-    global_frame: odom
+    global_frame: map
     robot_base_frame: base_link
     odom_topic: /odom
     bt_loop_duration: 10
@@ -124,8 +124,8 @@ controller_server:
     # Progress checker parameters
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      required_movement_radius: 0.15
+      movement_time_allowance: 25.0
     # Goal checker parameters
     #precise_goal_checker:
     #  plugin: "nav2_controller::SimpleGoalChecker"
@@ -136,20 +136,22 @@ controller_server:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.15
-      yaw_goal_tolerance: 0.3
+      yaw_goal_tolerance: 6.28
     # DWB parameters
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.2
+      desired_linear_vel: 0.15
       lookahead_dist: 0.3
-      min_lookahead_dist: 0.25
-      max_lookahead_dist: 0.6
-      use_rotate_to_heading: true
+      min_lookahead_dist: 0.2
+      max_lookahead_dist: 0.4
+      use_rotate_to_heading: false
       use_regulated_linear_velocity_scaling: true
-      regulated_linear_scaling_min_radius: 0.6
+      regulated_linear_scaling_min_speed: 0.08
+      regulated_linear_scaling_min_radius: 0.9
       rotate_to_heading_angular_vel: 0.8
-      allow_reversing: false
-      use_collision_detection: false
+      allow_reversing: true
+      use_collision_detection: true
+      collision_detection_min_radius: 0.1
       transform_tolerance: 0.2
 
 local_costmap:
@@ -165,8 +167,7 @@ local_costmap:
       height: 3
       resolution: 0.05
       robot_radius: 0.22
-      #plugins: ["voxel_layer", "inflation_layer"]
-      plugins: ["inflation_layer"]
+      plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
@@ -174,11 +175,11 @@ local_costmap:
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
-        publish_voxel_map: True
+        publish_voxel_map: false
         origin_z: 0.0
         z_resolution: 0.05
         z_voxels: 16
-        max_obstacle_height: 2.0
+        max_obstacle_height: 1.0
         mark_threshold: 0
         observation_sources: scan
         scan:
@@ -191,6 +192,14 @@ local_costmap:
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
           obstacle_min_range: 0.0
+        oak:
+          topic: /oak/points
+          data_type: "PointCloud2"
+          marking: True
+          clearing: True
+          obstacle_max_range: 3.0
+          obstacle_min_range: 0.3
+          raytrace_max_range: 3.5
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -201,14 +210,14 @@ global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
-      global_frame: odom
+      global_frame: map
       robot_base_frame: base_link
      
       use_sim_time: True
       robot_radius: 0.22
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["inflation_layer"]
+      plugins: ["inflation_layer", "static_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -225,6 +234,7 @@ global_costmap:
           obstacle_min_range: 0.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
+        map_topic: /map
         map_subscribe_transient_local: True
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
