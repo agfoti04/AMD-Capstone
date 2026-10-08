@@ -5,35 +5,45 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
-from four_wheel_sim.maze import WALLS
+
+from four_wheel_sim.worlds import WALLS, OBSTACLES
+
 from launch.actions import RegisterEventHandler
 from launch.event_handlers import OnProcessExit
 
+def _material(name):
+    return f"""<material><script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>{name}</name></script></material>"""
 
 def make_world(path='/tmp/four_wheel_maze.world'):
-    walls = ''
+    models = ''
     for i, (cx, cy, sx, sy) in enumerate(WALLS):
-        walls += f"""
-    <model name="wall_{i}">
-      <static>true</static>
+        models += f"""
+    <model name="wall_{i}"><static>true</static>
       <pose>{cx} {cy} 0.15 0 0 0</pose>
       <link name="link">
         <collision name="c"><geometry><box><size>{sx} {sy} 0.3</size></box></geometry></collision>
-        <visual name="v">
-          <geometry><box><size>{sx} {sy} 0.3</size></box></geometry>
-          <material><script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Bricks</name>
-            </script>
-        </material>
-        </visual>
-      </link>
-    </model>"""
+        <visual name="v"><geometry><box><size>{sx} {sy} 0.3</size></box></geometry>
+          {_material('Gazebo/Bricks')}</visual>
+      </link></model>"""
+    for i, (kind, x, y, a, b, mat) in enumerate(OBSTACLES):
+        if kind == 'box':
+            geom = f'<box><size>{a} {b} 0.5</size></box>'
+        else:
+            geom = f'<cylinder><radius>{a}</radius><length>0.5</length></cylinder>'
+        models += f"""
+    <model name="obstacle_{i}"><static>true</static>
+      <pose>{x} {y} 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry>{geom}</geometry></collision>
+        <visual name="v"><geometry>{geom}</geometry>{_material(mat)}</visual>
+      </link></model>"""
     sdf = f"""<?xml version="1.0"?>
 <sdf version="1.6">
   <world name="maze">
     <include><uri>model://sun</uri></include>
-    <include><uri>model://ground_plane</uri></include>{walls}
+    <include><uri>model://ground_plane</uri></include>{models}
   </world>
 </sdf>"""
     with open(path, 'w') as f:
@@ -62,8 +72,7 @@ def generate_launch_description():
                arguments=['diff_drive_controller'])
 
     # The Humble diff_drive_controller uses its own topic names; relay them to the standard ones
-    cmd_relay = Node(package='topic_tools', executable='relay', name='cmd_vel_relay',
-                     arguments=['/cmd_vel', '/diff_drive_controller/cmd_vel_unstamped'])
+    cmd_relay = Node(package='four_wheel_sim', executable='cmd_filter', parameters=[{'use_sim_time': True}])
     odom_relay = Node(package='four_wheel_sim', executable='odom_gt',
                    parameters=[{'use_sim_time': True}])
 

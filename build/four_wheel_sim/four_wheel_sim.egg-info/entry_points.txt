@@ -1,4 +1,5 @@
 [console_scripts]
+cmd_filter = four_wheel_sim.cmd_filter:main
 maze_waypoints = four_wheel_sim.maze_waypoints:main
 my_teleop = four_wheel_sim.my_teleop:main
 odom_gt = four_wheel_sim.odom_gt:main

@@ -18,14 +18,15 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(pkg, 'launch', 'gazebo.launch.py')))
 
     # 2. RTAB-Map: publishes /map and map->odom
-    rtabmap = IncludeLaunchDescription(
+    rtabmap = TimerAction(period=20.0, actions=[
+        IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(rtab_dir, 'launch', 'rtabmap.launch.py')),
             launch_arguments={
                 'rtabmap_args': '--delete_db_on_start '
                                 '--Vis/MinInliers 25 --RGBD/OptimizeMaxError 1.0 '
                                 '--Grid/FromDepth true --Grid/RayTracing true '
-                                '--Grid/RangeMax 4.0 --Grid/MaxGroundHeight 0.05 '
+                                '--Grid/RangeMax 6.0 --Grid/MaxGroundHeight 0.05 '
                                 '--Grid/MaxObstacleHeight 1.0 --Grid/CellSize 0.05',
                 'rgb_topic': '/oak/image_raw',
                 'depth_topic': '/oak/depth/image_raw',
@@ -37,7 +38,7 @@ def generate_launch_description():
                 'use_sim_time': 'true',
                 'rviz': 'false',
                 'rtabmap_viz': LaunchConfiguration('viz'),
-            }.items())
+            }.items())])
 
     # 3. Nav2, after RTAB-Map has had time to publish the first map
     nav2 = TimerAction(period=15.0, actions=[

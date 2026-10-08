@@ -6,10 +6,13 @@ config/maze.yaml
 config/nav2_params.yaml
 four_wheel_sim/__init__.py
 four_wheel_sim/base_controller.py
+four_wheel_sim/cmd_filter.py
+four_wheel_sim/field.py
 four_wheel_sim/maze.py
 four_wheel_sim/maze_waypoints.py
 four_wheel_sim/odom_gt.py
 four_wheel_sim/path_runner.py
+four_wheel_sim/worlds.py
 four_wheel_sim.egg-info/PKG-INFO
 four_wheel_sim.egg-info/SOURCES.txt
 four_wheel_sim.egg-info/dependency_links.txt
