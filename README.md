@@ -1,11 +1,20 @@
 # Rover perception workspace
 
 This folder is a separate copy of the rover simulation. The original archive
-is unchanged. `main` is a local baseline commit of that simulation.
-`perception/rock-dataset` adds rock scenes, YOLO labels, and a detector.
-`perception/mars-training-environment` adds the Martian terrain and the
-200-image capture tools. Those Mars files are local and not committed.
-Commands for that work are in `src/mars_training_environment/README.md`.
+is unchanged. `main` is a local baseline commit of that simulation. Branches,
+each built on the one before it:
+
+| Branch | Adds |
+| --- | --- |
+| `perception/rock-dataset` | Rock scenes, YOLO labels, and a detector in Gazebo Classic |
+| `perception/mars-training-environment` | The Martian terrain and the 200-image capture tools |
+| `perception/gz-harmonic-migration` | The rover and the Mars environment in Gazebo Harmonic (ROS 2 Jazzy) |
+| `perception/mars-sampling-sites` | A 1080p camera 30 in above the ground, and sampling-site analogues |
+
+The sections below cover the original Humble and Gazebo Classic workflow. The
+Mars environment runs in Jazzy and Harmonic. Its short version is in
+[Mars environment in Gazebo Harmonic](#mars-environment-in-gazebo-harmonic),
+and the full commands are in `src/mars_training_environment/README.md`.
 
 The rover description, maze launch, and controllers are the original files.
 `four_wheel_sim/launch/gazebo.launch.py` does not take a world argument: it
@@ -195,6 +204,91 @@ These tests check projection, clipping, occlusion, empty labels, class id 0,
 the scene split, and that the maze launch still has no world argument. They
 do not start Gazebo.
 
+The Mars environment tests also run without Gazebo:
+
+```powershell
+$env:PYTHONPATH = "src\mars_training_environment;src\rover_training"
+python src\mars_training_environment\test\test_environment.py
+```
+
+## Mars environment in Gazebo Harmonic
+
+The Mars worlds use the Jazzy image (`rover-jazzy`), not `rover-humble`. Build
+it once from this folder in PowerShell:
+
+```powershell
+docker build -f docker/Dockerfile.jazzy -t rover-jazzy .
+```
+
+To see the Gazebo window, start the container with the WSLg display mounts.
+Without them Gazebo exits with `could not connect to display`. Leave the
+mounts off for headless capture.
+
+```powershell
+docker run --rm -it -e LIBGL_ALWAYS_SOFTWARE=1 -v "${PWD}:/work" -w /work -v /run/desktop/mnt/host/wslg/.X11-unix:/tmp/.X11-unix -v /run/desktop/mnt/host/wslg:/mnt/wslg -e DISPLAY=:0 -e WAYLAND_DISPLAY=wayland-0 -e XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir rover-jazzy bash
+```
+
+Inside the container, build into the Jazzy folders, generate one scene, and
+open it:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd /work
+colcon --log-base log_jazzy build --build-base build_jazzy --install-base install_jazzy \
+  --packages-select four_wheel_sim rover_training mars_training_environment
+source /work/install_jazzy/setup.bash
+ros2 run mars_training_environment mars_generate \
+  --config /work/src/mars_training_environment/config/sample.json \
+  --output /work/dataset/mars_sites_scenes --seed 101 --asset-cache /work/assets_cache
+ros2 launch mars_training_environment mars_world.launch.py \
+  scene:=/work/dataset/mars_sites_scenes/scenes/scene_000101/scene.json gui:=true
+```
+
+Rock and ground scans come from `mars_assets` into `assets_cache/`. See the
+package README if that folder is empty.
+
+For a labeled 10-image set from that scene, without the window:
+
+```bash
+ros2 run mars_training_environment mars_dataset \
+  --bundle /work/dataset/mars_sites_scenes --output /work/dataset/mars_sites_10 --scene scene_000101
+```
+
+Saving `sample.json` does not change a running world. Generate into a new
+output folder and relaunch. The generator refuses to reuse a folder made with
+another config.
+
+### Camera
+
+The Harmonic camera captures 1920 × 1080 RGB at 30 Hz in simulation time.
+Its optical center is 0.762 m (30 in) above level ground. `base_link` rests
+0.08 m off the ground, so the camera joint is 0.682 m above it, with a 0.1 rad
+nose-down pitch. The 1.22 rad horizontal field of view is provisional until
+the OAK-D is calibrated. `mars_verify_runtime` checks the size, rate,
+intrinsics, and height in a running world.
+
+### Sampling-site analogues
+
+`candidates` in `sample.json` adds three targets on top of the sand and
+ordinary rocks. Each has a lookalike control, so a detector cannot pick sites
+by brightness alone.
+
+| Target | Lookalike |
+| --- | --- |
+| `silica_soil`: an irregular pale soil patch with embedded stones | `pale_lookalike`: a smoother pale patch |
+| `sulfur_rock`: a pale stone with yellow crystals on its broken face | `pale_stone`: an intact pale stone |
+| `cheyava_rock`: mudstone with pale veins and dark-rimmed spots | `veined_lookalike`: veins, no spots |
+
+They are built from the NASA photos in `Mars_Gazebo_Reference_Pack` but are
+not copies of them. Category names are assigned ground truth, not chemical
+measurements, and a camera cannot confirm composition. Cheyava spots are a few
+millimetres, so at 1080p they are only a few pixels past about 1 m.
+`exaggerated_spots` enlarges them for demos and tags those rocks.
+
+Labels have seven classes: `rock` plus the six above. Silica patches are also
+saved as `candidate_mask.png` in each scene folder. Seeds 100, 110, and 117
+stay empty.
+
 ## Copying to the Halo
 
 Copy this git repository, not `build/`, `install/`, `log/`, or `dataset/`.
@@ -208,7 +302,9 @@ you which of those is installed on the Halo.
 
 ## Known gaps
 
-- Gazebo was not started here, so camera topic names are not confirmed live.
+- The Classic maze was not started here, so its camera topic names are not
+  confirmed live. The Harmonic camera was checked with `mars_verify_runtime`.
+- The sampling-site analogues have unit tests but no live Gazebo capture yet.
 - `sim.launch.py`, `my_teleop`, and `demo.rviz` are missing from the archive.
 - NASA meshes were not available as direct downloads. Fuel rocks are used
   instead. See `src/rover_training/models/ATTRIBUTION.md`.
