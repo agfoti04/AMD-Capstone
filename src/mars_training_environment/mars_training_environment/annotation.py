@@ -25,7 +25,44 @@ def clip_polygon(poly, z, keep_above):
     return np.asarray(out)
 
 
-def rasterize(vertices, faces, intrinsics, near, far):
+SMALL_TRIANGLE_PX = 8
+
+
+def _rasterize_small(tri, output, fx, fy, cx, cy):
+    """Batch path for unclipped triangles whose pixel bounds fit SMALL_TRIANGLE_PX.
+
+    Same pixel-center barycentric test and perspective-correct depth as the
+    per-triangle loop, evaluated for all triangles at once.
+    """
+    h,w = output.shape
+    px = fx*tri[:,:,0]/tri[:,:,2]+cx
+    py = fy*tri[:,:,1]/tri[:,:,2]+cy
+    x0 = np.maximum(0,np.floor(px.min(axis=1)).astype(int))
+    y0 = np.maximum(0,np.floor(py.min(axis=1)).astype(int))
+    x1 = np.minimum(w-1,np.ceil(px.max(axis=1)).astype(int))
+    y1 = np.minimum(h-1,np.ceil(py.max(axis=1)).astype(int))
+    denom = (py[:,1]-py[:,2])*(px[:,0]-px[:,2])+(px[:,2]-px[:,1])*(py[:,0]-py[:,2])
+    keep = (x0<=x1)&(y0<=y1)&(np.abs(denom)>=1e-10)
+    tri,px,py,x0,y0,x1,y1,denom = (a[keep] for a in (tri,px,py,x0,y0,x1,y1,denom))
+    offsets = np.arange(SMALL_TRIANGLE_PX+1)
+    xs = (x0[:,None,None]+offsets[None,None,:]).astype(float)
+    ys = (y0[:,None,None]+offsets[None,:,None]).astype(float)
+    xs,ys = np.broadcast_arrays(xs,ys)
+    in_box = (xs<=x1[:,None,None])&(ys<=y1[:,None,None])
+    xx,yy = xs+.5,ys+.5
+    p = lambda arr,k: arr[:,k,None,None]
+    a = ((p(py,1)-p(py,2))*(xx-p(px,2))+(p(px,2)-p(px,1))*(yy-p(py,2)))/denom[:,None,None]
+    b = ((p(py,2)-p(py,0))*(xx-p(px,2))+(p(px,0)-p(px,2))*(yy-p(py,2)))/denom[:,None,None]
+    c = 1-a-b
+    z = tri[:,:,2]
+    inv_z = a/z[:,0,None,None]+b/z[:,1,None,None]+c/z[:,2,None,None]
+    hit = in_box&(a>=-1e-7)&(b>=-1e-7)&(c>=-1e-7)&(inv_z>0)
+    depth = (1/np.maximum(inv_z[hit],1e-12)).astype(np.float32)
+    flat = ys[hit].astype(int)*w+xs[hit].astype(int)
+    np.minimum.at(output.reshape(-1),flat,depth)
+
+
+def rasterize(vertices, faces, intrinsics, near, far, batch_small=True):
     """Return optical-axis depth at pixel centers, infinity for empty pixels."""
     h,w = int(intrinsics['height']),int(intrinsics['width'])
     output = np.full((h,w), np.inf, dtype=np.float32)
@@ -40,6 +77,18 @@ def rasterize(vertices, faces, intrinsics, near, far):
         lower = focal*tri[:,:,component]+center*tri[:,:,2]
         upper = focal*tri[:,:,component]+(center-extent)*tri[:,:,2]
         tri = tri[(lower.max(axis=1)>=0) & (upper.min(axis=1)<=0)]
+    if batch_small and len(tri):
+        unclipped = (tri[:,:,2].min(axis=1)>=near)&(tri[:,:,2].max(axis=1)<=far)
+        span = np.zeros(len(tri))
+        z = np.where(unclipped[:,None],tri[:,:,2],1.0)
+        for component,focal in ((0,fx),(1,fy)):
+            screen = focal*tri[:,:,component]/z
+            span = np.maximum(span,screen.max(axis=1)-screen.min(axis=1))
+        small = unclipped&(span<SMALL_TRIANGLE_PX-1)
+        batch = tri[small]
+        for start in range(0,len(batch),16384):
+            _rasterize_small(batch[start:start+16384],output,fx,fy,cx,cy)
+        tri = tri[~small]
     for original in tri:
         poly = original
         if poly[:,2].min() < near:
@@ -120,6 +169,64 @@ class Annotator:
                     quality[name+'_depth_p95_error_m'] = float(np.percentile(errors,95))
                     quality[name+'_compared_pixels'] = len(errors)
         return labels,objects,quality,instances
+
+
+def iou(a, b):
+    w = min(a[2],b[2])-max(a[0],b[0])
+    h = min(a[3],b[3])-max(a[1],b[1])
+    if w <= 0 or h <= 0:
+        return 0.
+    inter = w*h
+    return inter/((a[2]-a[0])*(a[3]-a[1])+(b[2]-b[0])*(b[3]-b[1])-inter)
+
+
+def compare_boxes(labels, objects, gazebo_boxes, policy):
+    """Match our labels to Gazebo's bounding-box camera, one-to-one by IoU.
+
+    A Gazebo box that only matches a rock our policy rejected (too hidden or too
+    small) is expected, as is one already below the policy's minimum box size:
+    IoU means nothing for a one-pixel sliver. Anything else unmatched on either
+    side is a disagreement.
+    """
+    min_iou = policy['bbox_min_iou']
+    ours = [(l['xmin'],l['ymin'],l['xmax'],l['ymax']) for l in labels]
+    pairs = sorted(((iou(a,b),i,j) for i,a in enumerate(ours) for j,b in enumerate(gazebo_boxes)), reverse=True)
+    used_ours,used_theirs,matched = set(),set(),[]
+    for score,i,j in pairs:
+        if score < min_iou:
+            break
+        if i in used_ours or j in used_theirs:
+            continue
+        used_ours.add(i)
+        used_theirs.add(j)
+        matched.append(score)
+    rejected = [o['bbox_xyxy'] for o in objects if o['rejected_reason'] and o['bbox_xyxy']]
+
+    def below_policy(box):
+        w, h = box[2]-box[0], box[3]-box[1]
+        return min(w, h) < policy['min_box_side_px'] or w*h < policy['min_visible_pixels']
+
+    explained,tiny,unexplained = 0,0,[]
+    for j,box in enumerate(gazebo_boxes):
+        if j in used_theirs:
+            continue
+        if any(iou(box,r) >= min_iou for r in rejected):
+            explained += 1
+            continue
+        if below_policy(box):
+            tiny += 1
+            continue
+        scored = [(iou(box,o['bbox_xyxy']),o['name'],o['rejected_reason']) for o in objects if o['bbox_xyxy']]
+        best = max(scored, key=lambda s: s[0], default=(0.0,None,None))
+        unexplained.append({'xyxy':[float(v) for v in box],'nearest_rock':best[1],'nearest_iou':float(best[0]),
+                            'nearest_rejected_reason':best[2]})
+    missing = [labels[i]['name'] for i in range(len(ours)) if i not in used_ours]
+    return {'gazebo_boxes':len(gazebo_boxes),'matched':len(matched),
+            'median_iou':float(np.median(matched)) if matched else None,
+            'min_matched_iou':float(min(matched)) if matched else None,
+            'labels_without_gazebo_match':missing,'gazebo_boxes_for_rejected_rocks':explained,
+            'gazebo_boxes_below_policy':tiny,'gazebo_boxes_unexplained':len(unexplained),'unexplained_boxes':unexplained,
+            'agrees':not missing and not unexplained}
 
 
 def labels_from_instances(instances, projected, objects, policy):

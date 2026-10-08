@@ -1,4 +1,4 @@
-"""Capture clean Gazebo RGB with time-matched simulator geometry and labels."""
+"""Capture clean Gazebo Harmonic RGB with time-matched simulator geometry and labels."""
 import json
 import math
 import time
@@ -7,11 +7,14 @@ from pathlib import Path
 
 import numpy as np
 import rclpy
-from gazebo_msgs.srv import SetEntityState
+from gz.msgs10.boolean_pb2 import Boolean
+from gz.msgs10.pose_pb2 import Pose
+from gz.transport13 import Node as GzNode
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import CameraInfo, Image
+from vision_msgs.msg import Detection2DArray
 
 # Match the reliable camera and ground-truth publishers already used by rover_training.
 SYNC_QOS = QoSProfile(reliability=ReliabilityPolicy.RELIABLE, history=HistoryPolicy.KEEP_LAST, depth=20)
@@ -21,8 +24,9 @@ from rover_training.image_io import decode_ros_depth, decode_ros_image, write_im
 from rover_training.preview import draw_boxes
 from rover_training.yolo_export import write_label_file
 
-from .annotation import Annotator
+from .annotation import Annotator, compare_boxes
 from .common import quaternion, write_json
+from .generate import ROCK_LABEL, WORLD_NAME
 
 
 def stamp(msg):
@@ -42,6 +46,18 @@ def _nearest(buffer, time_sec, window):
         if delta <= best_dt:
             best, best_dt = msg, delta
     return best
+
+
+def gazebo_rock_boxes(msg):
+    """Pixel xyxy boxes for the rock label from Gazebo's bounding-box camera."""
+    boxes = []
+    for detection in msg.detections:
+        if detection.results and detection.results[0].hypothesis.class_id != str(ROCK_LABEL):
+            continue
+        cx, cy = detection.bbox.center.position.x, detection.bbox.center.position.y
+        w, h = detection.bbox.size_x, detection.bbox.size_y
+        boxes.append([cx-w/2, cy-h/2, cx+w/2, cy+h/2])
+    return boxes
 
 
 def interpolated_pose(odometry, image_time, max_gap):
@@ -76,12 +92,23 @@ class Capture(Node):
         self.annotator = Annotator(path.parents[2],self.scene)
         self.extrinsics = parse_camera_extrinsics((path.parent/'robot_capture.urdf').read_text())
         self.images,self.depths,self.infos,self.odometry = deque(maxlen=16),deque(maxlen=16),deque(maxlen=16),deque(maxlen=200)
+        self.boxes = deque(maxlen=16)
         camera = self.cfg['camera']
         for msg_type,topic,buffer in ((Image,camera['image_topic'],self.images),(Image,camera['depth_topic'],self.depths),
-                                       (CameraInfo,camera['camera_info_topic'],self.infos),(Odometry,'/odom',self.odometry)):
-            self.create_subscription(msg_type,topic,buffer.append,SYNC_QOS)
-        self.set_state = self.create_client(SetEntityState,'/gazebo/set_entity_state')
+                                       (CameraInfo,camera['camera_info_topic'],self.infos),(Odometry,'/odom',self.odometry),
+                                       (Detection2DArray,camera['boxes_topic'],self.boxes)):
+            self.create_subscription(msg_type,topic,lambda msg,buffer=buffer: buffer.append(msg),SYNC_QOS)
+        self.gz = GzNode()
         self.records = []
+
+    def set_pose(self, view):
+        req = Pose()
+        req.name = 'four_wheel_bot'
+        req.position.x,req.position.y,req.position.z = view['xyz']
+        q = quaternion(view['rpy'])
+        req.orientation.x,req.orientation.y,req.orientation.z,req.orientation.w = q
+        ok,reply = self.gz.request(f'/world/{WORLD_NAME}/set_pose',req,Pose,Boolean,3000)
+        return ok and reply.data
 
     def wait(self, predicate, reason, timeout=None):
         deadline = time.monotonic() + (timeout or self.cap['timeout_wall_sec'])
@@ -111,36 +138,32 @@ class Capture(Node):
             # Saving the depth file stays optional.
             if (self.cap.get('require_depth_check', True) or self.cap['save_depth']) and depth is None:
                 continue
+            boxes = _nearest(self.boxes, ts, 0.05)
+            if self.cap['require_bbox_check'] and boxes is None:
+                continue
             if (image.width,image.height)!=(info.width,info.height) or image.header.frame_id != info.header.frame_id:
                 raise ValueError('RGB/CameraInfo geometry or frame mismatch')
-            return image,info,depth,pose
+            return image,info,depth,pose,boxes
         return None
 
     def _sync_hint(self):
         def last(buffer):
             return None if not buffer else round(stamp(buffer[-1]), 3)
-        return (f'images={len(self.images)} depth={len(self.depths)} '
+        return (f'images={len(self.images)} depth={len(self.depths)} boxes={len(self.boxes)} '
                 f'odom={len(self.odometry)} last_image={last(self.images)} '
-                f'last_depth={last(self.depths)} last_odom={last(self.odometry)}')
+                f'last_depth={last(self.depths)} last_boxes={last(self.boxes)} last_odom={last(self.odometry)}')
 
     def run(self):
         started = time.monotonic()
-        self.wait(lambda:self.images and self.depths and self.odometry and self.set_state.service_is_ready(),
-                  'Camera, depth, /odom, or /gazebo/set_entity_state not ready')
+        self.wait(lambda:self.images and self.depths and self.odometry and
+                  (self.boxes or not self.cap['require_bbox_check']),
+                  lambda: 'Camera, depth, boxes, or /odom not ready; '+self._sync_hint())
         sim_start = stamp(self.odometry[-1])
         for view in self.scene['views']:
             view_started = time.monotonic()
             before = stamp(self.images[-1])
-            req = SetEntityState.Request()
-            req.state.name = 'four_wheel_bot'
-            req.state.reference_frame = 'world'
-            req.state.pose.position.x,req.state.pose.position.y,req.state.pose.position.z = view['xyz']
-            q = quaternion(view['rpy'])
-            req.state.pose.orientation.x,req.state.pose.orientation.y,req.state.pose.orientation.z,req.state.pose.orientation.w = q
-            future = self.set_state.call_async(req)
-            self.wait(future.done,'SetEntityState did not complete')
-            if not future.result() or not future.result().success:
-                raise RuntimeError('SetEntityState rejected the viewpoint')
+            if not self.set_pose(view):
+                raise RuntimeError('Gazebo set_pose rejected the viewpoint')
             # Require odometry at the commanded XY, then a full settling interval
             # in simulation time. Never fall back to commanded pose or stale RGB.
             def arrived():
@@ -163,7 +186,7 @@ class Capture(Node):
         self.get_logger().info(f'Completed {self.scene["id"]}: {len(self.records)} frames in {elapsed:.1f}s')
 
     def save(self,view,sample,wait_seconds):
-        image,info,depth,pose = sample
+        image,info,depth,pose,boxes = sample
         xyz,quat,bracket = pose
         intrinsics = intrinsics_from_camera_info(info)
         width,height,rgb = decode_ros_image(image)
@@ -173,6 +196,11 @@ class Capture(Node):
         began = time.monotonic()
         labels,objects,quality,instances = self.annotator.annotate(xyz,quat,self.extrinsics,intrinsics,measured)
         annotation_seconds = time.monotonic()-began
+        # Independent second check from Gazebo's renderer. Recorded, never used as labels.
+        bbox_check = None
+        if boxes is not None:
+            bbox_check = compare_boxes(labels,objects,gazebo_rock_boxes(boxes),self.cfg['labels'])
+            bbox_check['timestamp_sim_sec'] = stamp(boxes)
         # Geometric cross-check independent of labels. Fail on gross calibration,
         # stale-pose, mesh scale or transform errors rather than write a bad dataset.
         if quality.get('rock_depth_median_error_m',0)>.08:
@@ -206,11 +234,14 @@ class Capture(Node):
                   'camera_frame':image.header.frame_id,'intrinsics':intrinsics,
                   'base_xyz':xyz.tolist(),'base_quaternion':quat.tolist(),'pose_source':'interpolated_ground_truth_odom',
                   'pose_bracket_sim_sec':bracket,'camera_extrinsics':self.extrinsics,
-                  'objects':objects,'labels':labels,'depth_quality':quality,'wait_seconds':wait_seconds,
-                  'annotation_seconds':annotation_seconds,'clean_rgb':True}
+                  'objects':objects,'labels':labels,'depth_quality':quality,'bbox_check':bbox_check,
+                  'wait_seconds':wait_seconds,'annotation_seconds':annotation_seconds,'clean_rgb':True}
         write_json(metadata_path,record)
         self.records.append(metadata_path.relative_to(self.root).as_posix())
-        self.get_logger().info(f'{stem}: {len(labels)} labels; annotation {annotation_seconds:.2f}s; depth {quality}')
+        agreement = 'n/a' if bbox_check is None else (
+            f"{bbox_check['matched']}/{len(labels)} matched, {bbox_check['gazebo_boxes_unexplained']} unexplained")
+        self.get_logger().info(f'{stem}: {len(labels)} labels; annotation {annotation_seconds:.2f}s; '
+                               f'depth {quality}; gazebo boxes {agreement}')
 
 
 def main():

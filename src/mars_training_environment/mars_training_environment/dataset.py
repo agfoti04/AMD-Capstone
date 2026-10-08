@@ -5,7 +5,6 @@ import os
 import signal
 import subprocess
 import time
-import select
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -26,37 +25,20 @@ def stop_group(process):
 
 @contextmanager
 def simulator_process(cmd,log):
+    """Headless Gazebo (EGL rendering) kept off every other simulator's network."""
     env = os.environ.copy()
     env.setdefault('LIBGL_ALWAYS_SOFTWARE','1')
-    env.setdefault('GAZEBO_MODEL_DATABASE_URI','')
-    display = None
+    # Separate Gazebo transport partition and container-local ROS discovery, so a
+    # simulator in another container cannot inject its clock or robot description.
+    env['GZ_PARTITION'] = f'mars_capture_{os.getpid()}_{time.monotonic_ns()}'
+    env.setdefault('ROS_AUTOMATIC_DISCOVERY_RANGE','LOCALHOST')
     process = None
     try:
-        if not env.get('DISPLAY'):
-            read_fd,write_fd = os.pipe()
-            try:
-                display = subprocess.Popen(['Xvfb','-displayfd',str(write_fd),'-screen','0','800x600x24','-nolisten','tcp'],
-                                           pass_fds=(write_fd,),stdout=log,stderr=log,start_new_session=True)
-                os.close(write_fd)
-                write_fd = None
-                if not select.select([read_fd],[],[],15)[0]:
-                    raise TimeoutError('Xvfb did not allocate a display')
-                number = os.read(read_fd,64).decode().strip()
-                if not number.isdigit():
-                    raise RuntimeError('Xvfb failed to allocate a display')
-                env['DISPLAY'] = ':'+number
-            finally:
-                os.close(read_fd)
-                if write_fd is not None:
-                    os.close(write_fd)
         process = subprocess.Popen(cmd,stdout=log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
         yield process
     finally:
         if process is not None:
             stop_group(process)
-        if display is not None:
-            display.terminate()
-            display.wait(timeout=10)
 
 
 def _remove_scene_files(output, ident):
@@ -105,8 +87,8 @@ def capture_bundle(bundle,output,resume=False,scene_ids=None):
             raise ValueError(f'{ident} has a partial capture; rerun with --resume to replace it')
         cmd = ['ros2','launch','mars_training_environment','mars_world.launch.py',
                f'scene:={scene_path}',f'output:={output}','capture:=true','gui:=false']
-        # The software renderer sometimes stops the camera while physics keeps
-        # running. A fresh Gazebo process usually gets the whole scene.
+        # A stalled camera or slow software rendering can still fail a scene.
+        # A fresh Gazebo process usually gets the whole scene.
         report = None
         start = time.monotonic()
         for attempt in range(1, 4):
@@ -151,9 +133,11 @@ def main(argv=None):
     parser.add_argument('--resume',action='store_true')
     parser.add_argument('--generate',action='store_true',help='Generate configured scenes first')
     parser.add_argument('--scene',action='append',help='Capture just these scene IDs (smoke test)')
+    parser.add_argument('--asset-cache',type=Path,default=None,help='Prepared asset cache, used with --generate')
     args = parser.parse_args(argv)
     if args.generate:
-        generate_bundle(args.bundle,read_config(args.config))
+        from .asset_cache import default_cache
+        generate_bundle(args.bundle,read_config(args.config),cache=args.asset_cache or default_cache())
     capture_bundle(args.bundle,args.output,args.resume,args.scene)
 
 

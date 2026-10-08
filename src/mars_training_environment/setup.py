@@ -2,7 +2,7 @@ from glob import glob
 from setuptools import find_packages, setup
 
 name = 'mars_training_environment'
-setup(name=name, version='0.1.0', packages=find_packages(exclude=['test']),
+setup(name=name, version='0.2.0', packages=find_packages(exclude=['test']),
       data_files=[('share/ament_index/resource_index/packages', ['resource/' + name]),
                   ('share/' + name, ['package.xml', 'README.md']),
                   ('share/' + name + '/config', glob('config/*.json')),
@@ -11,6 +11,7 @@ setup(name=name, version='0.1.0', packages=find_packages(exclude=['test']),
       maintainer='Ian Benge', maintainer_email='ianbenge37@gmail.com', license='Apache-2.0',
       description='Martian terrain and reproducible synthetic camera datasets',
       entry_points={'console_scripts': [
+          'mars_assets = mars_training_environment.asset_cache:main',
           'mars_generate = mars_training_environment.generate:main',
           'mars_capture = mars_training_environment.capture:main',
           'mars_dataset = mars_training_environment.dataset:main',

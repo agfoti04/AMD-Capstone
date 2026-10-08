@@ -1,19 +1,24 @@
-"""Generate portable, seeded world bundles without importing ROS."""
+"""Generate portable, seeded Gazebo Harmonic world bundles without importing ROS."""
 import argparse
 import json
 import math
-import shutil
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 import numpy as np
 
+from .asset_cache import default_cache
 from .common import digest, read_config, rotation, split_for_seed, write_json
-from .meshes import build_library
+from .dust import bake_scene_dust
+from .ground import composite_ground
+from .meshes import build_ground, build_library
 from .terrain import Terrain, generate_terrain
 
+WORLD_NAME = 'mars_training'
+ROCK_LABEL = 1
 
-def make_scene(root, config, seed, assets):
+
+def make_scene(root, config, seed, assets, ground=()):
     root = Path(root).resolve()
     ident = f'scene_{seed:06d}'
     folder = root/'scenes'/ident
@@ -24,7 +29,7 @@ def make_scene(root, config, seed, assets):
         if existing['config_sha256'] != config_hash:
             raise ValueError(f'{ident} already exists with another config; use a new output directory')
     rng = np.random.RandomState(seed)
-    field, terrain = generate_terrain(seed, config['terrain'], folder)
+    field, driveable, terrain = generate_terrain(seed, config['terrain'], folder)
     split = split_for_seed(seed)
     pool = [a for a in assets if a['held_out'] == (split == 'test')]
     if not pool:
@@ -54,7 +59,7 @@ def make_scene(root, config, seed, assets):
                 continue
             if any(np.linalg.norm(candidate-np.asarray(o['xyz'][:2])) < radius+o['radius_m']+rc['clearance_m'] for o in objects):
                 continue
-            if np.linalg.norm(field.gradient(*candidate)) > math.tan(math.radians(config['terrain']['max_slope_deg'])):
+            if np.linalg.norm(driveable.gradient(*candidate)) > math.tan(math.radians(config['terrain']['max_slope_deg'])):
                 continue
             xy = candidate
             break
@@ -62,8 +67,8 @@ def make_scene(root, config, seed, assets):
             raise ValueError('Placement constraints could not be met; reduce rock count or sizes')
         # Lowest support contact against the full sampled footprint. Burial is
         # the only intentional rock/terrain intersection; pairwise rocks stay apart.
-        ground = field.height(points[:,0]+xy[0], points[:,1]+xy[1])
-        support = float(np.max(ground-points[:,2]))
+        surface = field.height(points[:,0]+xy[0], points[:,1]+xy[1])
+        support = float(np.max(surface-points[:,2]))
         burial = float(rng.uniform(*rc['burial_fraction']))
         z = support - burial*float(np.ptp(points[:,2]))
         shade = rng.uniform(.72,1.0)
@@ -105,7 +110,7 @@ def make_scene(root, config, seed, assets):
                 cx, cy = x+lens*math.cos(yaw), y+lens*math.sin(yaw)
                 if any(math.hypot(cx-o['xyz'][0], cy-o['xyz'][1]) < o['radius_m']+near+0.08 for o in objects):
                     continue
-            gx,gy = field.gradient(x,y)
+            gx,gy = driveable.gradient(x,y)
             if math.hypot(gx,gy) > math.tan(math.radians(config['terrain']['max_slope_deg'])):
                 continue
             roll = math.atan(-gx*math.sin(yaw)+gy*math.cos(yaw))
@@ -116,104 +121,91 @@ def make_scene(root, config, seed, assets):
         if found is None:
             raise ValueError('Could not place a collision-free camera viewpoint')
         views.append(found)
-    scene = {'schema_version':1, 'id':ident, 'seed':seed, 'scene_group':f'seed_{seed}', 'split':split,
+    ground_recipe = (composite_ground(root, list(ground), config['terrain'], seed, folder) if ground
+                     else {'layers': [], 'procedural': 'ground.png'})
+    dust_textures = (bake_scene_dust(root, folder, assets, objects, ground_recipe['dust_bgr'])
+                     if ground_recipe.get('dust_bgr') else {})
+    # Mars sky: dusty butterscotch by day, varied per scene.
+    sky = np.array([.80, .62, .46])*rng.uniform(.85, 1.08)
+    scene = {'schema_version':2, 'simulator':'gazebo-harmonic', 'id':ident, 'seed':seed,
+             'scene_group':f'seed_{seed}', 'split':split,
              'config_sha256':config_hash, 'config':config, 'empty':empty, 'terrain':terrain,
-             'objects':objects, 'views':views, 'gravity':[0,0,-9.81],
+             'ground':ground_recipe, 'dust_textures':dust_textures, 'objects':objects, 'views':views,
+             'gravity':[0,0,-9.81],
              'lighting':{'azimuth':float(rng.uniform(0,math.tau)), 'elevation':float(rng.uniform(.35,1.2)),
-                         'intensity':float(rng.uniform(.65,1.1)), 'ambient':float(rng.uniform(.25,.45))},
-             'assets_sha256':digest(assets)}
+                         'intensity':float(rng.uniform(.75,1.15)), 'ambient':float(rng.uniform(.32,.50)),
+                         'sky_rgb':np.clip(sky,0,1).tolist()},
+             'assets_sha256':digest(assets), 'ground_sha256':digest(list(ground))}
     scene['content_sha256'] = digest(scene)
     write_json(manifest_path, scene)
     write_world(root, scene, assets)
     return scene
 
 
+def _material(maps, color, roughness=1.0):
+    """Physically based material; the diffuse color tints the albedo map."""
+    tags = ''.join(f'<{tag}>{escape(str(path))}</{tag}>' for tag, path in maps.items())
+    return (f'<material><ambient>{color}</ambient><diffuse>{color}</diffuse><specular>0.05 0.05 0.05 1</specular>'
+            f'<pbr><metal>{tags}<roughness>{roughness}</roughness><metalness>0</metalness></metal></pbr></material>')
+
+
 def write_world(root, scene, assets):
-    """Write host-specific URIs only here; manifests and hashes stay portable."""
+    """Write host-specific absolute paths only here; manifests and hashes stay portable."""
     root = Path(root).resolve()
     folder = root/'scenes'/scene['id']
     by_id = {a['id']:a for a in assets}
-    def uri(path):
-        return escape(Path(path).resolve().as_uri())
-    material_folder = folder/'materials'
-    material_folder.mkdir(exist_ok=True)
-    t = scene['terrain']
-    terrain_material = ''
-    if t['backend'] == 'heightmap':
-        height = (f'<uri>{uri(folder/"heightmap.png")}</uri><size>{t["size_m"]} {t["size_m"]} {t["heightmap_range_m"]}</size>'
-                  f'<pos>0 0 {t["heightmap_min_m"]}</pos><sampling>1</sampling>')
-        collision = '<heightmap>'+height+'</heightmap>'
-        visual = ('<heightmap>'+height+'<use_terrain_paging>false</use_terrain_paging><texture>'
-                  f'<diffuse>{uri(folder/"ground.png")}</diffuse><normal>{uri(folder/"normal.png")}</normal>'
-                  f'<size>{t["size_m"]}</size></texture></heightmap>')
+    visual_mesh = f'<mesh><uri>{escape(str(folder/"terrain.dae"))}</uri></mesh>'
+    collision_mesh = f'<mesh><uri>{escape(str(folder/"terrain_collision.dae"))}</uri></mesh>'
+    if scene['ground']['layers']:
+        terrain_maps = {'albedo_map': folder/'ground_albedo.jpg', 'normal_map': folder/'ground_normal.jpg',
+                        'roughness_map': folder/'ground_roughness.jpg'}
     else:
-        mesh = f'<mesh><uri>{uri(folder/"terrain.dae")}</uri></mesh>'
-        collision = visual = mesh
-        terrain_material = ('<material><ambient>0.55 0.36 0.24 1</ambient><diffuse>0.75 0.48 0.32 1</diffuse>'
-                            f'<script><uri>{uri(material_folder)}</uri><name>Mars/ground</name></script></material>')
+        terrain_maps = {'albedo_map': folder/'ground.png'}
     rocks = []
-    materials = []
-    shutil.copyfile(folder/'ground.png', material_folder/'ground.png')
-    materials.append('''material Mars/ground
-{
-  technique { pass {
-    ambient 0.55 0.36 0.24 1
-    diffuse 0.75 0.48 0.32 1
-    specular 0.02 0.02 0.02 1 2
-    cull_hardware none
-    cull_software none
-    texture_unit { texture ground.png
-      filtering trilinear
-    }
-  } }
-}''')
     for obj in scene['objects']:
         asset = by_id[obj['asset_id']]
         pose = ' '.join(f'{n:.12g}' for n in obj['xyz']+obj['rpy'])
         scale = ' '.join([str(obj['scale'])]*3)
-        color = ' '.join(str(c) for c in obj['color'])+' 1'
-        material_name = f'Mars/{scene["id"]}/{obj["name"]}'
-        texture_name = f"{asset['id']}.png"
-        shutil.copyfile(root/'assets'/asset['id']/'surface.png', material_folder/texture_name)
-        materials.append(f'''material {material_name}
-{{
-  technique {{ pass {{
-    ambient {color}
-    diffuse {color}
-    specular 0 0 0 1 1
-    cull_hardware none
-    cull_software none
-    texture_unit {{ texture {texture_name}
-      filtering anisotropic
-      max_anisotropy 4
-    }}
-  }} }}
-}}''')
-        rocks.append(f'''<model name="{obj['name']}"><static>true</static><pose>{pose}</pose><link name="link">
-<collision name="collision"><geometry><mesh><uri>{uri(root/asset['collision'])}</uri><scale>{scale}</scale></mesh></geometry>
+        dusted = scene.get('dust_textures', {}).get(obj['asset_id'])
+        if dusted:
+            color = '1 1 1 1'
+            maps = {f'{key}_map': root/path for key, path in dusted.items()}
+        else:
+            color = ' '.join(f'{c:.6g}' for c in obj['color'])+' 1'
+            maps = {f'{key}_map': root/path for key, path in asset['textures'].items()}
+        rocks.append(f'''
+<model name="{obj['name']}"><static>true</static><pose>{pose}</pose><link name="link">
+<collision name="collision"><geometry><mesh><uri>{escape(str(root/asset['collision']))}</uri><scale>{scale}</scale></mesh></geometry>
 <surface><friction><ode><mu>0.9</mu><mu2>0.8</mu2></ode></friction></surface></collision>
-<visual name="visual"><geometry><mesh><uri>{uri(root/asset['mesh'])}</uri><scale>{scale}</scale></mesh></geometry>
-<material><script><uri>{uri(material_folder)}</uri><name>{material_name}</name></script></material><cast_shadows>true</cast_shadows></visual>
-</link></model>''')
+<visual name="visual"><geometry><mesh><uri>{escape(str(root/asset['mesh']))}</uri><scale>{scale}</scale></mesh></geometry>
+{_material(maps, color)}<cast_shadows>true</cast_shadows></visual>
+</link><plugin filename="gz-sim-label-system" name="gz::sim::systems::Label"><label>{ROCK_LABEL}</label></plugin></model>''')
     light = scene['lighting']
     a,e,b = light['azimuth'],light['elevation'],light['intensity']
     ambient = light['ambient']
-    text = f'''<?xml version="1.0"?><sdf version="1.6"><world name="mars_training">
-<gravity>0 0 -9.81</gravity><physics name="default" type="ode"><max_step_size>0.002</max_step_size><real_time_update_rate>500</real_time_update_rate></physics>
-<scene><ambient>{ambient} {ambient} {ambient} 1</ambient><background>0.55 0.40 0.30 1</background><shadows>true</shadows></scene>
+    sky = ' '.join(f'{c:.4f}' for c in light['sky_rgb'])
+    text = f'''<?xml version="1.0"?>
+<sdf version="1.9"><world name="{WORLD_NAME}">
+<physics name="default" type="dart"><max_step_size>0.002</max_step_size><real_time_factor>1.0</real_time_factor></physics>
+<plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+<plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+<plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+<plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors"><render_engine>ogre2</render_engine></plugin>
+<gravity>0 0 -9.81</gravity>
+<scene><ambient>{ambient} {ambient*.9:.4f} {ambient*.8:.4f} 1</ambient><background>{sky} 1</background>
+<shadows>true</shadows><grid>false</grid></scene>
 <light name="sun" type="directional"><pose>0 0 20 0 0 0</pose><cast_shadows>true</cast_shadows>
-<diffuse>{b} {b*.94} {b*.86} 1</diffuse><specular>0.05 0.05 0.05 1</specular>
+<diffuse>1 0.93 0.82 1</diffuse><specular>0.1 0.1 0.1 1</specular><intensity>{b}</intensity>
 <direction>{math.cos(a)*math.cos(e)} {math.sin(a)*math.cos(e)} {-math.sin(e)}</direction></light>
-<plugin name="gazebo_ros_state" filename="libgazebo_ros_state.so"><ros><namespace>/gazebo</namespace></ros><update_rate>50</update_rate></plugin>
 <model name="mars_terrain"><static>true</static><link name="ground">
-<collision name="terrain_collision"><geometry>{collision}</geometry><surface><friction><ode><mu>0.9</mu><mu2>0.8</mu2></ode></friction></surface></collision>
-<visual name="terrain_visual"><geometry>{visual}</geometry>{terrain_material}<cast_shadows>true</cast_shadows></visual>
-</link></model>{''.join(rocks)}</world></sdf>'''
+<collision name="terrain_collision"><geometry>{collision_mesh}</geometry><surface><friction><ode><mu>0.9</mu><mu2>0.8</mu2></ode></friction></surface></collision>
+<visual name="terrain_visual"><geometry>{visual_mesh}</geometry>{_material(terrain_maps, '1 1 1 1')}<cast_shadows>true</cast_shadows></visual>
+</link></model>{''.join(rocks)}
+</world></sdf>'''
     (folder/'world.sdf').write_text(text, encoding='utf-8')
-    (material_folder/'rocks.material').write_text('\n'.join(materials),encoding='utf-8')
 
 
-def generate_bundle(output, config, seeds=None):
+def generate_bundle(output, config, seeds=None, cache=None):
     output = Path(output).resolve()
     seeds = config['dataset']['seeds'] if seeds is None else seeds
     output.mkdir(parents=True, exist_ok=True)
@@ -223,8 +215,9 @@ def generate_bundle(output, config, seeds=None):
         existing = json.loads(plan_path.read_text())
         if existing['config_sha256'] != config_hash:
             raise ValueError('Output contains another configuration; use a fresh directory')
-    assets = build_library(output/'assets', config['rocks'])
-    scenes = [make_scene(output, config, int(seed), assets) for seed in seeds]
+    assets = build_library(output/'assets', config['rocks'], cache)
+    ground = build_ground(output/'assets'/'ground', config['terrain']['ground_textures'], cache)
+    scenes = [make_scene(output, config, int(seed), assets, ground) for seed in seeds]
     plan = {'schema_version':1, 'config_sha256':config_hash, 'config':config,
             'scenes':[{'id':s['id'],'seed':s['seed'],'split':s['split'], 'content_sha256':s['content_sha256'],
                        'views':len(s['views'])} for s in scenes],
@@ -239,8 +232,10 @@ def main(argv=None):
     parser.add_argument('--config', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--seed', type=int, action='append', help='Repeat for selected scenes; default is all configured seeds')
+    parser.add_argument('--asset-cache', type=Path, default=None,
+                        help='Prepared asset cache from mars_assets (default ./assets_cache or $MARS_ASSET_CACHE)')
     args = parser.parse_args(argv)
-    plan = generate_bundle(args.output, read_config(args.config), args.seed)
+    plan = generate_bundle(args.output, read_config(args.config), args.seed, args.asset_cache or default_cache())
     print(f'Generated {len(plan["scenes"])} scenes / {sum(s["views"] for s in plan["scenes"])} planned images in {args.output}')
 
 

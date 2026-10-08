@@ -23,7 +23,10 @@ def validate_scene(scene,assets):
         errors.append(f'{ident}: config hash mismatch')
     if scene['split']!=split_for_seed(scene['seed']):
         errors.append(f'{ident}: seed split assignment changed')
-    field = Terrain(scene['terrain']['heights'],scene['terrain']['size_m'])
+    # Slope limit applies to the driveable surface. Ripples live only on the
+    # visual mesh, which is what `heights` stores for the labeler.
+    driveable = scene['terrain'].get('base_heights', scene['terrain']['heights'])
+    field = Terrain(driveable, scene['terrain']['size_m'])
     if math.degrees(field.maximum_slope())>scene['config']['terrain']['max_slope_deg']+.15:
         errors.append(f'{ident}: terrain exceeds slope limit')
     if abs(float(field.height(0.,0.)))>1e-7:
@@ -102,6 +105,7 @@ def validate_dataset(root,bundle,require_complete=True):
     seeds,splits_seen = {},{}
     empty = clipped = hidden = tiny = 0
     image_hashes = {}
+    bbox_checks,bbox_disagreements = [],[]
     for file in sorted((root/'metadata').glob('*/*.json')):
         r = json.loads(file.read_text())
         records.append(r)
@@ -162,6 +166,14 @@ def validate_dataset(root,bundle,require_complete=True):
         tiny += sum(o['rejected_reason'] in ('too_small','too_few_visible_pixels') for o in r['objects'])
         if r.get('depth_quality',{}).get('rock_depth_median_error_m',0)>.08:
             errors.append(f'{file.name}: geometric depth mismatch')
+        check = r.get('bbox_check')
+        if check is None:
+            if s['config']['capture'].get('require_bbox_check'):
+                errors.append(f'{file.name}: Gazebo bounding-box check missing')
+        else:
+            bbox_checks.append(check)
+            if not check['agrees']:
+                bbox_disagreements.append(r['image'])
         counts[r['split']] += 1
         scene_counts[r['scene_id']] += 1
     if require_complete:
@@ -180,7 +192,17 @@ def validate_dataset(root,bundle,require_complete=True):
     ann = [r['annotation_seconds'] for r in records]
     quality = [r['depth_quality']['rock_depth_median_error_m'] for r in records if 'rock_depth_median_error_m' in r['depth_quality']]
     preview = contact_sheet(root,records) if records else None
+    ious = [c['median_iou'] for c in bbox_checks if c['median_iou'] is not None]
+    gazebo_check = {'frames_checked':len(bbox_checks),'frames_agreeing':len(bbox_checks)-len(bbox_disagreements),
+                    'labels_matched':sum(c['matched'] for c in bbox_checks),
+                    'labels_without_gazebo_match':sum(len(c['labels_without_gazebo_match']) for c in bbox_checks),
+                    'gazebo_boxes_for_rejected_rocks':sum(c['gazebo_boxes_for_rejected_rocks'] for c in bbox_checks),
+                    'gazebo_boxes_below_policy':sum(c.get('gazebo_boxes_below_policy',0) for c in bbox_checks),
+                    'gazebo_boxes_unexplained':sum(c['gazebo_boxes_unexplained'] for c in bbox_checks),
+                    'median_iou':float(np.median(ious)) if ious else None,
+                    'disagreeing_images':bbox_disagreements}
     return {'errors':errors,'frames':len(records),'split_counts':dict(counts),'scene_counts':dict(scene_counts),
+            'gazebo_bbox_check':gazebo_check,
             'empty_frames':empty,'clipped_labels':clipped,'fully_occluded_objects_rejected':hidden,'tiny_objects_rejected':tiny,
             'reserved_meshes':plan['reserved_meshes'],'capture_wall_seconds_including_launches':wall,
             'images_per_wall_second':len(records)/wall if wall else None,

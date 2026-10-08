@@ -1,0 +1,17 @@
+{
+  "provider": "Poly Haven",
+  "provider_url": "https://polyhaven.com",
+  "license": "CC0-1.0",
+  "rocks": {
+    "resolution": "1k",
+    "visual_triangles": 2500,
+    "collision_triangles": 400,
+    "ids": ["moon_rock_01", "moon_rock_02", "moon_rock_03", "moon_rock_04",
+            "moon_rock_05", "moon_rock_06", "moon_rock_07", "rock_07", "rock_09",
+            "boulder_01"]
+  },
+  "ground": {
+    "resolution": "2k",
+    "ids": ["red_sand", "sand_03"]
+  }
+}

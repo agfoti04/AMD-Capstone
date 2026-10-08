@@ -9,16 +9,53 @@ from pathlib import Path
 
 import numpy as np
 
-from mars_training_environment.annotation import labels_from_instances, rasterize
-from mars_training_environment.common import digest, quaternion, read_config, rotation, split_for_seed
+from mars_training_environment.annotation import compare_boxes, labels_from_instances, rasterize
+from mars_training_environment.common import digest, quaternion, read_config, rotation, split_for_seed, write_json
 from mars_training_environment.generate import make_scene
-from mars_training_environment.meshes import build_library, read_collada, sphere_mesh, write_dae
+from mars_training_environment.dust import dust_images
+from mars_training_environment.ground import broad_field, composite_ground, periodic_field
+from mars_training_environment.meshes import build_ground, build_library, read_collada, sphere_mesh, write_dae
 from mars_training_environment.terrain import Terrain, generate_terrain
 from mars_training_environment.validate import validate_scene
 
 
 K = {'width':80,'height':60,'fx':50.,'fy':50.,'cx':40.,'cy':30.}
 POLICY = {'min_visible_pixels':6,'min_box_side_px':2,'min_visible_fraction':.12}
+# Procedural and Fuel rocks only, so tests need no downloaded assets.
+OFFLINE = {'rocks':{'procedural_count':16,'include_existing':True,'scanned_ids':[],
+                    'held_out_ids':['proc_12','proc_13','proc_14','proc_15','falling_rock4']},
+           'terrain':{'ground_textures':[], 'visual_grid_size':65}}
+
+
+def offline_config(folder):
+    path = Path(folder)/'offline.json'
+    path.write_text(json.dumps(OFFLINE))
+    return read_config(path)
+
+
+def fake_cache(folder, rocks=(), ground=()):
+    """A prepared asset cache with small stand-in meshes and textures."""
+    import cv2
+    cache = Path(folder)/'cache'
+    rng = np.random.RandomState(3)
+    for index, ident in enumerate(rocks):
+        out = cache/'prepared'/'rocks'/ident
+        out.mkdir(parents=True, exist_ok=True)
+        v,f = sphere_mesh(index)
+        uv = (v[:,:2]-v[:,:2].min(axis=0))/np.ptp(v[:,:2],axis=0)
+        write_json(out/'visual.json', {'vertices':v.tolist(),'faces':f.tolist(),'uv':uv.tolist()})
+        write_json(out/'collision.json', {'vertices':v.tolist(),'faces':f[::2].tolist()})
+        write_json(out/'meta.json', {'id':ident,'page':f'https://polyhaven.com/a/{ident}','license':'CC0-1.0'})
+        for key in ('albedo','normal','roughness'):
+            cv2.imwrite(str(out/f'{key}.jpg'), rng.randint(0,255,(16,16,3)).astype(np.uint8))
+    for ident in ground:
+        out = cache/'prepared'/'ground'/ident
+        out.mkdir(parents=True, exist_ok=True)
+        write_json(out/'meta.json', {'id':ident,'page':'x','license':'CC0-1.0','size_m':2.0})
+        cv2.imwrite(str(out/'albedo.jpg'), rng.randint(0,255,(64,64,3)).astype(np.uint8))
+        cv2.imwrite(str(out/'normal.jpg'), np.full((64,64,3),(255,128,128),np.uint8))
+        cv2.imwrite(str(out/'roughness.jpg'), rng.randint(0,255,(64,64)).astype(np.uint8))
+    return cache
 
 
 def square(x0=-.5,x1=.5,y0=-.5,y1=.5,z=2):
@@ -82,13 +119,24 @@ class RasterTests(unittest.TestCase):
         rock = rasterize(rock_v,f,K,.3,8)
         self.assertFalse((rock<floor).any())
 
+    def test_batched_small_triangles_match_the_per_triangle_path(self):
+        rng = np.random.RandomState(4)
+        centers = np.column_stack([rng.uniform(-2,2,600),rng.uniform(-1.5,1.5,600),rng.uniform(.2,9,600)])
+        v = (centers[:,None,:]+rng.normal(0,.04,(600,3,3))*centers[:,None,2:]).reshape(-1,3)
+        f = np.arange(len(v)).reshape(-1,3)
+        batched = rasterize(v,f,K,.3,8)
+        reference = rasterize(v,f,K,.3,8,batch_small=False)
+        self.assertGreater(np.isfinite(reference).sum(),200)
+        np.testing.assert_array_equal(np.isfinite(batched),np.isfinite(reference))
+        np.testing.assert_allclose(batched[np.isfinite(batched)],reference[np.isfinite(reference)],rtol=1e-6)
+
 
 class GenerationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.root = Path(cls.tmp.name)
-        cls.config = read_config()
+        cls.config = offline_config(cls.root)
         cls.assets = build_library(cls.root/'assets',cls.config['rocks'])
         cls.scene = make_scene(cls.root,cls.config,101,cls.assets)
 
@@ -105,13 +153,15 @@ class GenerationTests(unittest.TestCase):
     def test_spawn_flat_slope_bounded_and_placement_nonintersecting(self):
         self.assertEqual(validate_scene(self.scene,self.assets),[])
         t = self.scene['terrain']
-        field = Terrain(t['heights'],t['size_m'])
+        visual = Terrain(t['heights'],t['size_m'])
+        driveable = Terrain(t['base_heights'],t['size_m'])
         for x,y in [(0,0),(.4,.4),(-.4,.4)]:
-            self.assertAlmostEqual(float(field.height(x,y)),0.,places=8)
-        self.assertLessEqual(math.degrees(field.maximum_slope()),self.config['terrain']['max_slope_deg'])
+            self.assertAlmostEqual(float(visual.height(x,y)),0.,places=8)
+            self.assertAlmostEqual(float(driveable.height(x,y)),0.,places=8)
+        self.assertLessEqual(math.degrees(driveable.maximum_slope()),self.config['terrain']['max_slope_deg'])
 
     def test_surface_contact_uses_rotated_mesh_and_burial(self):
-        field = Terrain(self.scene['terrain']['heights'],20)
+        field = Terrain(self.scene['terrain']['heights'], self.scene['terrain']['size_m'])
         assets = {a['id']:a for a in self.assets}
         for obj in self.scene['objects']:
             v = np.array(json.loads((self.root/assets[obj['asset_id']]['geometry']).read_text())['vertices'])
@@ -154,23 +204,50 @@ class GenerationTests(unittest.TestCase):
         model = world.find(".//model[@name='mars_terrain']")
         collision = model.findtext('link/collision/geometry/mesh/uri')
         visual = model.findtext('link/visual/geometry/mesh/uri')
-        self.assertEqual(collision, visual)
-        self.assertIn('terrain.dae', collision)
+        self.assertIn('terrain_collision.dae', collision)
+        self.assertIn('terrain.dae', visual)
+        self.assertNotEqual(collision, visual)
         self.assertEqual(world.findtext('.//gravity'),'0 0 -9.81')
-        self.assertIn('Mars/ground', world.getroot().find('.//visual').findtext('material/script/name'))
+        self.assertIn('ground.png', model.findtext('link/visual/material/pbr/metal/albedo_map'))
+        self.assertNotIn('libgazebo', (self.root/'scenes'/self.scene['id']/'world.sdf').read_text())
+        for tag in ('ambient', 'diffuse', 'specular', 'background'):
+            for element in world.iter(tag):
+                values = [float(v) for v in element.text.split()]
+                self.assertTrue(all(0 <= v <= 1 for v in values), f'<{tag}> {values} outside [0, 1]')
+        self.assertEqual(float(world.findtext('.//light/intensity')), self.scene['lighting']['intensity'])
 
-    def test_heightmap_backend_shares_visual_and_collision(self):
-        scene = copy.deepcopy(self.scene)
-        scene['terrain']['backend'] = 'heightmap'
-        from mars_training_environment.generate import write_world
-        write_world(self.root, scene, self.assets)
-        world = ET.parse(self.root/'scenes'/scene['id']/'world.sdf')
-        model = world.find(".//model[@name='mars_terrain']")
-        a = model.find('link/collision/geometry/heightmap')
-        b = model.find('link/visual/geometry/heightmap')
-        for key in ('uri','size','pos','sampling'):
-            self.assertEqual(a.findtext(key), b.findtext(key))
-        write_world(self.root, self.scene, self.assets)
+    def test_every_rock_is_labelled_for_the_gazebo_box_camera(self):
+        world = ET.parse(self.root/'scenes'/self.scene['id']/'world.sdf')
+        rocks = [m for m in world.iter('model') if m.get('name').startswith('rock_')]
+        self.assertEqual(len(rocks), len(self.scene['objects']))
+        for model in rocks:
+            plugin = model.find("plugin[@name='gz::sim::systems::Label']")
+            self.assertEqual(plugin.findtext('label'), '1')
+            self.assertTrue(Path(model.findtext('link/visual/material/pbr/metal/albedo_map')).is_file())
+        sensors = world.find(".//plugin[@name='gz::sim::systems::Sensors']")
+        self.assertEqual(sensors.findtext('render_engine'), 'ogre2')
+
+    def test_ripples_are_on_the_visual_surface_and_off_the_spawn_pad(self):
+        changed = copy.deepcopy(self.config)
+        changed['terrain']['grid_size'] = 17
+        changed['terrain']['visual_grid_size'] = 33
+        fine = make_scene(self.root, changed, 251, self.assets)
+        self.assertEqual(len(fine['terrain']['heights']), 33)
+        self.assertEqual(len(fine['terrain']['base_heights']), 17)
+        visual = Terrain(self.scene['terrain']['heights'], self.scene['terrain']['size_m'])
+        base = Terrain(self.scene['terrain']['base_heights'], self.scene['terrain']['size_m'])
+        points = [(x, y) for x in np.linspace(-8, 8, 7) for y in np.linspace(-8, 8, 7)
+                  if math.hypot(x, y) > 3]
+        self.assertGreater(max(abs(float(visual.height(x, y)-base.height(x, y))) for x, y in points), 0.01)
+        self.assertAlmostEqual(float(visual.height(0, 0)), 0, places=8)
+
+    def test_terrain_texture_coordinates_tile_at_the_configured_scale(self):
+        ns = {'c':'http://www.collada.org/2005/11/COLLADASchema'}
+        dae = ET.parse(self.root/'scenes'/self.scene['id']/'terrain.dae')
+        uv = np.fromstring(dae.find(".//c:source[@id='uv']/c:float_array",ns).text,sep=' ').reshape(-1,2)
+        size, tile = self.config['terrain']['size_m'], self.config['terrain']['texture_tile_m']
+        np.testing.assert_allclose(uv.min(axis=0), [-size/2/tile]*2)
+        np.testing.assert_allclose(uv.max(axis=0), [size/2/tile]*2)
 
     def test_pose_quaternion_matches_the_placement_rotation(self):
         rpy = (0.2, -0.35, 1.1)
@@ -198,6 +275,14 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(set(counts), {'train', 'val', 'test'})
         self.assertTrue(set(self.config['dataset']['empty_seeds']) <= set(self.config['dataset']['seeds']))
 
+    def test_default_config_uses_scanned_rocks_and_ground(self):
+        config = read_config()
+        self.assertEqual(config['rocks']['procedural_count'], 0)
+        self.assertTrue(set(config['rocks']['held_out_ids']) < set(config['rocks']['scanned_ids']))
+        sources = json.loads((Path(__file__).resolve().parents[1]/'config'/'assets.json').read_text())
+        self.assertEqual(set(config['rocks']['scanned_ids']), set(sources['rocks']['ids']))
+        self.assertEqual(set(config['terrain']['ground_textures']), set(sources['ground']['ids']))
+
     def test_invalid_grid_and_operating_range_rejected(self):
         path=self.root/'bad.json'
         path.write_text(json.dumps({'terrain':{'grid_size':64}}))
@@ -206,6 +291,108 @@ class GenerationTests(unittest.TestCase):
         path.write_text(json.dumps({'capture':{'distance_m':[.1,4.]}}))
         with self.assertRaises(ValueError):
             read_config(path)
+
+
+class ScannedAssetTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_prepared_rocks_keep_uvs_textures_and_simplified_collision(self):
+        cache = fake_cache(self.root, rocks=['scan_a','scan_b','scan_c','scan_d'])
+        config = offline_config(self.root)['rocks']
+        config.update(procedural_count=0, include_existing=False, scanned_ids=['scan_a','scan_b','scan_c','scan_d'],
+                      held_out_ids=['scan_d'])
+        assets = build_library(self.root/'assets', config, cache)
+        first = assets[0]
+        self.assertEqual(first['license'], 'CC0-1.0')
+        self.assertEqual(set(first['textures']), {'albedo','normal','roughness'})
+        for path in first['textures'].values():
+            self.assertTrue((self.root/path).is_file())
+        self.assertLess(first['collision_triangles'], first['triangles'])
+        ns = {'c':'http://www.collada.org/2005/11/COLLADASchema'}
+        dae = ET.parse(self.root/first['mesh'])
+        uv = np.fromstring(dae.find(".//c:source[@id='uv']/c:float_array",ns).text,sep=' ').reshape(-1,2)
+        expected = json.loads((cache/'prepared/rocks/scan_a/visual.json').read_text())['uv']
+        np.testing.assert_allclose(uv, expected, atol=1e-8)
+        geometry = json.loads((self.root/first['geometry']).read_text())
+        self.assertEqual(len(geometry['faces']), first['triangles'])
+
+    def test_dust_coat_lifts_a_dark_upward_face(self):
+        albedo = np.zeros((32, 32, 3), np.uint8)
+        roughness = np.full((32, 32), 30, np.uint8)
+        vertices = [[0, 0, 0], [1, 0, 0], [0, 1, 1], [1, 0, -1]]
+        uvs = [[0, 0], [1, 0], [0, 1], [1, 1]]
+        faces = [[0, 1, 2], [0, 1, 3]]
+        coated, coated_rough = dust_images(albedo, roughness, vertices, uvs, faces, [40, 90, 150])
+        self.assertGreater(float(coated.mean()), 30)
+        self.assertGreater(float(coated_rough.mean()), 30)
+        # The upward face (brighter coat) and the vertical face land on opposite
+        # sides of this test image.
+        self.assertGreater(float(coated[21, 8].mean()), float(coated[10, 24].mean()))
+
+    def test_missing_cache_explains_how_to_prepare(self):
+        config = offline_config(self.root)['rocks']
+        config.update(scanned_ids=['not_downloaded'])
+        with self.assertRaisesRegex(FileNotFoundError,'mars_assets'):
+            build_library(self.root/'assets', config, self.root/'empty_cache')
+
+    def test_ground_blend_is_seamless_and_reproducible(self):
+        field = broad_field(np.random.RandomState(2), 64)
+        self.assertGreater(float(np.abs(field[:, 0]-field[:, -1]).max()), 0.05)
+        field = periodic_field(np.random.RandomState(1), 128)
+        step = np.abs(np.diff(field,axis=1)).max()
+        self.assertLessEqual(np.abs(field[:,0]-field[:,-1]).max(), step+1e-5)
+        cache = fake_cache(self.root, ground=['g1','g2','g3'])
+        catalog = build_ground(self.root/'assets'/'ground', ['g1','g2','g3'], cache)
+        terrain = dict(read_config()['terrain'], composite_px=256)
+        first = composite_ground(self.root, catalog, terrain, 5, self.root)
+        image = (self.root/'ground_albedo.jpg').read_bytes()
+        again = composite_ground(self.root, catalog, terrain, 5, self.root)
+        self.assertEqual(first, again)
+        self.assertEqual((self.root/'ground_albedo.jpg').read_bytes(), image)
+        import cv2
+        normal = cv2.imread(str(self.root/'ground_normal.jpg')).astype(float)/127.5-1
+        self.assertLess(abs(np.median(np.linalg.norm(normal,axis=2))-1), .05)
+
+
+class GazeboBoxCheckTests(unittest.TestCase):
+    LABELS = [{'name':'a','xmin':10,'ymin':10,'xmax':30,'ymax':30},
+              {'name':'b','xmin':50,'ymin':10,'xmax':70,'ymax':40}]
+    OBJECTS = [{'name':'a','rejected_reason':None,'bbox_xyxy':[10,10,30,30]},
+               {'name':'b','rejected_reason':None,'bbox_xyxy':[50,10,70,40]},
+               {'name':'c','rejected_reason':'occluded_below_fraction','bbox_xyxy':[0,40,8,48]}]
+    POLICY = {'bbox_min_iou':.5,'min_box_side_px':5,'min_visible_pixels':24}
+
+    def test_matching_boxes_agree(self):
+        result = compare_boxes(self.LABELS, self.OBJECTS, [[11,10,30,31],[50,11,70,40]], self.POLICY)
+        self.assertTrue(result['agrees'])
+        self.assertEqual(result['matched'], 2)
+        self.assertGreater(result['min_matched_iou'], .85)
+
+    def test_gazebo_box_for_a_policy_rejected_rock_is_expected(self):
+        result = compare_boxes(self.LABELS, self.OBJECTS, [[10,10,30,30],[50,10,70,40],[0,40,8,48]], self.POLICY)
+        self.assertTrue(result['agrees'])
+        self.assertEqual(result['gazebo_boxes_for_rejected_rocks'], 1)
+
+    def test_gazebo_sliver_below_label_policy_is_expected(self):
+        result = compare_boxes(self.LABELS, self.OBJECTS, [[10,10,30,30],[50,10,70,40],[90,90,94,91]], self.POLICY)
+        self.assertTrue(result['agrees'])
+        self.assertEqual(result['gazebo_boxes_below_policy'], 1)
+
+    def test_missing_or_unexplained_boxes_disagree(self):
+        missing = compare_boxes(self.LABELS, self.OBJECTS, [[10,10,30,30]], self.POLICY)
+        self.assertFalse(missing['agrees'])
+        self.assertEqual(missing['labels_without_gazebo_match'], ['b'])
+        extra = compare_boxes(self.LABELS, self.OBJECTS, [[10,10,30,30],[50,10,70,40],[90,90,99,99]], self.POLICY)
+        self.assertFalse(extra['agrees'])
+        self.assertEqual(extra['gazebo_boxes_unexplained'], 1)
+        self.assertEqual(extra['unexplained_boxes'][0]['xyxy'], [90.0,90.0,99.0,99.0])
+        shifted = compare_boxes(self.LABELS[:1], self.OBJECTS[:1], [[20,20,40,40]], self.POLICY)
+        self.assertFalse(shifted['agrees'])
 
 
 if __name__ == '__main__':

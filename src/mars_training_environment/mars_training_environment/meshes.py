@@ -1,5 +1,7 @@
-"""Original procedural rocks plus attributed existing Fuel rock geometry."""
+"""Scanned Poly Haven rocks, original procedural rocks, and existing Fuel rocks."""
+import json
 import math
+import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -136,40 +138,86 @@ def write_dae(path, vertices, faces, uv=None, texture=None):
     Path(path).write_text(text, encoding='utf-8')
 
 
-def build_library(directory, config):
+MAPS = ('albedo', 'normal', 'roughness')
+
+
+def _prepared(cache, kind, ident):
+    if cache is None:
+        raise ValueError(f'{ident} needs the asset cache; pass --asset-cache')
+    folder = Path(cache)/'prepared'/kind/ident
+    if not (folder/'meta.json').exists():
+        raise FileNotFoundError(f'{ident} is not prepared in {cache}; run: mars_assets all --cache {cache}')
+    return folder, json.loads((folder/'meta.json').read_text())
+
+
+def build_library(directory, config, cache=None):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     assets = []
-    shapes = [(f'proc_{i:02d}', *sphere_mesh(i), 'Original procedural geometry')
+    # (id, vertices, faces, uv or None, collision (v, f) or None, provenance, license, texture folder or None)
+    shapes = [(f'proc_{i:02d}', *sphere_mesh(i), None, None, 'Original procedural geometry', 'Apache-2.0', None)
               for i in range(config['procedural_count'])]
     if config['include_existing']:
         from rover_training.assets import load_assets, models_dir
         for asset in load_assets():
             v, f = read_collada(models_dir() / asset['id'] / asset['mesh'])
-            shapes.append((asset['id'], v, f, asset['fuel_url']))
-    for index, (ident, v, f, provenance) in enumerate(shapes):
+            shapes.append((asset['id'], v, f, None, None, asset['fuel_url'], 'CC-BY-4.0', None))
+    for ident in config['scanned_ids']:
+        source, meta = _prepared(cache, 'rocks', ident)
+        visual = json.loads((source/'visual.json').read_text())
+        collision = json.loads((source/'collision.json').read_text())
+        shapes.append((ident, np.asarray(visual['vertices'], dtype=float), np.asarray(visual['faces'], dtype=int),
+                       np.asarray(visual['uv'], dtype=float),
+                       (np.asarray(collision['vertices'], dtype=float), np.asarray(collision['faces'], dtype=int)),
+                       meta['page'], meta['license'], source))
+    for index, (ident, v, f, uv, collision, provenance, license_id, source) in enumerate(shapes):
         folder = directory / ident
         folder.mkdir(exist_ok=True)
-        rng = np.random.RandomState(7300+index)
-        yy, xx = np.mgrid[0:128, 0:128]
-        base = np.array([[111,88,67], [124,120,112], [151,120,86], [84,78,74]][index % 4])
-        grain = rng.normal(0, 8, (128, 128)) + 12*np.sin(xx*.13 + 2*np.sin(yy*.09)) + 6*np.cos(yy*.4)
-        png(folder / 'surface.png', np.clip(base + grain[:, :, None], 0, 255))
-        write_dae(folder / 'visual.dae', v, f, texture='surface.png')
-        # These meshes are already a few hundred triangles. Collision uses the same
-        # triangles so a contact test hits the shape that was rasterized for labels.
-        cv, cf = v, f
+        if source is None:
+            rng = np.random.RandomState(7300+index)
+            yy, xx = np.mgrid[0:128, 0:128]
+            base = np.array([[111,88,67], [124,120,112], [151,120,86], [84,78,74]][index % 4])
+            grain = rng.normal(0, 8, (128, 128)) + 12*np.sin(xx*.13 + 2*np.sin(yy*.09)) + 6*np.cos(yy*.4)
+            png(folder / 'albedo.png', np.clip(base + grain[:, :, None], 0, 255))
+            textures = {'albedo': f'assets/{ident}/albedo.png'}
+        else:
+            for key in MAPS:
+                shutil.copyfile(source/f'{key}.jpg', folder/f'{key}.jpg')
+            textures = {key: f'assets/{ident}/{key}.jpg' for key in MAPS}
+        # The visual triangles are also the label mesh. Procedural and Fuel rocks are
+        # a few hundred triangles, so their collision uses the same triangles.
+        write_dae(folder / 'visual.dae', v, f, uv=uv)
+        cv, cf = collision if collision is not None else (v, f)
         write_dae(folder / 'collision.dae', cv, cf)
         geometry = {'vertices': v.tolist(), 'faces': f.tolist()}
+        if uv is not None:
+            geometry['uv'] = np.asarray(uv).tolist()
         write_json(folder / 'geometry.json', geometry)
         assets.append({'id': ident, 'held_out': ident in config['held_out_ids'], 'source': provenance,
-                       'license': 'CC-BY-4.0' if ident.startswith('falling_') else 'Apache-2.0',
+                       'license': license_id, 'textures': textures,
                        'mesh': f'assets/{ident}/visual.dae', 'collision': f'assets/{ident}/collision.dae',
                        'geometry': f'assets/{ident}/geometry.json', 'sha256': digest(geometry),
                        'bounds_min': v.min(axis=0).tolist(), 'bounds_max': v.max(axis=0).tolist(),
                        'triangles': len(f), 'collision_triangles': len(cf)})
     unknown = set(config['held_out_ids']) - {a['id'] for a in assets}
-    if unknown or not any(a['held_out'] for a in assets):
+    if unknown or not any(a['held_out'] for a in assets) or all(a['held_out'] for a in assets):
         raise ValueError(f'Invalid evaluation mesh reservation: {sorted(unknown)}')
     write_json(directory / 'catalog.json', assets)
     return assets
+
+
+def build_ground(directory, ids, cache=None):
+    """Copy prepared ground texture sets; an empty list keeps the procedural ground."""
+    directory = Path(directory)
+    ground = []
+    for ident in ids:
+        source, meta = _prepared(cache, 'ground', ident)
+        folder = directory/ident
+        folder.mkdir(parents=True, exist_ok=True)
+        for key in MAPS:
+            shutil.copyfile(source/f'{key}.jpg', folder/f'{key}.jpg')
+        ground.append({'id': ident, 'size_m': meta['size_m'], 'source': meta['page'], 'license': meta['license'],
+                       **{key: f'assets/ground/{ident}/{key}.jpg' for key in MAPS}})
+    if ground:
+        write_json(directory/'catalog.json', ground)
+    return ground

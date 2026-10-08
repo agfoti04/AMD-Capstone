@@ -6,6 +6,7 @@ install_jazzy/
 log_jazzy/
 dataset/
 datasets/
+assets_cache/
 *.pyc
 __pycache__/
 *.pt

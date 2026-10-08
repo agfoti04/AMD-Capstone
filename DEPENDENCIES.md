@@ -78,7 +78,8 @@ Humble plugin source plus the launch files, not from a running simulator.
 
 `rover-jazzy` installs `ros-jazzy-ros-gz`, `ros-jazzy-gz-ros2-control`,
 `ros-jazzy-ros2-controllers`, and the same xacro, state publisher, cv_bridge,
-and rendering packages as the Humble image.
+and rendering packages as the Humble image. It also installs Ubuntu's
+`blender` (4.0), used headless by `mars_assets` to simplify scanned rocks.
 
 What changes with `sim:=harmonic`:
 
@@ -99,3 +100,8 @@ turning may need a different `wheel_separation_multiplier` in
 ## Assets
 
 See `src/rover_training/models/ATTRIBUTION.md` and `assets.json`.
+
+The Mars environment's scanned rocks and ground textures come from Poly Haven
+under CC0. They are listed in
+`src/mars_training_environment/config/assets.json`, pinned with checksums in
+`assets.lock.json`, and downloaded into `assets_cache/`, which is not committed.

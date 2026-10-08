@@ -30,26 +30,37 @@ def read_config(path=None):
             config[section].update(values)
     t, r, c, cap = (config[k] for k in ('terrain', 'rocks', 'camera', 'capture'))
     n = t['grid_size']
+    visual_n = t['visual_grid_size']
     if not isinstance(n, int) or n < 17 or (n - 1) & (n - 2):
         raise ValueError('grid_size must be 2^n + 1, at least 17')
+    if not isinstance(visual_n, int) or visual_n < n or visual_n > 257 or (visual_n - 1) & (visual_n - 2):
+        raise ValueError('visual_grid_size must be 2^n + 1, at least grid_size, and at most 257')
+    for key in ('wavelength_m', 'height_m', 'ridge_wavelength_m', 'ridge_height_m'):
+        lo, hi = t['ripples'][key]
+        if not 0 < lo <= hi:
+            raise ValueError(f'Invalid ripple range {key}')
     if t['size_m'] < 6 or not 0 < t['spawn_clearance_m'] < t['size_m'] / 4:
         raise ValueError('Terrain size or spawn clearance is invalid')
-    if t['backend'] not in ('heightmap', 'mesh') or not 0 < t['max_slope_deg'] < 25:
-        raise ValueError('Use heightmap/mesh and a slope limit between 0 and 25 degrees')
+    if not 0 < t['max_slope_deg'] < 25:
+        raise ValueError('Use a slope limit between 0 and 25 degrees')
+    if t['texture_tile_m'] <= 0 or t['ground_layers'] < 1 or t['composite_px'] < 256:
+        raise ValueError('Invalid ground texture tiling')
     if not 0 < c['near_m'] < c['far_m'] or not 0.2 < c['horizontal_fov_rad'] < 2.5:
         raise ValueError('Invalid camera clipping planes or field of view')
     if min(c['width'], c['height'], c['rate_hz'], cap['views_per_scene']) <= 0:
         raise ValueError('Camera dimensions, rate and view count must be positive')
-    if not 4 <= r['procedural_count'] <= 64:
-        raise ValueError('procedural_count must be 4..64')
+    if not 0 <= r['procedural_count'] <= 64:
+        raise ValueError('procedural_count must be 0..64')
+    if r['procedural_count'] + len(r['scanned_ids']) + (4 if r['include_existing'] else 0) < 4:
+        raise ValueError('Use at least four rock shapes')
     for lo, hi in (r['count_range'], r['sampling_size_m'], r['obstacle_size_m'],
-                   r['burial_fraction'], cap['distance_m']):
+                   r['burial_fraction'], cap['distance_m'], t['tint_strength']):
         if not 0 <= lo <= hi:
             raise ValueError('Invalid configuration range')
     if cap['distance_m'][0] <= c['near_m'] + 0.25 or cap['distance_m'][1] >= c['far_m']:
         raise ValueError('View distances must lie safely inside camera operating range')
-    if not 0 <= config['labels']['min_visible_fraction'] <= 1:
-        raise ValueError('Invalid visible fraction')
+    if not 0 <= config['labels']['min_visible_fraction'] <= 1 or not 0 < config['labels']['bbox_min_iou'] <= 1:
+        raise ValueError('Invalid visible fraction or box IoU threshold')
     seeds = config['dataset']['seeds']
     if len(set(seeds)) != len(seeds) or any(not isinstance(s, int) or s < 0 for s in seeds):
         raise ValueError('Seeds must be unique nonnegative integers')

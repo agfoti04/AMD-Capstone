@@ -28,5 +28,9 @@ RUN printf 'Acquire::Retries "8";\nAcquire::http::Timeout "30";\n' > /etc/apt/ap
         libegl-mesa0 \
     && rm -rf /var/lib/apt/lists/*
 
+# Headless Blender simplifies scanned rock meshes (mars_assets prepare).
+RUN apt-get update && apt-get install -y --no-install-recommends blender \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /work
 CMD ["bash"]

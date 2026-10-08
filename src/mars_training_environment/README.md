@@ -1,52 +1,80 @@
 # Martian training environment
 
-Additive world and dataset tools for the existing Humble / Gazebo Classic rover.
-`four_wheel_sim` is not edited. The maze launch still builds the maze, and it
-still has no world argument. This package starts `gzserver` itself and spawns
-the same rover, controllers, `/cmd_vel` relay, and `/odom` ground-truth relay.
+World and dataset tools for the rover in ROS 2 Jazzy and Gazebo Harmonic.
+The Gazebo Classic version of this package is on the
+`perception/mars-training-environment` branch and is not maintained here.
+`four_wheel_sim` keeps both simulators; this package uses its Harmonic path
+(`robot.urdf.xacro` with `sim:=harmonic`, `gz_ros2_control`, `twist_stamper`,
+and the `odom_gt` relay).
 
-The default world is 20 m by 20 m. Size, relief, rock counts, and camera
-settings come from `config/sample.json`. Earth gravity (`0 0 -9.81`) stays on,
-because the physical rover is tested on Earth.
+The default world is 20 m by 20 m. Size, relief, rock counts, lighting, and
+camera settings come from `config/sample.json`. Earth gravity (`0 0 -9.81`)
+stays on, because the physical rover is tested on Earth.
 
-## Terrain and rocks
+## Look: scanned rocks and ground
 
-The default terrain backend is `mesh`, so the picture, the collision, and the
-labeler share one triangle mesh (`scenes/<id>/terrain.dae`). Gazebo Classic
-can load a heightmap instead (`"backend": "heightmap"`). That path writes the
-same image, size, and position into the visual and the collision. Classic has
-a history of mirroring those two heightmaps, so the sample config uses the mesh.
+Rocks and ground textures are photogrammetry scans from
+[Poly Haven](https://polyhaven.com), all CC0. They are downloaded by
+`mars_assets` into a local cache and are never committed. The exact files
+and their MD5 checksums are pinned in `config/assets.lock.json`, so every
+machine builds the same worlds.
 
-The ground texture is a seeded mix of dusty red, tan, and gray. It is copied
-next to the Ogre material script so Gazebo finds it. The height field has
-broad slopes, ridges, and shallow bowls, then a flat disk at the origin so
-the rover still spawns at `z = 0.09`. Slope is limited to `max_slope_deg`
-(10 degrees in the sample).
+NASA's free 3D library was checked first. It has spacecraft and kilometre-scale
+terrain, but no individual rock models that fit a rover camera, so none are
+used.
 
-Rock shapes:
+Rocks (`config/assets.json`): `moon_rock_01` to `moon_rock_07`, `rock_07`,
+`rock_09`, and `boulder_01`. Headless Blender reduces each scan to about
+2,500 triangles for the picture and labels, and 400 for collision, keeping
+UVs, and copies its albedo, normal, and roughness maps. Preparation refuses
+any scan that is several separate stones (the Namaqualand boulder scans, and
+`stone_01`), because one asset must be one labeled rock.
+`namaqualand_boulder_03` looks like one light boulder in its preview, but the
+mesh falls apart into fragments once it is simplified, so it is not used.
+`boulder_01` and `rock_07` are the lighter stones in the set.
 
-- 16 procedural meshes (`proc_00` through `proc_15`), generated in this
-  package, Apache-2.0.
-- 4 Open Robotics Fuel models already stored in `rover_training`
-  (`falling_rock1` through `falling_rock4`), CC-BY-4.0. See
-  `src/rover_training/models/ATTRIBUTION.md`.
+When a scene is generated, each scanned rock is recoated with that scene's
+dust colour. Upward faces take more dust than undersides, and the material
+colour is left white so the coat is not multiplied back down to black. The
+dark lunar scans are what made the rocks look like coal.
 
-`proc_12`, `proc_13`, `proc_14`, `proc_15`, and `falling_rock4` are reserved
-for test scenes. A train or val scene never instances them, and a test scene
-never instances the other shapes. Each mesh is a few hundred triangles, and
-collision uses those same triangles.
+`moon_rock_06` and `rock_09` are held out for test scenes. A train or val
+scene never instances them, and a test scene never instances the others.
+
+Ground: `red_sand` and `sand_03`, both fine sand with no gravel. Gravel,
+cracked earth, and pebble photos were removed, because at 12 cm camera height
+those stones are painted on and the detector learns them as rocks. Each scene
+blends the two sands across the whole 20 m patch, then pulls the result toward
+one Mars hue and multiplies by a slower brightness change several metres
+across, so the sand's own 2–3 m repeat is not the largest pattern in the frame.
+Only color variation along the Mars hue survives, so moss or other off-palette
+tones in a scan do not show.
+
+The driveable surface stays the coarse height field: 0.8 m of relief, slopes
+capped at 10°, and a flat spawn pad. The picture and the labels use a finer
+mesh (`visual_grid_size` 129, about 16 cm) with wind ripples a couple of
+centimetres high and low ridges. Collision stays on the coarse mesh, so the
+simulator does not pay for the ripples. Ripples are zero on the spawn pad.
+
+The world uses physically based materials (`<pbr>`), the `ogre2` renderer, a
+dusty butterscotch sky, a directional sun at a random azimuth and elevation,
+and ambient light between 0.32 and 0.50 so shadowed rock faces stay readable.
 
 Sample rocks are 0.07–0.20 m on the longest side. Obstacle rocks are
 0.25–0.70 m. Those ranges are placeholders until the arm and gripper limits
 are known; change `sampling_size_m` and `obstacle_size_m`. Burial is
-0–24% of the rock's height (`burial_fraction`). Rocks are static. Soil
-deformation and grasping are not modeled.
+0–24% of the rock's height. Rocks are static. Soil deformation and grasping
+are not modeled.
+
+The offline unit tests still use 16 procedural shapes and the four Open
+Robotics Fuel rocks from `rover_training`, so they need no download. Set
+`procedural_count` or `include_existing` in a config to mix those back in.
 
 ## Labels
 
-Classic 11 has no bounding-box camera. Labels are not detector output. A CPU
-rasterizer projects the same visual triangles the world loads, including the
-terrain, and keeps the visible pixels.
+Labels are not detector output. A CPU rasterizer projects the same visual
+triangles the world loads, including the terrain, and keeps the visible
+pixels.
 
 | Case | What is written |
 | --- | --- |
@@ -60,14 +88,25 @@ terrain, and keeps the visible pixels.
 Class id `0` is `rock`. Ground texture is background. Clean images are written
 under `images/`. Boxes are drawn only under `previews/`.
 
-Each accepted frame must also match the live depth image. The capture refuses
-the frame when the median depth error on rock pixels is above 8 cm. That
-check uses `/oak/depth/image_raw`. Depth files are saved only when
-`save_depth` is true.
+Two independent checks run on every frame:
+
+- **Depth.** The capture refuses the frame when the median difference between
+  `/oak/depth/image_raw` and the label mesh on rock pixels is above 8 cm.
+- **Gazebo's bounding-box camera.** Every rock carries Harmonic's `Label`
+  plugin, and the rover has a `boundingbox_camera` with the same pose and
+  optics as the RGB camera. Its boxes arrive on `/oak/boxes`
+  (`vision_msgs/Detection2DArray`). They are compared one-to-one with our
+  labels by IoU (`bbox_min_iou`, 0.5) and stored in each frame's metadata as
+  `bbox_check`. They are never used as labels. A Gazebo box is expected when
+  it matches a rock our policy rejected, or when it is already below the
+  minimum box size. Anything else is listed in `unexplained_boxes`.
+  `validation.json` sums this as `gazebo_bbox_check`.
+
+With `require_bbox_check` true, a frame is not written until a Gazebo box
+message near the image time has arrived.
 
 The rover body is not in the rasterizer. The camera looks forward from the
-front of the body, so the body rarely covers a labeled rock. This is still a
-limitation for rocks directly against the chassis.
+front of the body, so the body rarely covers a labeled rock.
 
 ## Camera values are not OAK-D calibration
 
@@ -85,12 +124,12 @@ treat these as measured intrinsics.
 
 The launch applies those overrides to an in-memory copy of the rover. The
 xacro file on disk is unchanged. Capture reads `/oak/camera_info` for the
-actual `K` matrix, so a later calibration change is picked up from the sensor
-message rather than from this file.
+actual `K` matrix.
 
-`/odom` in this stack is the ground-truth relay (`odom_gt` republishes the
-Gazebo `libgazebo_ros_p3d` pose). It is not wheel odometry. Labels use that
-pose, interpolated to the image timestamp.
+`/odom` in this stack is the ground-truth relay: `odom_gt` republishes
+Harmonic's `OdometryPublisher` pose from `/odom_gt`. It is not wheel
+odometry. Labels use that pose, interpolated to the image timestamp. Each
+view is reached by teleporting the rover with `/world/mars_training/set_pose`.
 
 ## Splits
 
@@ -99,51 +138,76 @@ so adding seeds does not move an existing scene. The sample seeds 100–119
 produce 14 train, 2 val, and 4 test scenes, 10 views each, 200 images.
 Seeds 100, 110, and 117 are empty. Seed 100 is an empty test scene.
 
-`dataset/mars_sample/data.yaml` points Ultralytics at `images/train`,
-`images/val`, and `images/test` with `0: rock`. Nothing in this package starts
-a training run.
+`data.yaml` points Ultralytics at `images/train`, `images/val`, and
+`images/test` with `0: rock`. Nothing in this package starts a training run.
 
 ## Commands
 
-Run these inside the `rover-humble` container, from `/work`, after Docker
-Desktop is up. From PowerShell in `rover_ws`, a headless container is:
+Build the image once, from `rover_ws` in PowerShell:
 
 ```powershell
-docker run --rm -it -v ${PWD}:/work -w /work rover-humble bash
+docker build -f docker/Dockerfile.jazzy -t rover-jazzy .
 ```
 
-To open the Gazebo window, use the display mounts instead:
+A headless shell:
 
 ```powershell
-docker run --rm -it -v ${PWD}:/work -w /work -v /run/desktop/mnt/host/wslg/.X11-unix:/tmp/.X11-unix -v /run/desktop/mnt/host/wslg:/mnt/wslg -e DISPLAY=:0 -e WAYLAND_DISPLAY=wayland-0 -e XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir rover-humble bash
+docker run --rm -it -v ${PWD}:/work -w /work rover-jazzy bash
 ```
 
-Only one Gazebo can run in that container. Stop the other with Ctrl+C before
-launching again.
+To see the Gazebo window, add the WSLg display mounts:
+
+```powershell
+docker run --rm -it -v ${PWD}:/work -w /work -v /run/desktop/mnt/host/wslg/.X11-unix:/tmp/.X11-unix -v /run/desktop/mnt/host/wslg:/mnt/wslg -e DISPLAY=:0 -e WAYLAND_DISPLAY=wayland-0 -e XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir rover-jazzy bash
+```
+
+If another ROS container is running (for example `rover-humble`), start
+capture containers with `--network none`. Each capture also sets its own
+`GZ_PARTITION` and keeps ROS discovery on localhost, but two containers on
+the same Docker network can still see each other's topics.
+
+Inside the container, Jazzy builds go to separate folders so they do not
+clash with Humble builds:
 
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 cd /work
-colcon build --packages-select mars_training_environment
-source install/setup.bash
-export LIBGL_ALWAYS_SOFTWARE=1
+colcon --log-base log_jazzy build --build-base build_jazzy --install-base install_jazzy \
+  --packages-select four_wheel_sim rover_training mars_training_environment
+source install_jazzy/setup.bash
 ```
 
-Unit tests do not need Gazebo:
+Unit tests do not need Gazebo or the asset download:
 
 ```bash
-python3 -m unittest discover -s src/mars_training_environment/test
+cd /work/src/mars_training_environment
+PYTHONPATH=$PWD:/work/src/rover_training python3 -m unittest discover -s test -p 'test_*.py'
 ```
 
-Generate the 20 sample scenes (200 planned images):
+Download and prepare the scanned assets (about 100 MB, a minute of Blender).
+This needs network access, so do not use `--network none` for this step:
 
 ```bash
-ros2 run mars_training_environment mars_generate -- --output /work/dataset/mars_scenes
+ros2 run mars_training_environment mars_assets all --cache /work/assets_cache
 ```
 
-The same config and seed rewrite the same scene. A different config in an
-existing output directory is rejected. `scene.json` stores the seed, config
-hash, asset ids, and poses.
+Only after editing `config/assets.json`, rebuild the lock file and commit it:
+
+```bash
+ros2 run mars_training_environment mars_assets lock \
+  --lock /work/src/mars_training_environment/config/assets.lock.json
+```
+
+Generate the 20 sample scenes:
+
+```bash
+ros2 run mars_training_environment mars_generate \
+  --output /work/dataset/mars_scenes --asset-cache /work/assets_cache
+```
+
+Without `--asset-cache`, `$MARS_ASSET_CACHE` or `./assets_cache` is used. The
+same config and seed rewrite the same scene. A different config in an
+existing output directory is rejected.
 
 Look at one world:
 
@@ -152,119 +216,70 @@ ros2 launch mars_training_environment mars_world.launch.py \
   scene:=/work/dataset/mars_scenes/scenes/scene_000101/scene.json gui:=true
 ```
 
-Capture the sample dataset. This starts an offscreen Gazebo per scene, writes
-clean images and labels, and validates the set:
+Capture and validate. This starts a headless Gazebo per scene:
 
 ```bash
-ros2 run mars_training_environment mars_dataset -- \
+ros2 run mars_training_environment mars_dataset \
   --bundle /work/dataset/mars_scenes --output /work/dataset/mars_sample
 ```
 
-One scene is enough for a smoke test:
+Add `--scene scene_000101` for a smoke test, or `--resume` after a stopped
+run. Check labels again and rebuild the contact sheet:
 
 ```bash
-ros2 run mars_training_environment mars_dataset -- \
-  --bundle /work/dataset/mars_scenes \
-  --output /work/dataset/mars_sample --scene scene_000101
-```
-
-Resume after a stopped run:
-
-```bash
-ros2 run mars_training_environment mars_dataset -- \
-  --bundle /work/dataset/mars_scenes \
-  --output /work/dataset/mars_sample --resume
-```
-
-Check labels again, and rebuild the contact sheet:
-
-```bash
-ros2 run mars_training_environment mars_validate -- \
+ros2 run mars_training_environment mars_validate \
   --dataset /work/dataset/mars_sample --bundle /work/dataset/mars_scenes
 ```
 
-Previews with boxes are `dataset/mars_sample/previews/<split>/`. The clean
-training images are `dataset/mars_sample/images/<split>/`.
-
-Collision and the original maze launch:
-
-```bash
-ros2 run mars_training_environment mars_verify_runtime -- \
-  --output /work/dataset/mars_sample/reports/original_runtime.json
-ros2 run mars_training_environment mars_verify_runtime -- \
-  --scene /work/dataset/mars_scenes/scenes/scene_000101/scene.json \
-  --output /work/dataset/mars_sample/reports/mars_runtime.json
-```
-
-The original command is `ros2 launch four_wheel_sim gazebo.launch.py`. It
-always starts the maze and a Gazebo client, and it does not accept `gui:=`.
-
-A larger set is the same tools with a different seed list. Copy
-`config/sample.json`, append seeds, and keep the held-out mesh ids. Then:
-
-```bash
-ros2 run mars_training_environment mars_generate -- \
-  --config /work/my_mars.json --output /work/dataset/mars_large_scenes
-ros2 run mars_training_environment mars_dataset -- \
-  --bundle /work/dataset/mars_large_scenes --output /work/dataset/mars_large
-```
-
-Read `validation.json` before growing the set. It records images per wall
-second, annotation time, and the simulation real-time factor. Scene generation
-is about one second per scene. Labeling one frame is under a second. A
-headless scene of 10 frames took about 80 seconds on this laptop with
-software rendering, at a real-time factor near 0.8, so the 200-image sample
-is about half an hour. The median rock-depth error on that check was 1.5 mm.
-`dataset/` is gitignored; do not commit images or generated worlds.
-
-Viewpoints are placed so the lens, which sits 0.2 m ahead of `base_link`,
-stays outside the 0.3 m near plane of every rock. A rock closer than that is
-clipped by the camera and shows a hole.
-
-## Halo Strix
-
-Keep Humble and Gazebo Classic. Do not install Jazzy or Gazebo Harmonic on the
-24.04 host. Build `docker/Dockerfile` there and run the same commands. The
-image already contains `xvfb`, `libgl1-mesa-dri`, and `LIBGL_ALWAYS_SOFTWARE`
-is the safe default when the container cannot see a GPU.
-
-If `/dev/dri` is passed into the container and `glxinfo` shows a non-software
-renderer, unset `LIBGL_ALWAYS_SOFTWARE` and compare one scene's
-`real_time_factor` in `reports/scene_*.json` before changing the sample size.
-Classic's renderer is OpenGL. A ROCm or PyTorch install does not speed up
-Gazebo, and this package does not start training.
+`dataset/` and `assets_cache/` are gitignored. Do not commit images, worlds,
+or downloaded assets.
 
 ## What has been run
 
-Unit tests: 18 passed, without Gazebo.
+All in `rover-jazzy` on this laptop, software rendering, `--network none`:
 
-Inside `rover-humble`, scene 101 was captured with the mesh terrain. The ground
-is reddish rather than flat green, clean images have no boxes, and the median
-difference between the depth image and the label mesh was about 1.5 mm.
-`dataset/mars_sample` currently has 40 frames (scenes 100–103), including the
-empty test scene. Finish the other 16 scenes with `--resume` after Docker has
-free disk space. The software renderer sometimes stops publishing the camera
-while physics keeps going; the capture retries each scene up to three times.
+- Unit tests: 30 passed.
+- Assets: the first set was 10 rocks and 6 ground textures.
+  `namaqualand_boulder_02`, `_04`, `_05`, `_06`, and `stone_01` are piles of
+  stones and are not used. `namaqualand_boulder_03` looks like one boulder
+  in its preview, but the mesh falls apart when simplified, so it is not
+  used either. Gravel and cracked-earth ground textures were removed after
+  this capture.
+- Scenes 100 (empty) and 101, 20 frames: no validation errors. 71 labels,
+  every one matched by a Gazebo box, median IoU 0.91. Median rock depth
+  error under 0.01 mm. 19 of 20 frames agree fully. The other frame has one
+  Gazebo box on a rock our policy rejected as mostly hidden (visible
+  fraction under 0.30); Gazebo's box for it is wider than our visible-pixel
+  box. That is recorded, not hidden.
+- Speed: about 7.4 s of wall time per image including Gazebo start-up, a
+  simulation real-time factor near 0.37, and 0.6 s of labeling per frame.
+  The 200-image sample is roughly 25 minutes.
+- `dataset/mars_hq_sample` has 100 images from that older look (scenes
+  100–109). The ground and the rock dust have changed since. Do not train
+  on it. Recapture only after those images have been looked at.
 
-The original maze launch published `/oak/image_raw` at 640×400 and
-`/oak/depth/image_raw` as `32FC1`. An automated one-second drive in that same
-check barely moved, so do not treat that run as proof of the controllers.
-An earlier probe on this terrain rested on the mesh within a millimeter and
-did contact a rock; a later probe timed out after the collision meshes were
-made identical to the visual meshes, which are heavier.
+Not yet run in Harmonic: `mars_verify_runtime` (driving and camera checks),
+`mars_world.launch.py gui:=true`, and the full 20-scene sample.
+
+## Halo Strix
+
+Build `docker/Dockerfile.jazzy` there and run the same commands. Harmonic
+renders with `ogre2`. Without a GPU in the container, keep
+`LIBGL_ALWAYS_SOFTWARE=1` (the capture sets it). If `/dev/dri` is passed in
+and hardware rendering works, compare one scene's real-time factor in
+`reports/scene_*.json` before growing the dataset. A ROCm or PyTorch install
+does not speed up Gazebo, and this package does not start training.
 
 ## Limitations
 
 - Camera numbers above are the current simulated camera, not a bench calibration.
 - Rock sizes are not yet tied to a real gripper.
+- Ten rock shapes, two held out. More single-rock scans would add variety.
 - Rocks do not move, and the ground does not deform.
 - Labels ignore chassis occlusion.
-- `backend: heightmap` is implemented and tested for matching visual/collision
-  XML, but it is not the default.
-- The `odom_gt` process can print `rcl_shutdown already called` while the
-  launch is exiting. The capture has already finished when that appears.
-- Two Gazebo processes in one container fail with `gzserver` exit 255.
-- The capture keeps an image only when RGB, camera info, depth, and
-  ground-truth odometry line up. Under software rendering the odometry
-  bracket is at least 0.2 s, even if `max_pose_gap_sec` is smaller.
-  `--resume` replaces a scene that stopped halfway.
+- The `odom_gt` and `twist_stamper` processes can print
+  `rcl_shutdown already called` while the launch is exiting. The capture has
+  already finished when that appears.
+- The capture keeps an image only when RGB, camera info, depth, Gazebo boxes,
+  and ground-truth odometry line up. `--resume` replaces a scene that stopped
+  halfway.
