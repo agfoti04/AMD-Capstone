@@ -1,6 +1,9 @@
 build/
 install/
 log/
+build_jazzy/
+install_jazzy/
+log_jazzy/
 dataset/
 datasets/
 *.pyc

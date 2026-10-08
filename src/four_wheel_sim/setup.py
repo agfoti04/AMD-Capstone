@@ -32,6 +32,7 @@ setup(
             'path_runner = four_wheel_sim.path_runner:main',
             'maze_waypoints = four_wheel_sim.maze_waypoints:main',
             'odom_gt = four_wheel_sim.odom_gt:main',
+            'twist_stamper = four_wheel_sim.twist_stamper:main',
         ],
     },
 )

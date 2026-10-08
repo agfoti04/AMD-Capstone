@@ -5,6 +5,12 @@ Ubuntu 24.04's default is ROS 2 Jazzy and Gazebo Harmonic. This repository
 does not use those. The Docker image in `docker/Dockerfile` is the isolated
 22.04 environment for a 24.04 host, including the Halo.
 
+A second image, `docker/Dockerfile.jazzy` (tag `rover-jazzy`), is ROS 2 Jazzy
+on Ubuntu 24.04 with Gazebo Harmonic. It runs the same rover through
+`four_wheel_sim/launch/gz_harmonic.launch.py`, which builds the xacro with
+`sim:=harmonic`. The Classic image and launch files are unchanged. See
+"Gazebo Harmonic" below.
+
 ## Apt packages inside the image
 
 - `ros-humble-ros-base` (from the official image `ros:humble-ros-base`, Ubuntu 22.04)
@@ -67,6 +73,28 @@ different names:
 detector reads. Confirm the live names with `ros2 topic list` before a long
 capture. This laptop could not start Gazebo, so those names are from the
 Humble plugin source plus the launch files, not from a running simulator.
+
+## Gazebo Harmonic
+
+`rover-jazzy` installs `ros-jazzy-ros-gz`, `ros-jazzy-gz-ros2-control`,
+`ros-jazzy-ros2-controllers`, and the same xacro, state publisher, cv_bridge,
+and rendering packages as the Humble image.
+
+What changes with `sim:=harmonic`:
+
+| Classic | Harmonic |
+|---|---|
+| `gazebo_ros2_control/GazeboSystem` | `gz_ros2_control/GazeboSimSystem` |
+| `libgazebo_ros_p3d.so` on `odom_gt` | `OdometryPublisher` system, bridged to `/odom_gt` |
+| `depth` sensor with `libgazebo_ros_camera.so` | `rgbd_camera` sensor, bridged by `config/gz_bridge.yaml` |
+| `Gazebo/Blue`, `Gazebo/Black` materials | URDF material colors |
+| `use_stamped_vel: false` and a `/cmd_vel` relay | `twist_stamper` converts `/cmd_vel` (Twist) to TwistStamped |
+
+The bridge keeps the Classic ROS names (`/oak/image_raw`,
+`/oak/depth/image_raw`, `/oak/camera_info`, `/oak/points`, `/odom_gt`,
+`/clock`). Harmonic uses a different default physics engine, so skid-steer
+turning may need a different `wheel_separation_multiplier` in
+`config/controllers_jazzy.yaml`.
 
 ## Assets
 
