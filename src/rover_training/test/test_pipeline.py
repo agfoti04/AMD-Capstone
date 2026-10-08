@@ -10,6 +10,7 @@ from rover_training.geometry import (
     camera_rigid_from_base,
     class_id_for,
     nominal_intrinsics,
+    optical_center_above_ground,
     parse_camera_extrinsics,
     pose_to_rigid,
     quaternion_to_matrix,
@@ -41,6 +42,21 @@ class GeometryTests(unittest.TestCase):
         self.assertLess(u, intrinsics["width"] * 0.65)
         self.assertGreater(v, intrinsics["cy"])
         self.assertLess(v, intrinsics["height"])
+
+    def test_optical_center_is_thirty_inches_above_the_wheels(self):
+        text = XACRO.read_text(encoding="utf-8")
+        self.assertAlmostEqual(optical_center_above_ground(text), 0.762, places=6)
+        _rotation, translation = parse_camera_extrinsics(text)
+        self.assertAlmostEqual(translation[2], 0.682, places=6)
+        self.assertNotIn("<width>640</width>", text)
+        self.assertNotIn("<height>400</height>", text)
+        self.assertEqual(text.count("<width>1920</width>"), 2)
+        self.assertEqual(text.count("<height>1080</height>"), 2)
+        self.assertEqual(text.count("<update_rate>30</update_rate>"), 2)
+        self.assertIn('name="camera_mast"', text)
+        values = nominal_intrinsics()
+        self.assertEqual((values["width"], values["height"]), (1920, 1080))
+        self.assertAlmostEqual(values["hfov"], 1.22, places=6)
 
     def test_rpy_matches_quaternion(self):
         rpy = (0.1, -0.2, 0.7)

@@ -10,11 +10,14 @@ from pathlib import Path
 import numpy as np
 
 from mars_training_environment.annotation import compare_boxes, labels_from_instances, rasterize
+from mars_training_environment.candidates import (
+    drape_mesh, mudstone_texture, paint_ground_regions, stone_texture, world_to_pixels)
 from mars_training_environment.common import digest, quaternion, read_config, rotation, split_for_seed, write_json
 from mars_training_environment.generate import make_scene
 from mars_training_environment.dust import dust_images
 from mars_training_environment.ground import broad_field, composite_ground, periodic_field
 from mars_training_environment.meshes import build_ground, build_library, read_collada, sphere_mesh, write_dae
+from mars_training_environment.robot import sync_mast
 from mars_training_environment.terrain import Terrain, generate_terrain
 from mars_training_environment.validate import validate_scene
 
@@ -171,12 +174,14 @@ class GenerationTests(unittest.TestCase):
 
     def test_eval_shapes_and_complete_seed_groups_stay_separate(self):
         held = {a['id'] for a in self.assets if a['held_out']}
-        self.assertEqual(len(self.assets),20)
+        shared = {a['id'] for a in self.assets if a.get('shared_shape')}
+        self.assertEqual(len(self.assets),23)
+        self.assertEqual(shared, {'cand_sulfur', 'cand_pale_stone', 'cand_slab'})
         self.assertEqual(len(held),5)
         for seed in [100,101,107,114]:
             scene = make_scene(self.root,self.config,seed,self.assets)
             self.assertEqual(validate_scene(scene,self.assets),[])
-            ids = {o['asset_id'] for o in scene['objects']}
+            ids = {o['asset_id'] for o in scene['objects']} - shared
             self.assertFalse(ids-held if scene['split']=='test' else ids&held)
             self.assertEqual(scene['split'],split_for_seed(seed))
             self.assertEqual(len(scene['views']),10)
@@ -218,9 +223,11 @@ class GenerationTests(unittest.TestCase):
 
     def test_every_rock_is_labelled_for_the_gazebo_box_camera(self):
         world = ET.parse(self.root/'scenes'/self.scene['id']/'world.sdf')
-        rocks = [m for m in world.iter('model') if m.get('name').startswith('rock_')]
-        self.assertEqual(len(rocks), len(self.scene['objects']))
-        for model in rocks:
+        labeled = [m for m in world.iter('model') if m.find("plugin[@name='gz::sim::systems::Label']") is not None]
+        self.assertEqual(len(labeled), len(self.scene['objects']))
+        rocks = [m for m in labeled if m.get('name').startswith('rock_')]
+        self.assertEqual(len(rocks), sum(1 for obj in self.scene['objects'] if obj['name'].startswith('rock_')))
+        for model in labeled:
             plugin = model.find("plugin[@name='gz::sim::systems::Label']")
             self.assertEqual(plugin.findtext('label'), '1')
             self.assertTrue(Path(model.findtext('link/visual/material/pbr/metal/albedo_map')).is_file())
@@ -270,6 +277,22 @@ class GenerationTests(unittest.TestCase):
                 gap = math.hypot(cx-obj['xyz'][0], cy-obj['xyz'][1]) - obj['radius_m']
                 self.assertGreater(gap, near + 0.05)
 
+    def test_sampling_sites_mix_into_scenes_and_stay_out_of_empty_ones(self):
+        classes = {obj.get('class_name') for obj in self.scene['objects']}
+        self.assertTrue({'sulfur_rock', 'pale_stone', 'cheyava_rock', 'veined_lookalike'} <= classes)
+        self.assertEqual({region['class_name'] for region in self.scene['regions']}, {'silica_soil', 'pale_lookalike'})
+        self.assertTrue((self.root/'scenes'/self.scene['id']/'candidate_mask.png').is_file())
+        self.assertTrue(all(view['id'].startswith('view_') for view in self.scene['views']))
+        self.assertTrue(self.scene['appearance_notes'])
+        self.assertTrue(any('not chemical' in note for note in self.scene['appearance_notes']))
+        empty = make_scene(self.root, self.config, 100, self.assets)
+        self.assertEqual(empty['regions'], [])
+        self.assertFalse(any(obj.get('class_name') for obj in empty['objects']))
+        sulfur = next(obj for obj in self.scene['objects'] if obj.get('class_name') == 'sulfur_rock')
+        self.assertTrue(sulfur['synthetic_analogue'])
+        self.assertFalse(sulfur['exaggerated_analogue'])
+        self.assertTrue((self.root/sulfur['material_maps']['albedo']).is_file())
+
     def test_configured_seeds_cover_every_split(self):
         counts = Counter(split_for_seed(seed) for seed in self.config['dataset']['seeds'])
         self.assertEqual(set(counts), {'train', 'val', 'test'})
@@ -282,6 +305,34 @@ class GenerationTests(unittest.TestCase):
         sources = json.loads((Path(__file__).resolve().parents[1]/'config'/'assets.json').read_text())
         self.assertEqual(set(config['rocks']['scanned_ids']), set(sources['rocks']['ids']))
         self.assertEqual(set(config['terrain']['ground_textures']), set(sources['ground']['ids']))
+
+    def test_sample_camera_is_1080p_and_thirty_inches_up(self):
+        from rover_training.geometry import optical_center_above_ground, parse_camera_extrinsics
+        from rover_training.randomize import default_xacro
+        text = default_xacro().read_text(encoding='utf-8')
+        camera = read_config()['camera']
+        self.assertEqual((camera['width'], camera['height'], camera['rate_hz']), (1920, 1080, 30.0))
+        self.assertEqual(camera['horizontal_fov_status'], 'provisional')
+        self.assertAlmostEqual(camera['horizontal_fov_rad'], 1.22, places=6)
+        self.assertAlmostEqual(camera['optical_center_height_m'], 0.762, places=6)
+        _rotation, translation = parse_camera_extrinsics(text)
+        np.testing.assert_allclose(camera['mount_xyz'], translation, atol=1e-9)
+        self.assertAlmostEqual(optical_center_above_ground(text), 0.762, places=6)
+        self.assertLess(camera['mount_xyz'][2], 0.762)
+
+    def test_mast_follows_the_joint_offset_not_the_ground_height(self):
+        root = ET.fromstring('''<robot><link name="base_link">
+          <visual name="chassis"><geometry><box size="0.4 0.2 0.1"/></geometry></visual>
+          <visual name="camera_mast"><origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.02 0.02 0.1"/></geometry></visual>
+        </link></robot>''')
+        sync_mast(root, [0.2, 0.0, 0.682])
+        origin = root.find("link/visual[@name='camera_mast']/origin").get('xyz').split()
+        size = root.find("link/visual[@name='camera_mast']/geometry/box").get('size').split()
+        self.assertAlmostEqual(float(origin[0]), 0.2, places=6)
+        self.assertAlmostEqual(float(origin[2]), 0.366, places=6)
+        self.assertAlmostEqual(float(size[2]), 0.632, places=6)
+        self.assertAlmostEqual(float(origin[2]) + float(size[2]) * 0.5, 0.682, places=6)
 
     def test_invalid_grid_and_operating_range_rejected(self):
         path=self.root/'bad.json'
@@ -393,6 +444,80 @@ class GazeboBoxCheckTests(unittest.TestCase):
         self.assertEqual(extra['unexplained_boxes'][0]['xyxy'], [90.0,90.0,99.0,99.0])
         shifted = compare_boxes(self.LABELS[:1], self.OBJECTS[:1], [[20,20,40,40]], self.POLICY)
         self.assertFalse(shifted['agrees'])
+
+    def test_ground_regions_are_not_required_to_match_a_gazebo_box(self):
+        labels = [{'name':'silica_soil_000','xmin':10,'ymin':10,'xmax':40,'ymax':40,'source':'ground_region'}]
+        objects = [{'name':'silica_soil_000','rejected_reason':None,'bbox_xyxy':[10,10,40,40],'source':'ground_region'}]
+        result = compare_boxes(labels, objects, [], self.POLICY)
+        self.assertTrue(result['agrees'])
+        self.assertEqual(result['labels_without_gazebo_match'], [])
+
+
+class CandidateTests(unittest.TestCase):
+    def test_positive_y_maps_toward_the_top_of_the_albedo(self):
+        _col, north = world_to_pixels([[0, 5]], 20, 101)
+        _col, south = world_to_pixels([[0, -5]], 20, 101)
+        self.assertLess(float(np.asarray(north).reshape(-1)[0]), float(np.asarray(south).reshape(-1)[0]))
+
+    def test_pale_controls_stay_near_the_silica_brightness(self):
+        image = np.full((180, 180, 3), (70, 110, 160), np.float32)
+        regions = [
+            {'class_name':'silica_soil','mask_id':1,'dust_cover':0.25,
+             'polygon_xy':[[-1.5,-1.2],[1.6,-0.8],[1.2,1.1],[-1.4,0.9]]},
+            {'class_name':'pale_lookalike','mask_id':2,'dust_cover':0.25,
+             'polygon_xy':[[-1.5,2.0],[1.5,1.8],[1.4,3.6],[-1.6,3.4]]},
+        ]
+        painted, _normal, _rough, mask = paint_ground_regions(
+            image, None, None, regions, 20.0, np.random.RandomState(1))
+        silica = painted[mask == 1].mean(axis=1)
+        lookalike = painted[mask == 2].mean(axis=1)
+        self.assertGreater(len(silica), 20)
+        self.assertGreater(len(lookalike), 20)
+        self.assertLess(abs(float(silica.mean()) - float(lookalike.mean())) / float(lookalike.mean()), 0.2)
+        self.assertLess(float(silica.min()), float(lookalike.min()) - 30)
+
+    def test_sulfur_yellow_stays_on_the_fracture_face(self):
+        dust = [150, 110, 80]
+        fracture = stone_texture(np.random.RandomState(3), 128, True, dust)[0]
+        intact = stone_texture(np.random.RandomState(3), 128, False, dust)[0]
+
+        def yellowness(image):
+            return float(image[:, :, 0].mean() + image[:, :, 1].mean() - 2 * image[:, :, 2].mean())
+
+        self.assertGreater(yellowness(fracture[:, 100:]), yellowness(fracture[:, :28]) + 40)
+        self.assertLess(abs(yellowness(intact) - yellowness(fracture[:, :28])), 30)
+        purple = (fracture[:, :, 0] > 160) & (fracture[:, :, 2] > 160) & (fracture[:, :, 1] < 80)
+        self.assertEqual(int(purple.sum()), 0)
+
+    def test_cheyava_spots_are_rimmed_and_exaggeration_makes_them_larger(self):
+        dust = [140, 100, 70]
+        physical = mudstone_texture(np.random.RandomState(4), 256, True, 1.0, 1.0, dust)[0]
+        exaggerated = mudstone_texture(np.random.RandomState(4), 256, True, 8.0, 1.0, dust)[0]
+        veins_only = mudstone_texture(np.random.RandomState(4), 256, False, 1.0, 1.0, dust)[0]
+
+        def centers(image):
+            return int(((image[:, :, 0] > 220) & (image[:, :, 1] > 210) & (image[:, :, 2] > 200)).sum())
+
+        self.assertEqual(centers(veins_only), 0)
+        self.assertGreater(centers(physical), 20)
+        self.assertGreater(centers(exaggerated), centers(physical) * 3)
+        pixl = (physical[:, :, 2] > 150) & (physical[:, :, 0] > 150) & (physical[:, :, 1] < 80)
+        self.assertEqual(int(pixl.sum()), 0)
+
+    def test_a_ground_region_drapes_onto_the_terrain(self):
+        field = Terrain(np.zeros((17, 17)), 20)
+        vertices, faces = drape_mesh(field, [[-0.3, -0.2], [0.3, -0.2], [0.3, 0.2], [-0.3, 0.2]])
+        self.assertGreater(len(faces), 4)
+        self.assertAlmostEqual(float(vertices[:, 2].mean()), 0.008, places=3)
+
+    def test_region_labels_keep_their_class_id(self):
+        instances = np.zeros((60, 80), int)
+        instances[10:30, 10:30] = 1
+        objects = [{'name':'silica_soil_000','asset_id':'silica_soil','class_name':'silica_soil','source':'ground_region'}]
+        labels, _records = labels_from_instances(instances, [400], objects, POLICY)
+        self.assertEqual(labels[0]['class_id'], 1)
+        self.assertEqual(labels[0]['class_name'], 'silica_soil')
+        self.assertEqual(labels[0]['source'], 'ground_region')
 
 
 if __name__ == '__main__':

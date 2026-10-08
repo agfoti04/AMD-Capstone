@@ -55,7 +55,7 @@ def bake_scene_dust(bundle, scene_folder, assets, objects, dust_bgr):
         if asset['id'] not in used:
             continue
         geometry = json.loads((bundle/asset['geometry']).read_text())
-        if 'uv' not in geometry or 'roughness' not in asset['textures']:
+        if asset.get('shared_shape') or 'uv' not in geometry or 'roughness' not in asset['textures']:
             continue
         albedo = cv2.imread(str(bundle/asset['textures']['albedo']), cv2.IMREAD_COLOR)
         roughness = cv2.imread(str(bundle/asset['textures']['roughness']), cv2.IMREAD_GRAYSCALE)

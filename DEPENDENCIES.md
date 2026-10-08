@@ -58,6 +58,12 @@ a ROS namespace, so the expected simulator names are:
 - `/oak/camera_info`
 - `/oak/depth/image_raw`
 
+The image is 1920 × 1080 at 30 Hz in simulation time. The Harmonic RGB-D
+sensor uses that same size for depth. The horizontal field of view, 1.22 rad,
+is provisional until an OAK-D calibration is measured. The optical center is
+0.762 m above level ground; the camera joint Z is 0.682 m because `base_link`
+rests 0.08 m up on the wheels.
+
 `rtab_demo.py` subscribes to those three. Depth is `32FC1` meters along the
 optical axis. Values outside the sensor near/far range (0.3 m to 8.0 m in the
 xacro) are stored as infinities.

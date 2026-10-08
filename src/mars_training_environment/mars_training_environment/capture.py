@@ -143,6 +143,12 @@ class Capture(Node):
                 continue
             if (image.width,image.height)!=(info.width,info.height) or image.header.frame_id != info.header.frame_id:
                 raise ValueError('RGB/CameraInfo geometry or frame mismatch')
+            if depth is not None and (depth.width, depth.height) != (image.width, image.height):
+                raise ValueError(
+                    f'Depth {depth.width}x{depth.height} does not match RGB {image.width}x{image.height}')
+            if (depth is not None and depth.header.frame_id and image.header.frame_id
+                    and depth.header.frame_id != image.header.frame_id):
+                raise ValueError('RGB and depth frame_ids differ')
             return image,info,depth,pose,boxes
         return None
 

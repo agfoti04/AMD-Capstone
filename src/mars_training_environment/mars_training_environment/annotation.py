@@ -8,7 +8,8 @@ from pathlib import Path
 
 import numpy as np
 
-from rover_training.geometry import camera_rigid_from_base
+from rover_training.geometry import camera_rigid_from_base, class_id_for
+from .candidates import drape_mesh
 from .common import rotation
 from .terrain import Terrain
 
@@ -139,6 +140,8 @@ class Annotator:
             transformed = v @ rotation(obj['rpy']).T * obj['scale']+np.asarray(obj['xyz'])
             self.meshes.append((obj,transformed,f))
         self.scene = scene
+        self.regions = list(scene.get('regions', []))
+        self.field = Terrain(t['heights'], t['size_m'])
 
     def annotate(self, base_xyz, base_quat, extrinsics, intrinsics, observed_depth=None):
         cam_r,cam_t = camera_rigid_from_base(base_xyz,base_quat,extrinsics)
@@ -158,6 +161,19 @@ class Annotator:
             projected.append(count)
         labels,objects = labels_from_instances(instances,projected,[m[0] for m in self.meshes],
                                                 self.scene['config']['labels'])
+        if self.regions:
+            region_instances = np.zeros(zbuffer.shape, dtype=np.int32)
+            region_projected = []
+            for ident, region in enumerate(self.regions, 1):
+                rv, rf = drape_mesh(self.field, region['polygon_xy'])
+                depth = rasterize(rv @ r.T + t, rf, intrinsics, near, far)
+                region_projected.append(int(np.isfinite(depth).sum()))
+                visible = np.isfinite(depth) & (depth < zbuffer - 1e-4)
+                region_instances[visible] = ident
+            region_labels, region_records = labels_from_instances(
+                region_instances, region_projected, self.regions, self.scene['config']['labels'])
+            labels.extend(region_labels)
+            objects.extend(region_records)
         quality = {}
         if observed_depth is not None:
             observed = np.asarray(observed_depth).reshape(zbuffer.shape)
@@ -188,6 +204,9 @@ def compare_boxes(labels, objects, gazebo_boxes, policy):
     IoU means nothing for a one-pixel sliver. Anything else unmatched on either
     side is a disagreement.
     """
+    # Ground patches are painted into the terrain, so Gazebo's box camera has no mesh for them.
+    labels = [label for label in labels if label.get('source', 'mesh') != 'ground_region']
+    objects = [obj for obj in objects if obj.get('source', 'mesh') != 'ground_region']
     min_iou = policy['bbox_min_iou']
     ours = [(l['xmin'],l['ymin'],l['xmax'],l['ymax']) for l in labels]
     pairs = sorted(((iou(a,b),i,j) for i,a in enumerate(ours) for j,b in enumerate(gazebo_boxes)), reverse=True)
@@ -251,11 +270,20 @@ def labels_from_instances(instances, projected, objects, policy):
             bounds = [int(xx.min()),int(yy.min()),int(xx.max()+1),int(yy.max()+1)]
             if min(bounds[2]-bounds[0],bounds[3]-bounds[1]) < policy['min_box_side_px']:
                 reason = reason or 'too_small'
-        record = {'name':obj['name'],'asset_id':obj['asset_id'],'projected_pixels':total,'visible_pixels':count,
+        class_name = obj.get('class_name', 'rock')
+        class_id = class_id_for(class_name)
+        if class_id is None:
+            raise ValueError(f'Unknown label class {class_name}')
+        record = {'name':obj['name'],'asset_id':obj['asset_id'],'class_name':class_name,
+                  'source':obj.get('source', 'mesh'),'projected_pixels':total,'visible_pixels':count,
                   'visible_fraction':fraction,'rejected_reason':reason,'bbox_xyxy':bounds,
                   'truncated': bool(bounds and (bounds[0]==0 or bounds[1]==0 or bounds[2]==w or bounds[3]==h))}
+        if obj.get('synthetic_analogue'):
+            record['synthetic_analogue'] = True
+        if obj.get('exaggerated_analogue'):
+            record['exaggerated_analogue'] = True
         records.append(record)
         if reason is None:
-            labels.append({'class_id':0,'class_name':'rock','xmin':bounds[0],'ymin':bounds[1],
+            labels.append({'class_id':class_id,'xmin':bounds[0],'ymin':bounds[1],
                            'xmax':bounds[2],'ymax':bounds[3],**record})
     return labels,records

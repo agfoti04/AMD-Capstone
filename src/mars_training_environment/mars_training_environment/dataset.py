@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from rover_training.geometry import CLASS_NAMES
 from .common import read_config, write_json
 from .generate import generate_bundle
 
@@ -59,8 +60,10 @@ def capture_bundle(bundle,output,resume=False,scene_ids=None):
     write_json(output/'splits.json',json.loads((bundle/'splits.json').read_text()))
     (output/'logs').mkdir(exist_ok=True)
     (output/'scenes').mkdir(exist_ok=True)
-    (output/'data.yaml').write_text(f'path: {output.as_posix()}\ntrain: images/train\nval: images/val\ntest: images/test\nnames:\n  0: rock\n')
-    (output/'classes.txt').write_text('rock\n')
+    names = '\n'.join(f'  {index}: {name}' for index, name in enumerate(CLASS_NAMES))
+    (output/'data.yaml').write_text(
+        f'path: {output.as_posix()}\ntrain: images/train\nval: images/val\ntest: images/test\nnames:\n{names}\n')
+    (output/'classes.txt').write_text('\n'.join(CLASS_NAMES) + '\n')
     for split in ('train','val','test'):
         (output/'images'/split).mkdir(parents=True,exist_ok=True)
         (output/'labels'/split).mkdir(parents=True,exist_ok=True)

@@ -60,11 +60,42 @@ The world uses physically based materials (`<pbr>`), the `ogre2` renderer, a
 dusty butterscotch sky, a directional sun at a random azimuth and elevation,
 and ambient light between 0.32 and 0.50 so shadowed rock faces stay readable.
 
-Sample rocks are 0.07–0.20 m on the longest side. Obstacle rocks are
-0.25–0.70 m. Those ranges are placeholders until the arm and gripper limits
+Sample rocks are 0.02–0.12 m on the longest side. Obstacle rocks are
+0.15–0.45 m. Those ranges are placeholders until the arm and gripper limits
 are known; change `sampling_size_m` and `obstacle_size_m`. Burial is
-0–24% of the rock's height. Rocks are static. Soil deformation and grasping
+22–44% of the rock's height. Rocks are static. Soil deformation and grasping
 are not modeled.
+
+## Sampling-site appearances
+
+`candidates` in `config/sample.json` adds three visual analogues on top of the
+sand, ripples, and dust. They are not copies of the NASA photographs in
+`Mars_Gazebo_Reference_Pack`. Those photos are appearance references. Patch
+sizes, crystal grain, and spot diameters are simulation choices, stored on
+each scene record. Category names are assigned ground truth. They are not
+chemical measurements, and they are not written into the RGB filenames.
+
+| Category | What is generated | Lookalike control |
+| --- | --- | --- |
+| `silica_soil` | Irregular pale soil blended into the ground, with a broken edge and small embedded stones | `pale_lookalike`, a pale patch of similar brightness and a smoother surface |
+| `sulfur_rock` | A pale stone with yellow crystals only on one fracture face | `pale_stone`, an intact pale stone with no yellow |
+| `cheyava_rock` | A mudstone slab with pale veins and millimetre-scale pale spots that have dark rims | `veined_lookalike`, the same kind of slab with veins and no spots |
+
+The silica patches are painted into the ground image and saved as
+`candidate_mask.png` in the scene folder. That mask is not a camera image.
+Labels for those patches come from the polygon draped on the terrain. Sulfur
+and Cheyava targets are meshes, so they use the same box labeler as rocks.
+`exaggerated_spots` multiplies the Cheyava spot diameter by 8 and tags that
+rock as an exaggerated analogue. Leave it false to keep the photographed
+millimetre scale. Rover abrasion circles and the drill hole are not
+reproduced. The PIXL map's purple, pink, and green display colors are not
+used as surface colors.
+
+Empty seeds stay empty: no rocks and no sampling candidates. Other scenes mix
+the candidates with the ordinary rocks. Set `candidates.enabled` to false to
+generate the previous ground only. Remove a name from `categories` to drop
+that target. The camera pose is unchanged: the optical center stays 0.762 m
+above level ground.
 
 The offline unit tests still use 16 procedural shapes and the four Open
 Robotics Fuel rocks from `rover_training`, so they need no download. Set
@@ -85,8 +116,10 @@ pixels.
 | Partly in frame | Box clipped to the image |
 | Empty scene | Empty `.txt` file, which is a valid YOLO label |
 
-Class id `0` is `rock`. Ground texture is background. Clean images are written
-under `images/`. Boxes are drawn only under `previews/`.
+Class ids are `rock`, `silica_soil`, `pale_lookalike`, `sulfur_rock`,
+`pale_stone`, `cheyava_rock`, and `veined_lookalike`, in that order. Ordinary
+ground stays background. Clean images are written under `images/`. Boxes are
+drawn only under `previews/`.
 
 Two independent checks run on every frame:
 
@@ -105,26 +138,40 @@ Two independent checks run on every frame:
 With `require_bbox_check` true, a frame is not written until a Gazebo box
 message near the image time has arrived.
 
-The rover body is not in the rasterizer. The camera looks forward from the
-front of the body, so the body rarely covers a labeled rock.
+The rover body is not in the rasterizer. The camera looks forward from a mast
+at the front of the body, so the body rarely covers a labeled rock.
 
 ## Camera values are not OAK-D calibration
 
-`config/sample.json` copies the camera already in `robot.urdf.xacro`. Do not
-treat these as measured intrinsics.
+`config/sample.json` and `robot.urdf.xacro` carry the same camera. The launch
+still applies the config to an in-memory copy of the rover, and capture reads
+that copy back from `robot_capture.urdf`. Do not treat these numbers as a
+bench calibration.
+
+The optical center is 0.762 m (30 in) above level ground with the rover
+resting on its wheels. The wheel collision spheres have radius 0.05 m and are
+centered 0.03 m below `base_link`, so `base_link` rests 0.08 m off the ground.
+`mount_xyz` z is the joint offset, 0.682 m, not 0.762 m. The camera body,
+RGB-D sensor, and optical frame share that origin and the 0.1 rad nose-down
+pitch. A visual mast fills the gap from the chassis top. It has no collision.
+
+`horizontal_fov_rad` stays 1.22 rad and is provisional until a measured OAK-D
+calibration exists. The Harmonic `rgbd_camera` has one image size, so the
+depth image is also 1920 × 1080. Capture rejects a frame whose depth size or
+frame id does not match the RGB image.
 
 | Setting | Sample value | Replace with |
 | --- | --- | --- |
-| `mount_xyz` | `0.2 0 0.12` m from `base_link` | Measured mount |
+| `mount_xyz` | `0.2 0 0.682` m from `base_link` | Measured joint offset |
+| optical center | 0.762 m above level ground | Measured mount height |
 | `tilt_rad` | `0.1` rad nose-down | Measured tilt |
-| `width`, `height` | 640 x 400 | OAK-D RGB mode |
-| `horizontal_fov_rad` | 1.22 rad | Value from `camera_info`, not a guess |
+| `width`, `height` | 1920 x 1080 | OAK-D RGB mode |
+| `horizontal_fov_rad` | 1.22 rad, provisional | Value from `camera_info`, not a guess |
 | `near_m`, `far_m` | 0.3 m, 8.0 m | The mode you actually run |
-| `rate_hz` | 10 | The capture rate you want |
+| `rate_hz` | 30 | Simulation-time rate. Wall-clock rate is lower under software rendering |
 
-The launch applies those overrides to an in-memory copy of the rover. The
-xacro file on disk is unchanged. Capture reads `/oak/camera_info` for the
-actual `K` matrix.
+The launch applies those overrides to an in-memory copy of the rover. Capture
+reads `/oak/camera_info` for the actual `K` matrix.
 
 `/odom` in this stack is the ground-truth relay: `odom_gt` republishes
 Harmonic's `OdometryPublisher` pose from `/odom_gt`. It is not wheel
@@ -139,7 +186,8 @@ produce 14 train, 2 val, and 4 test scenes, 10 views each, 200 images.
 Seeds 100, 110, and 117 are empty. Seed 100 is an empty test scene.
 
 `data.yaml` points Ultralytics at `images/train`, `images/val`, and
-`images/test` with `0: rock`. Nothing in this package starts a training run.
+`images/test`. `classes.txt` lists the class names above. Nothing in this
+package starts a training run.
 
 ## Commands
 
@@ -236,30 +284,29 @@ or downloaded assets.
 
 ## What has been run
 
-All in `rover-jazzy` on this laptop, software rendering, `--network none`:
+All in `rover-jazzy` on this laptop, software rendering, `--network none`,
+after the camera change to 1920 × 1080 at 30 Hz and a 0.762 m optical center.
+Older dataset folders were removed; they were captured with the previous camera.
 
-- Unit tests: 30 passed.
-- Assets: the first set was 10 rocks and 6 ground textures.
-  `namaqualand_boulder_02`, `_04`, `_05`, `_06`, and `stone_01` are piles of
-  stones and are not used. `namaqualand_boulder_03` looks like one boulder
-  in its preview, but the mesh falls apart when simplified, so it is not
-  used either. Gravel and cracked-earth ground textures were removed after
-  this capture.
-- Scenes 100 (empty) and 101, 20 frames: no validation errors. 71 labels,
-  every one matched by a Gazebo box, median IoU 0.91. Median rock depth
-  error under 0.01 mm. 19 of 20 frames agree fully. The other frame has one
-  Gazebo box on a rock our policy rejected as mostly hidden (visible
-  fraction under 0.30); Gazebo's box for it is wider than our visible-pixel
-  box. That is recorded, not hidden.
-- Speed: about 7.4 s of wall time per image including Gazebo start-up, a
-  simulation real-time factor near 0.37, and 0.6 s of labeling per frame.
-  The 200-image sample is roughly 25 minutes.
-- `dataset/mars_hq_sample` has 100 images from that older look (scenes
-  100–109). The ground and the rock dust have changed since. Do not train
-  on it. Recapture only after those images have been looked at.
+- Unit tests: 22 in `rover_training`, 32 in this package.
+- `mars_verify_runtime` on the flat maze: RGB and depth are both 1920 × 1080
+  in `camera_optical_frame`, depth is `32FC1`, and `camera_info` focal length
+  matches the provisional 1.22 rad field of view. Simulation-time rate was
+  30.3 Hz. Wall-clock rate was 2.4 Hz. `base_link` rested at 0.080 m and the
+  optical center was at 0.762 m. The rover drove 0.12 m.
+- Scene 101, 10 frames, in `dataset/mars_look_1080p_10`: no validation errors.
+  94 labels, every one matched by a Gazebo box, median IoU 0.96. Median rock
+  depth error under 0.01 mm. 9 of 10 frames agree fully. The other frame has
+  one 16 × 5 px Gazebo box on a rock our policy rejected as mostly hidden
+  (visible fraction 0.12). Its IoU with our visible pixels is 0.46, just under
+  the 0.50 cutoff, so it is listed in `unexplained_boxes` rather than counted
+  as an expected rejection. It is not a shifted label.
+- Speed for that scene: about 27 s of wall time per image including Gazebo
+  start-up, a simulation real-time factor near 0.05, and 3.8 s of labeling
+  per frame.
 
-Not yet run in Harmonic: `mars_verify_runtime` (driving and camera checks),
-`mars_world.launch.py gui:=true`, and the full 20-scene sample.
+Not yet run with this camera: `mars_world.launch.py gui:=true`, and the full
+20-scene sample.
 
 ## Halo Strix
 
@@ -272,7 +319,10 @@ does not speed up Gazebo, and this package does not start training.
 
 ## Limitations
 
-- Camera numbers above are the current simulated camera, not a bench calibration.
+- The simulated camera is 1920 × 1080 at 30 Hz in simulation time. Its
+  horizontal field of view, 1.22 rad, is provisional, not a bench calibration.
+  Depth uses the same resolution as RGB.
+- The optical center is 0.762 m above level ground.
 - Rock sizes are not yet tied to a real gripper.
 - Ten rock shapes, two held out. More single-rock scans would add variety.
 - Rocks do not move, and the ground does not deform.

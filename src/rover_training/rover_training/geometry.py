@@ -8,7 +8,15 @@ depth-buffer occlusion. They are not detector predictions.
 import math
 import re
 
-CLASS_NAMES = ("rock",)
+CLASS_NAMES = (
+    "rock",
+    "silica_soil",
+    "pale_lookalike",
+    "sulfur_rock",
+    "pale_stone",
+    "cheyava_rock",
+    "veined_lookalike",
+)
 
 
 def class_id_for(class_name):
@@ -99,8 +107,50 @@ def parse_camera_extrinsics(xacro_text):
     return compose(*frames["camera_joint"], *frames["camera_optical_joint"])
 
 
-def nominal_intrinsics(width=640, height=400, hfov=1.22):
-    """Pinhole values matching the rover depth camera in robot.urdf.xacro."""
+# 30 inches. This is the optical-center height above the wheel contact plane,
+# not the camera_joint Z offset.
+OPTICAL_CENTER_HEIGHT_M = 0.762
+
+
+def wheel_contact_drop(xacro_text):
+    """Meters from the base_link origin down to the wheel contact point.
+
+    The collision spheres are centered on the wheel links. The contact point
+    is one radius below that center. The ros2_control joint of the same name
+    has no origin, so the drop comes from the wheel macro.
+    """
+    macro = re.search(r'<xacro:macro name="wheel".*?</xacro:macro>', xacro_text, flags=re.DOTALL)
+    if not macro:
+        raise ValueError("missing wheel macro")
+    body = macro.group(0)
+    origin = re.search(r'xyz="([^"]+)"', body)
+    if not origin:
+        raise ValueError("missing wheel joint origin")
+    wheel_z = float(origin.group(1).split()[2])
+    radius_match = re.search(r'<sphere radius="([^"]+)"', body)
+    if not radius_match:
+        raise ValueError("missing wheel collision sphere")
+    return -wheel_z + float(radius_match.group(1))
+
+
+def optical_center_above_ground(xacro_text):
+    """Height of the optical-frame origin above the wheel contact plane.
+
+    camera_optical_joint has no translation, so the optical center is the
+    camera_joint origin. Adding 0.762 m to that joint would leave the lens
+    0.762 m above base_link, which is already above the ground.
+    """
+    _rotation, translation = parse_camera_extrinsics(xacro_text)
+    return translation[2] + wheel_contact_drop(xacro_text)
+
+
+def nominal_intrinsics(width=1920, height=1080, hfov=1.22):
+    """Pinhole values for the rover RGB-D camera.
+
+    hfov 1.22 rad is provisional. It is not a measured OAK-D calibration.
+    Vertical focal length follows the image aspect ratio at that horizontal
+    field of view. Depth uses the same image size as RGB.
+    """
     fx = (width * 0.5) / math.tan(hfov * 0.5)
     vfov = 2.0 * math.atan(math.tan(hfov * 0.5) * (height / float(width)))
     fy = (height * 0.5) / math.tan(vfov * 0.5)

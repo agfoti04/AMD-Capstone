@@ -8,9 +8,17 @@
   <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
 
   <link name="base_link">
-    <visual>
+    <visual name="chassis">
       <geometry><box size="0.4 0.2 0.1"/></geometry>
       <material name="blue"/>
+    </visual>
+    <!-- Visual only. No collision, so the mast does not change driving.
+         The post runs from the chassis top (z = 0.05) to the camera origin
+         (z = 0.682). See the camera_joint comment for that height. -->
+    <visual name="camera_mast">
+      <origin xyz="0.2 0 0.366" rpy="0 0 0"/>
+      <geometry><box size="0.02 0.02 0.632"/></geometry>
+      <material name="black"/>
     </visual>
     <collision><geometry><box size="0.4 0.2 0.1"/></geometry></collision>
     <inertial>
@@ -122,9 +130,17 @@
       <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
     </inertial>
   </link>
+  <!-- Wheel spheres of radius 0.05 m are centered 0.03 m below base_link, so
+       the origin rests 0.08 m above level ground. The optical frame has no
+       translation from camera_link, so this joint Z is the optical center in
+       base_link, not the height above the ground.
+       30 in = 0.762 m above the contact plane => z = 0.762 - 0.08 = 0.682.
+       Pitch 0.1 rad noses the body, sensor, and optical frame down together.
+       horizontal_fov 1.22 rad below is provisional, not a measured OAK-D
+       calibration. The RGB-D sensor has one image size, so depth follows RGB. -->
   <joint name="camera_joint" type="fixed">
     <parent link="base_link"/><child link="camera_link"/>
-    <origin xyz="0.2 0 0.12" rpy="0 0.1 0"/>
+    <origin xyz="0.2 0 0.682" rpy="0 0.1 0"/>
   </joint>
 
   
@@ -138,10 +154,10 @@
     <gazebo reference="camera_link">
       <sensor name="oak_d" type="depth">
         <always_on>true</always_on>
-        <update_rate>15</update_rate>
+        <update_rate>30</update_rate>
         <camera>
           <horizontal_fov>1.22</horizontal_fov>
-          <image><width>640</width><height>400</height><format>R8G8B8</format></image>
+          <image><width>1920</width><height>1080</height><format>R8G8B8</format></image>
           <clip><near>0.3</near><far>8.0</far></clip>
         </camera>
         <plugin name="oak_d_plugin" filename="libgazebo_ros_camera.so">
@@ -159,12 +175,12 @@
     <gazebo reference="camera_link">
       <sensor name="oak_d" type="rgbd_camera">
         <always_on>true</always_on>
-        <update_rate>15</update_rate>
+        <update_rate>30</update_rate>
         <topic>oak</topic>
         <gz_frame_id>camera_optical_frame</gz_frame_id>
         <camera>
           <horizontal_fov>1.22</horizontal_fov>
-          <image><width>640</width><height>400</height><format>R8G8B8</format></image>
+          <image><width>1920</width><height>1080</height><format>R8G8B8</format></image>
           <clip><near>0.3</near><far>8.0</far></clip>
           <depth_camera><clip><near>0.3</near><far>8.0</far></clip></depth_camera>
         </camera>

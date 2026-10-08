@@ -53,7 +53,7 @@ def tile_to(image, size, tile_m, texture_m):
     return tiled
 
 
-def composite_ground(bundle, catalog, terrain_config, seed, folder):
+def composite_ground(bundle, catalog, terrain_config, seed, folder, regions=()):
     """Write ground_{albedo,normal,roughness}.jpg into `folder`; return the recipe."""
     import cv2
     rng = np.random.RandomState(9100+seed)
@@ -101,12 +101,21 @@ def composite_ground(bundle, catalog, terrain_config, seed, folder):
     shade = (shade-shade.min())/(np.ptp(shade)+1e-6)
     albedo *= (0.78+0.28*shade)[:, :, None]
     normal /= np.maximum(np.linalg.norm(normal, axis=2, keepdims=True), 1e-6)
+    dust_bgr = np.clip(albedo, 0, 255).mean(axis=(0, 1))
+    recipe = {'layers': [catalog[i]['id'] for i in picks], 'tint_strength': strength,
+              'tint_rgb': hue.tolist(), 'span_m': span, 'pixels': size,
+              'dust_bgr': dust_bgr.tolist()}
+    if regions:
+        from .candidates import MASK_IDS, paint_ground_regions
+        from .common import png
+        albedo, normal, rough, mask = paint_ground_regions(
+            albedo, normal, rough, regions, span, np.random.RandomState(7000 + int(seed)))
+        png(Path(folder) / 'candidate_mask.png', mask)
+        recipe['candidate_mask'] = 'candidate_mask.png'
+        recipe['mask_ids'] = {'background': 0, **MASK_IDS}
     quality = [cv2.IMWRITE_JPEG_QUALITY, 92]
     folder = Path(folder)
     cv2.imwrite(str(folder/'ground_albedo.jpg'), np.clip(albedo, 0, 255).astype(np.uint8), quality)
     cv2.imwrite(str(folder/'ground_normal.jpg'), np.clip((normal+1)*127.5, 0, 255).astype(np.uint8), quality)
     cv2.imwrite(str(folder/'ground_roughness.jpg'), np.clip(rough, 0, 255).astype(np.uint8), quality)
-    dust_bgr = np.clip(albedo, 0, 255).mean(axis=(0, 1))
-    return {'layers': [catalog[i]['id'] for i in picks], 'tint_strength': strength,
-            'tint_rgb': hue.tolist(), 'span_m': span, 'pixels': size,
-            'dust_bgr': dust_bgr.tolist()}
+    return recipe

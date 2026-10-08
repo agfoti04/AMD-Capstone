@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
+from rover_training.geometry import CLASS_NAMES
 from .common import digest, split_for_seed, write_json
 from .terrain import Terrain
 
@@ -36,7 +37,8 @@ def validate_scene(scene,assets):
         if obj['asset_id'] not in by_id:
             errors.append(f'{ident}: unknown asset')
             continue
-        if by_id[obj['asset_id']]['held_out'] != (scene['split']=='test'):
+        asset = by_id[obj['asset_id']]
+        if not asset.get('shared_shape') and asset['held_out'] != (scene['split']=='test'):
             errors.append(f'{ident}: reserved shape crosses split boundary')
         if math.hypot(*obj['xyz'][:2])-obj['radius_m']<scene['config']['terrain']['spawn_clearance_m']:
             errors.append(f'{ident}: rock encroaches on spawn clearance')
@@ -46,6 +48,13 @@ def validate_scene(scene,assets):
                 errors.append(f'{ident}: intersecting rock footprints')
     if scene['empty'] and scene['objects']:
         errors.append(f'{ident}: empty scene has rocks')
+    for region in scene.get('regions', []):
+        if region.get('class_name') not in CLASS_NAMES or region.get('source') != 'ground_region':
+            errors.append(f'{ident}: invalid ground candidate')
+        if math.hypot(*region['xyz'][:2]) - region['radius_m'] < scene['config']['terrain']['spawn_clearance_m']:
+            errors.append(f'{ident}: sampling patch encroaches on spawn clearance')
+    if scene['empty'] and scene.get('regions'):
+        errors.append(f'{ident}: empty scene has sampling patches')
     return errors
 
 
@@ -139,7 +148,7 @@ def validate_dataset(root,bundle,require_complete=True):
         w,h = intrinsics['width'],intrinsics['height']
         for line,index in zip(lines,range(len(lines))):
             parts = line.split()
-            if len(parts)!=5 or parts[0]!='0':
+            if len(parts)!=5 or parts[0] not in {str(i) for i in range(len(CLASS_NAMES))}:
                 errors.append(f'{file.name}: invalid YOLO row')
                 continue
             xc,yc,bw,bh = map(float,parts[1:])

@@ -170,6 +170,8 @@ def build_library(directory, config, cache=None):
                        np.asarray(visual['uv'], dtype=float),
                        (np.asarray(collision['vertices'], dtype=float), np.asarray(collision['faces'], dtype=int)),
                        meta['page'], meta['license'], source))
+    from .candidates import candidate_shapes
+    shapes.extend(candidate_shapes())
     for index, (ident, v, f, uv, collision, provenance, license_id, source) in enumerate(shapes):
         folder = directory / ident
         folder.mkdir(exist_ok=True)
@@ -193,12 +195,17 @@ def build_library(directory, config, cache=None):
         if uv is not None:
             geometry['uv'] = np.asarray(uv).tolist()
         write_json(folder / 'geometry.json', geometry)
-        assets.append({'id': ident, 'held_out': ident in config['held_out_ids'], 'source': provenance,
-                       'license': license_id, 'textures': textures,
-                       'mesh': f'assets/{ident}/visual.dae', 'collision': f'assets/{ident}/collision.dae',
-                       'geometry': f'assets/{ident}/geometry.json', 'sha256': digest(geometry),
-                       'bounds_min': v.min(axis=0).tolist(), 'bounds_max': v.max(axis=0).tolist(),
-                       'triangles': len(f), 'collision_triangles': len(cf)})
+        record = {'id': ident, 'held_out': ident in config['held_out_ids'], 'source': provenance,
+                  'license': license_id, 'textures': textures,
+                  'mesh': f'assets/{ident}/visual.dae', 'collision': f'assets/{ident}/collision.dae',
+                  'geometry': f'assets/{ident}/geometry.json', 'sha256': digest(geometry),
+                  'bounds_min': v.min(axis=0).tolist(), 'bounds_max': v.max(axis=0).tolist(),
+                  'triangles': len(f), 'collision_triangles': len(cf)}
+        if ident.startswith('cand_'):
+            # Same shape may appear in every split. Scanned rocks stay split-isolated.
+            record['shared_shape'] = True
+            record['held_out'] = False
+        assets.append(record)
     unknown = set(config['held_out_ids']) - {a['id'] for a in assets}
     if unknown or not any(a['held_out'] for a in assets) or all(a['held_out'] for a in assets):
         raise ValueError(f'Invalid evaluation mesh reservation: {sorted(unknown)}')

@@ -14,15 +14,26 @@
                     "moon_rock_05", "moon_rock_06", "moon_rock_07", "rock_07", "rock_09",
                     "boulder_01"],
     "held_out_ids": ["moon_rock_06", "rock_09"],
-    "count_range": [38, 55], "sampling_size_m": [0.07, 0.20],
-    "obstacle_size_m": [0.25, 0.70], "sampling_probability": 0.55,
-    "burial_fraction": [0.0, 0.24], "clearance_m": 0.07,
+    "count_range": [38, 55], "sampling_size_m": [0.02, 0.12],
+    "obstacle_size_m": [0.15, 0.45], "sampling_probability": 0.55,
+    "burial_fraction": [0.22, 0.44], "clearance_m": 0.07, 
     "cluster_probability": 0.65, "max_tilt_deg": 22.0
   },
+  "candidates": {
+    "enabled": true,
+    "categories": ["silica_soil", "pale_lookalike", "sulfur_rock", "pale_stone",
+                   "cheyava_rock", "veined_lookalike"],
+    "silica_count": [1, 2], "pale_lookalike_count": [1, 2], "silica_size_m": [0.40, 1.20],
+    "sulfur_count": [1, 2], "pale_stone_count": [2, 4], "sulfur_size_m": [0.08, 0.16],
+    "cheyava_count": [1, 1], "veined_lookalike_count": [1, 1], "cheyava_size_m": [0.75, 1.05],
+    "exaggerated_spots": false, "spot_scale": 1.0
+  },
   "camera": {
-    "mount_xyz": [0.2, 0.0, 0.12], "tilt_rad": 0.1,
-    "width": 640, "height": 400, "horizontal_fov_rad": 1.22,
-    "rate_hz": 10.0, "near_m": 0.3, "far_m": 8.0,
+    "mount_xyz": [0.2, 0.0, 0.682], "tilt_rad": 0.1,
+    "width": 1920, "height": 1080, "horizontal_fov_rad": 1.22,
+    "horizontal_fov_status": "provisional",
+    "optical_center_height_m": 0.762,
+    "rate_hz": 30.0, "near_m": 0.3, "far_m": 8.0,
     "image_topic": "/oak/image_raw", "depth_topic": "/oak/depth/image_raw",
     "camera_info_topic": "/oak/camera_info", "boxes_topic": "/oak/boxes"
   },

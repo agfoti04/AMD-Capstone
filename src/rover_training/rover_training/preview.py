@@ -26,9 +26,22 @@ def preview_dataset(dataset_dir):
     return written
 
 
+# Preview overlays only. Clean images stay unlabeled, and these colors are not material colors.
+_BOX_COLORS = {
+    0: (40, 220, 60),
+    1: (80, 210, 230),
+    2: (170, 170, 190),
+    3: (40, 200, 230),
+    4: (210, 210, 220),
+    5: (70, 140, 230),
+    6: (190, 150, 90),
+}
+
+
 def draw_boxes(rgb, width, height, labels, color=(40, 220, 60)):
     pixels = bytearray(rgb)
     for label in labels:
+        color = _BOX_COLORS.get(int(label.get("class_id", 0)), color)
         x0 = int(max(0, min(width - 1, round(label["xmin"]))))
         x1 = int(max(0, min(width - 1, round(label["xmax"]))))
         y0 = int(max(0, min(height - 1, round(label["ymin"]))))

@@ -8,6 +8,7 @@ from xml.sax.saxutils import escape
 import numpy as np
 
 from .asset_cache import default_cache
+from .candidates import NOTES, add_candidates, paint_procedural_ground, write_candidate_materials
 from .common import digest, read_config, rotation, split_for_seed, write_json
 from .dust import bake_scene_dust
 from .ground import composite_ground
@@ -76,12 +77,21 @@ def make_scene(root, config, seed, assets, ground=()):
         objects.append({'name': f'rock_{index:03d}', 'asset_id': asset['id'], 'xyz': [float(xy[0]),float(xy[1]),z],
                         'rpy': rpy, 'scale': diameter, 'size_class': 'sampling' if sampling else 'obstacle',
                         'radius_m': radius, 'burial_fraction': burial, 'burial_m': support-z, 'color': color})
+    regions = []
+    if not empty and config.get('candidates', {}).get('enabled'):
+        add_candidates(rng, config, field, driveable, assets, root, objects, regions)
     views = []
+    targets = list(objects) + [{'xyz': region['xyz'], 'radius_m': region['radius_m'], 'class_name': region['class_name']}
+                               for region in regions]
+    priority = [item for item in targets if item.get('class_name')]
     for index in range(config['capture']['views_per_scene']):
         found = None
         for attempt in range(1000):
-            if objects:
-                target = objects[(index+attempt) % len(objects)]
+            if targets:
+                if priority and index % 2 == 0:
+                    target = priority[(index // 2 + attempt) % len(priority)]
+                else:
+                    target = targets[(index + attempt) % len(targets)]
                 tx,ty,_ = target['xyz']
                 # distance_m is how far the lens is from the target. The lens is
                 # ahead of base_link, and a large rock can reach the near plane.
@@ -121,16 +131,25 @@ def make_scene(root, config, seed, assets, ground=()):
         if found is None:
             raise ValueError('Could not place a collision-free camera viewpoint')
         views.append(found)
-    ground_recipe = (composite_ground(root, list(ground), config['terrain'], seed, folder) if ground
+    ground_recipe = (composite_ground(root, list(ground), config['terrain'], seed, folder, regions) if ground
                      else {'layers': [], 'procedural': 'ground.png'})
-    dust_textures = (bake_scene_dust(root, folder, assets, objects, ground_recipe['dust_bgr'])
+    if regions and not ground:
+        paint_procedural_ground(folder, regions, config['terrain']['size_m'], seed)
+        ground_recipe['candidate_mask'] = 'candidate_mask.png'
+        ground_recipe['mask_ids'] = {'background': 0, 'silica_soil': 1, 'pale_lookalike': 2}
+    dust_bgr = ground_recipe.get('dust_bgr') or [96.0, 128.0, 168.0]
+    if any(obj.get('material_maps') is None and obj.get('class_name') in ('sulfur_rock', 'pale_stone', 'cheyava_rock', 'veined_lookalike') for obj in objects):
+        write_candidate_materials(root, folder, objects, dust_bgr, seed, config)
+    dust_textures = (bake_scene_dust(root, folder, assets, objects, dust_bgr)
                      if ground_recipe.get('dust_bgr') else {})
     # Mars sky: dusty butterscotch by day, varied per scene.
     sky = np.array([.80, .62, .46])*rng.uniform(.85, 1.08)
-    scene = {'schema_version':2, 'simulator':'gazebo-harmonic', 'id':ident, 'seed':seed,
+    scene = {'schema_version':3, 'simulator':'gazebo-harmonic', 'id':ident, 'seed':seed,
              'scene_group':f'seed_{seed}', 'split':split,
              'config_sha256':config_hash, 'config':config, 'empty':empty, 'terrain':terrain,
-             'ground':ground_recipe, 'dust_textures':dust_textures, 'objects':objects, 'views':views,
+             'ground':ground_recipe, 'dust_textures':dust_textures, 'objects':objects, 'regions':regions,
+             'appearance_notes': NOTES if config.get('candidates', {}).get('enabled') else [],
+             'views':views,
              'gravity':[0,0,-9.81],
              'lighting':{'azimuth':float(rng.uniform(0,math.tau)), 'elevation':float(rng.uniform(.35,1.2)),
                          'intensity':float(rng.uniform(.75,1.15)), 'ambient':float(rng.uniform(.32,.50)),
@@ -167,7 +186,10 @@ def write_world(root, scene, assets):
         pose = ' '.join(f'{n:.12g}' for n in obj['xyz']+obj['rpy'])
         scale = ' '.join([str(obj['scale'])]*3)
         dusted = scene.get('dust_textures', {}).get(obj['asset_id'])
-        if dusted:
+        if obj.get('material_maps'):
+            color = '1 1 1 1'
+            maps = {f'{key}_map': root/path for key, path in obj['material_maps'].items()}
+        elif dusted:
             color = '1 1 1 1'
             maps = {f'{key}_map': root/path for key, path in dusted.items()}
         else:

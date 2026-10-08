@@ -61,10 +61,34 @@ def read_config(path=None):
         raise ValueError('View distances must lie safely inside camera operating range')
     if not 0 <= config['labels']['min_visible_fraction'] <= 1 or not 0 < config['labels']['bbox_min_iou'] <= 1:
         raise ValueError('Invalid visible fraction or box IoU threshold')
+    _validate_candidates(config)
     seeds = config['dataset']['seeds']
     if len(set(seeds)) != len(seeds) or any(not isinstance(s, int) or s < 0 for s in seeds):
         raise ValueError('Seeds must be unique nonnegative integers')
     return config
+
+
+def _validate_candidates(config):
+    cand = config.get('candidates')
+    if not cand:
+        return
+    known = {'silica_soil', 'pale_lookalike', 'sulfur_rock', 'pale_stone', 'cheyava_rock', 'veined_lookalike'}
+    if not isinstance(cand.get('enabled'), bool) or not isinstance(cand.get('exaggerated_spots'), bool):
+        raise ValueError('Candidate toggles must be booleans')
+    categories = cand.get('categories')
+    if not isinstance(categories, list) or set(categories) - known:
+        raise ValueError('Unknown sampling-candidate category')
+    for key in ('silica_count', 'pale_lookalike_count', 'sulfur_count', 'pale_stone_count',
+                'cheyava_count', 'veined_lookalike_count'):
+        lo, hi = cand[key]
+        if not isinstance(lo, int) or not isinstance(hi, int) or not 0 <= lo <= hi <= 16:
+            raise ValueError(f'Invalid candidate count {key}')
+    for key in ('silica_size_m', 'sulfur_size_m', 'cheyava_size_m'):
+        lo, hi = cand[key]
+        if not 0 < float(lo) <= float(hi):
+            raise ValueError(f'Invalid candidate size {key}')
+    if not float(cand['spot_scale']) > 0:
+        raise ValueError('spot_scale must be positive')
 
 
 def stable_numbers(value):

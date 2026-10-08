@@ -68,8 +68,10 @@ ros2 topic echo /oak/camera_info --once
 ros2 topic hz /oak/depth/image_raw
 ```
 
-You want image rates near 15 Hz and a camera info message whose width is 640
-and height is 400. If the names differ, do not edit the rover xacro. Pass the
+You want a camera info message whose width is 1920 and height is 1080, and a
+simulation-time image rate near 30 Hz. Wall-clock rate is lower when the
+container is software-rendering. The horizontal field of view, 1.22 rad, is
+provisional until an OAK-D calibration is measured. If the topic names differ, do not edit the rover xacro. Pass the
 real names to the capture node (`image_topic`, `depth_topic`,
 `camera_info_topic`) and edit `src/rover_perception/config/sim.yaml` to match,
 then rebuild.
