@@ -304,7 +304,8 @@ you which of those is installed on the Halo.
 
 - The Classic maze was not started here, so its camera topic names are not
   confirmed live. The Harmonic camera was checked with `mars_verify_runtime`.
-- The sampling-site analogues have unit tests but no live Gazebo capture yet.
+- Sampling-site scene 101 has a validated 10-image capture after the terrain
+  placement fix. The full 200-image sampling-site dataset has not been captured.
 - `sim.launch.py`, `my_teleop`, and `demo.rviz` are missing from the archive.
 - NASA meshes were not available as direct downloads. Fuel rocks are used
   instead. See `src/rover_training/models/ATTRIBUTION.md`.

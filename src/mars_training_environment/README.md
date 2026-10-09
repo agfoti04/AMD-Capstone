@@ -91,6 +91,17 @@ millimetre scale. Rover abrasion circles and the drill hole are not
 reproduced. The PIXL map's purple, pink, and green display colors are not
 used as surface colors.
 
+Cheyava and veined-lookalike mudstone exposures follow the visual terrain,
+including its ripples. Their per-object meshes are clipped along the terrain
+triangles, with tops up to `slab_surface_height_m` (8 mm) above the surface,
+1 mm rims blended over `slab_edge_blend_m` (3 cm), and undersides buried by
+`slab_embed_m` (2 cm). These settings are in `config/sample.json`; placement
+and mesh generation are in `mars_training_environment/candidates.py`.
+Rendering, collision, and labels use the same per-object geometry. Ordinary
+rocks and sulfur stones remain separate protruding rocks. Older scene bundles
+retain their original geometry; generate into a new folder and recapture to
+see this change.
+
 Empty seeds stay empty: no rocks and no sampling candidates. Other scenes mix
 the candidates with the ordinary rocks. Set `candidates.enabled` to false to
 generate the previous ground only. Remove a name from `categories` to drop
@@ -284,11 +295,14 @@ or downloaded assets.
 
 ## What has been run
 
-All in `rover-jazzy` on this laptop, software rendering, `--network none`,
-after the camera change to 1920 × 1080 at 30 Hz and a 0.762 m optical center.
+All in `rover-jazzy` on this laptop with software rendering, after the camera
+change to 1920 × 1080 at 30 Hz and a 0.762 m optical center. Earlier checks
+used `--network none`; the October 9 terrain-placement check used the
+`rover-gazebo` container on its default bridge network.
 Older dataset folders were removed; they were captured with the previous camera.
 
-- Unit tests: 22 in `rover_training`, 32 in this package.
+- Unit tests: 22 in `rover_training`, 42 in this package, including mudstone
+  ground-contact and matching render/label geometry checks.
 - `mars_verify_runtime` on the flat maze: RGB and depth are both 1920 × 1080
   in `camera_optical_frame`, depth is `32FC1`, and `camera_info` focal length
   matches the provisional 1.22 rad field of view. Simulation-time rate was
@@ -304,6 +318,13 @@ Older dataset folders were removed; they were captured with the previous camera.
 - Speed for that scene: about 27 s of wall time per image including Gazebo
   start-up, a simulation real-time factor near 0.05, and 3.8 s of labeling
   per frame.
+
+- October 9 terrain-following sampling sites: scene 101, ten frames in
+  `dataset/mars_sites_flush_10`, with no validation errors. All 83 mesh labels
+  matched Gazebo boxes, all ten frames agreed, and median IoU was 0.941.
+  The repaired mudstone undersides are buried 20 mm across their footprints;
+  tops are 1–8 mm above the visual terrain. Capture took about 239 s including
+  launch and shutdown. These generated files remain gitignored.
 
 Not yet run with this camera: `mars_world.launch.py gui:=true`, and the full
 20-scene sample.

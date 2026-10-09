@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .common import png, rotation
+from .common import digest, png, rotation, write_json
 
 # Ground-mask values. The mask is a scene file, not a camera image.
 MASK_IDS = {'silica_soil': 1, 'pale_lookalike': 2}
@@ -83,7 +83,7 @@ def slab_mesh(seed=21, aspect=0.62, thickness=0.045):
     return vertices, np.asarray(faces, dtype=int), _planar_uv(vertices)
 
 
-def add_candidates(rng, config, field, driveable, assets, root, objects, regions):
+def add_candidates(rng, config, field, driveable, assets, root, objects, regions, scene_folder):
     """Append mesh candidates and ground regions. Empty scenes call this never."""
     selected = set(config['candidates']['categories'])
     by_id = {asset['id']: asset for asset in assets}
@@ -157,8 +157,120 @@ def add_candidates(rng, config, field, driveable, assets, root, objects, regions
                 'exaggerated_analogue': exaggerated,
                 'references': references,
             }
+            if category in ('cheyava_rock', 'veined_lookalike'):
+                write_slab_geometry(root, scene_folder, obj, field, vertices, config['candidates'])
             objects.append(obj)
-            occupied.append((xy, radius))
+            occupied.append((xy, obj['radius_m']))
+
+
+def terrain_slab_mesh(field, polygon, surface_height=0.008, embed=0.02, edge_blend=0.03):
+    """An embedded outcrop clipped to the exact visual terrain triangles.
+
+    The angular mudstone outline is star-shaped. Clip its center fan against
+    the terrain grid so no face bridges a ripple or terrain diagonal. The rim
+    meets the ground within 1 mm, and the underside stays buried everywhere.
+    """
+    poly = np.asarray(polygon, dtype=float)
+    cross = lambda a, b: a[0] * b[1] - a[1] * b[0]
+    if sum(cross(a, b) for a, b in zip(poly, np.roll(poly, -1, axis=0))) < 0:
+        poly = poly[::-1]
+    center = poly.mean(axis=0)
+    if not _inside(poly, center[None, :])[0]:
+        raise ValueError('Mudstone outline must be star-shaped around its center')
+    outline_faces = [np.array([center, a, b]) for a, b in zip(poly, np.roll(poly, -1, axis=0))]
+
+    def clip(subject, triangle):
+        for a, b in zip(triangle, np.roll(triangle, -1, axis=0)):
+            result = []
+            if not len(subject):
+                break
+            for start, end in zip(subject, np.roll(subject, -1, axis=0)):
+                ds, de = cross(b - a, start - a), cross(b - a, end - a)
+                if ds >= -1e-12:
+                    result.append(start)
+                if (ds >= -1e-12) != (de >= -1e-12):
+                    result.append(start + (end - start) * (ds / (ds - de)))
+            subject = np.asarray(result)
+        return subject
+
+    lower = np.floor((poly.min(axis=0) + field.size / 2) / field.step).astype(int)
+    upper = np.floor((poly.max(axis=0) + field.size / 2) / field.step).astype(int)
+    lower, upper = np.clip(lower, 0, field.n - 2), np.clip(upper, 0, field.n - 2)
+    points, faces, lookup = [], [], {}
+    for j in range(lower[1], upper[1] + 1):
+        for i in range(lower[0], upper[0] + 1):
+            origin = np.array([i, j]) * field.step - field.size / 2
+            square = origin + np.array([[0, 0], [1, 0], [0, 1], [1, 1]]) * field.step
+            for cell in (square[[0, 1, 2]], square[[1, 3, 2]]):
+                for outline in outline_faces:
+                    patch = clip(cell, outline)
+                    for k in range(1, len(patch) - 1):
+                        triangle = patch[[0, k, k + 1]]
+                        if cross(triangle[1] - triangle[0], triangle[2] - triangle[0]) <= 1e-12:
+                            continue
+                        indices = []
+                        for point in triangle:
+                            key = tuple(np.round(point, 10))
+                            if key not in lookup:
+                                lookup[key] = len(points)
+                                points.append(key)
+                            indices.append(lookup[key])
+                        faces.append(indices)
+    if not faces:
+        raise ValueError('Mudstone exposure produced an empty mesh')
+    xy = np.asarray(points)
+    distance = np.full(len(xy), np.inf)
+    for a, b in zip(poly, np.roll(poly, -1, axis=0)):
+        edge = b - a
+        t = np.clip((xy - a) @ edge / (edge @ edge), 0, 1)
+        distance = np.minimum(distance, np.linalg.norm(xy - (a + t[:, None] * edge), axis=1))
+    blend = np.clip(distance / edge_blend, 0, 1)
+    reveal = 0.001 + (surface_height - 0.001) * blend * blend * (3 - 2 * blend)
+    ground = field.height(xy[:, 0], xy[:, 1])
+    count = len(xy)
+    vertices = np.vstack([np.column_stack([xy, ground + reveal]), np.column_stack([xy, ground - embed])])
+    top = np.asarray(faces, dtype=int)
+    edges = {}
+    for face in top:
+        for a, b in zip(face, np.roll(face, -1)):
+            key = tuple(sorted((int(a), int(b))))
+            edges.setdefault(key, []).append((int(a), int(b)))
+    sides = []
+    for shared in edges.values():
+        if len(shared) == 1:
+            a, b = shared[0]
+            sides.extend([[a, a + count, b], [b, a + count, b + count]])
+    return vertices, np.vstack([top, top[:, ::-1] + count, np.asarray(sides, dtype=int)])
+
+
+def write_slab_geometry(bundle, scene_folder, obj, field, template, settings):
+    """Give each mudstone exposure one mesh for rendering, collision and labels."""
+    from .meshes import write_dae
+    # Keep the sampled yaw and footprint; terrain controls the slope and height.
+    obj['rpy'] = [0.0, 0.0, obj['rpy'][2]]
+    obj['xyz'][2] = float(field.height(*obj['xyz'][:2]))
+    r = rotation(obj['rpy'])
+    outline = template[:len(template) // 2] @ r.T * obj['scale'] + obj['xyz']
+    embed = float(settings['slab_embed_m'])
+    world, faces = terrain_slab_mesh(field, outline[:, :2], float(settings['slab_surface_height_m']),
+                                     embed, float(settings['slab_edge_blend_m']))
+    local = (world - obj['xyz']) @ r / obj['scale']
+    uv = _planar_uv(local)
+    folder = Path(scene_folder) / 'meshes'
+    folder.mkdir(parents=True, exist_ok=True)
+    mesh_path = folder / (obj['name'] + '.dae')
+    geometry_path = folder / (obj['name'] + '.json')
+    geometry = {'vertices': local.tolist(), 'faces': faces.tolist(), 'uv': uv.tolist()}
+    write_dae(mesh_path, local, faces, uv=uv)
+    write_json(geometry_path, geometry)
+    obj['mesh'] = mesh_path.relative_to(bundle).as_posix()
+    obj['collision'] = obj['mesh']
+    obj['geometry'] = geometry_path.relative_to(bundle).as_posix()
+    obj['geometry_sha256'] = digest(geometry)
+    obj['placement'] = 'terrain_following_outcrop'
+    obj['burial_m'] = embed
+    obj['burial_fraction'] = embed / (embed + float(settings['slab_surface_height_m']))
+    obj['radius_m'] = float(np.linalg.norm(world[:, :2] - obj['xyz'][:2], axis=1).max())
 
 
 def write_candidate_materials(bundle, scene_folder, objects, dust_bgr, seed, config):

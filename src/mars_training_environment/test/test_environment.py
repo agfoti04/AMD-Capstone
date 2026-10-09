@@ -9,9 +9,9 @@ from pathlib import Path
 
 import numpy as np
 
-from mars_training_environment.annotation import compare_boxes, labels_from_instances, rasterize
+from mars_training_environment.annotation import Annotator, compare_boxes, labels_from_instances, rasterize
 from mars_training_environment.candidates import (
-    drape_mesh, mudstone_texture, paint_ground_regions, stone_texture, world_to_pixels)
+    drape_mesh, mudstone_texture, paint_ground_regions, stone_texture, terrain_slab_mesh, world_to_pixels)
 from mars_training_environment.common import digest, quaternion, read_config, rotation, split_for_seed, write_json
 from mars_training_environment.generate import make_scene
 from mars_training_environment.dust import dust_images
@@ -167,10 +167,37 @@ class GenerationTests(unittest.TestCase):
         field = Terrain(self.scene['terrain']['heights'], self.scene['terrain']['size_m'])
         assets = {a['id']:a for a in self.assets}
         for obj in self.scene['objects']:
-            v = np.array(json.loads((self.root/assets[obj['asset_id']]['geometry']).read_text())['vertices'])
+            path = obj.get('geometry', assets[obj['asset_id']]['geometry'])
+            v = np.array(json.loads((self.root/path).read_text())['vertices'])
             v = v @ rotation(obj['rpy']).T*obj['scale']+obj['xyz']
             clearance = v[:,2]-field.height(v[:,0],v[:,1])
             self.assertAlmostEqual(float(clearance.min()),-obj['burial_m'],places=8)
+
+    def test_mudstone_edges_are_embedded_and_rendered_mesh_matches_labels(self):
+        field = Terrain(self.scene['terrain']['heights'], self.scene['terrain']['size_m'])
+        annotated = {obj['name']: (v, f) for obj, v, f in Annotator(self.root, self.scene).meshes}
+        world = ET.parse(self.root/'scenes'/self.scene['id']/'world.sdf')
+        slabs = [o for o in self.scene['objects'] if o.get('placement') == 'terrain_following_outcrop']
+        self.assertEqual({o['class_name'] for o in slabs}, {'cheyava_rock', 'veined_lookalike'})
+        self.assertEqual(len({o['geometry'] for o in slabs}), len(slabs))
+        ns = {'c': 'http://www.collada.org/2005/11/COLLADASchema'}
+        for obj in slabs:
+            model = world.find(f".//model[@name='{obj['name']}']")
+            visual = Path(model.findtext('link/visual/geometry/mesh/uri'))
+            self.assertEqual(visual, self.root/obj['mesh'])
+            self.assertEqual(model.findtext('link/collision/geometry/mesh/uri'), str(visual))
+            geometry = json.loads((self.root/obj['geometry']).read_text())
+            self.assertEqual(digest(geometry), obj['geometry_sha256'])
+            positions = ET.parse(visual).find(".//c:source[@id='positions']/c:float_array", ns).text
+            local = np.fromstring(positions, sep=' ').reshape(-1, 3)
+            np.testing.assert_allclose(local, geometry['vertices'], atol=1e-8)
+            vertices = local @ rotation(obj['rpy']).T * obj['scale'] + obj['xyz']
+            np.testing.assert_allclose(annotated[obj['name']][0], vertices, atol=1e-8)
+            np.testing.assert_array_equal(annotated[obj['name']][1], geometry['faces'])
+            clearance = vertices[:, 2] - field.height(vertices[:, 0], vertices[:, 1])
+            count = len(vertices) // 2
+            self.assertLessEqual(float(clearance[:count].max()), 0.008 + 1e-8)
+            np.testing.assert_allclose(clearance[count:], -0.02, atol=1e-8)
 
     def test_eval_shapes_and_complete_seed_groups_stay_separate(self):
         held = {a['id'] for a in self.assets if a['held_out']}
@@ -454,6 +481,31 @@ class GazeboBoxCheckTests(unittest.TestCase):
 
 
 class CandidateTests(unittest.TestCase):
+    def test_mudstone_follows_ripples_without_air_gaps_or_bridging_grid_diagonals(self):
+        coords = np.linspace(-1, 1, 17)
+        x, y = np.meshgrid(coords, coords)
+        field = Terrain(0.12*x + 0.04*y + 0.04*np.cos(3*x)*np.sin(4*y), 2)
+        # Concave but star-shaped footprint, including terrain-grid crossings.
+        polygon = [[-0.6, -0.45], [0.45, -0.45], [0.25, -0.1], [0.6, 0.4], [-0.45, 0.6]]
+        vertices, faces = terrain_slab_mesh(field, polygon)
+        count = len(vertices) // 2
+        clearance = vertices[:, 2] - field.height(vertices[:, 0], vertices[:, 1])
+        self.assertGreaterEqual(float(clearance[:count].min()), 0.001 - 1e-9)
+        self.assertLessEqual(float(clearance[:count].max()), 0.008 + 1e-9)
+        np.testing.assert_allclose(clearance[count:], -0.02, atol=1e-9)
+        top = faces[np.all(faces < count, axis=1)]
+        centers = vertices[top].mean(axis=1)
+        reveal = centers[:, 2] - field.height(centers[:, 0], centers[:, 1])
+        self.assertGreaterEqual(float(reveal.min()), 0.001 - 1e-9)
+        self.assertLessEqual(float(reveal.max()), 0.008 + 1e-9)
+        area = np.cross(vertices[top[:, 1]] - vertices[top[:, 0]], vertices[top[:, 2]] - vertices[top[:, 0]])[:, 2].sum()/2
+        p = np.asarray(polygon)
+        expected = abs(np.sum(p[:, 0]*np.roll(p[:, 1], -1) - p[:, 1]*np.roll(p[:, 0], -1)))/2
+        self.assertAlmostEqual(float(area), float(expected), places=8)
+        edges = Counter(tuple(sorted((int(a), int(b)))) for face in faces
+                        for a, b in zip(face, np.roll(face, -1)))
+        self.assertEqual(set(edges.values()), {2}, 'Outcrop mesh must be watertight')
+
     def test_positive_y_maps_toward_the_top_of_the_albedo(self):
         _col, north = world_to_pixels([[0, 5]], 20, 101)
         _col, south = world_to_pixels([[0, -5]], 20, 101)

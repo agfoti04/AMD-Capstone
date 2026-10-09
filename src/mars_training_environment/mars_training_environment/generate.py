@@ -79,7 +79,7 @@ def make_scene(root, config, seed, assets, ground=()):
                         'radius_m': radius, 'burial_fraction': burial, 'burial_m': support-z, 'color': color})
     regions = []
     if not empty and config.get('candidates', {}).get('enabled'):
-        add_candidates(rng, config, field, driveable, assets, root, objects, regions)
+        add_candidates(rng, config, field, driveable, assets, root, objects, regions, folder)
     views = []
     targets = list(objects) + [{'xyz': region['xyz'], 'radius_m': region['radius_m'], 'class_name': region['class_name']}
                                for region in regions]
@@ -183,6 +183,8 @@ def write_world(root, scene, assets):
     rocks = []
     for obj in scene['objects']:
         asset = by_id[obj['asset_id']]
+        mesh_path = root / obj.get('mesh', asset['mesh'])
+        collision_path = root / obj.get('collision', asset['collision'])
         pose = ' '.join(f'{n:.12g}' for n in obj['xyz']+obj['rpy'])
         scale = ' '.join([str(obj['scale'])]*3)
         dusted = scene.get('dust_textures', {}).get(obj['asset_id'])
@@ -197,9 +199,9 @@ def write_world(root, scene, assets):
             maps = {f'{key}_map': root/path for key, path in asset['textures'].items()}
         rocks.append(f'''
 <model name="{obj['name']}"><static>true</static><pose>{pose}</pose><link name="link">
-<collision name="collision"><geometry><mesh><uri>{escape(str(root/asset['collision']))}</uri><scale>{scale}</scale></mesh></geometry>
+<collision name="collision"><geometry><mesh><uri>{escape(str(collision_path))}</uri><scale>{scale}</scale></mesh></geometry>
 <surface><friction><ode><mu>0.9</mu><mu2>0.8</mu2></ode></friction></surface></collision>
-<visual name="visual"><geometry><mesh><uri>{escape(str(root/asset['mesh']))}</uri><scale>{scale}</scale></mesh></geometry>
+<visual name="visual"><geometry><mesh><uri>{escape(str(mesh_path))}</uri><scale>{scale}</scale></mesh></geometry>
 {_material(maps, color)}<cast_shadows>true</cast_shadows></visual>
 </link><plugin filename="gz-sim-label-system" name="gz::sim::systems::Label"><label>{ROCK_LABEL}</label></plugin></model>''')
     light = scene['lighting']

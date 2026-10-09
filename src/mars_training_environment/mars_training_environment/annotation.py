@@ -133,10 +133,11 @@ class Annotator:
         cache = {}
         for obj in scene['objects']:
             asset = by_id[obj['asset_id']]
-            if asset['id'] not in cache:
-                mesh = json.loads((bundle/asset['geometry']).read_text())
-                cache[asset['id']] = np.asarray(mesh['vertices']),np.asarray(mesh['faces'],dtype=int)
-            v,f = cache[asset['id']]
+            geometry_path = obj.get('geometry', asset['geometry'])
+            if geometry_path not in cache:
+                mesh = json.loads((bundle/geometry_path).read_text())
+                cache[geometry_path] = np.asarray(mesh['vertices']),np.asarray(mesh['faces'],dtype=int)
+            v,f = cache[geometry_path]
             transformed = v @ rotation(obj['rpy']).T * obj['scale']+np.asarray(obj['xyz'])
             self.meshes.append((obj,transformed,f))
         self.scene = scene

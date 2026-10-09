@@ -107,6 +107,11 @@ def validate_dataset(root,bundle,require_complete=True):
     scenes = {s['id']:json.loads((bundle/'scenes'/s['id']/'scene.json').read_text()) for s in plan['scenes']}
     for s in scenes.values():
         errors.extend(validate_scene(s,assets))
+        for obj in s['objects']:
+            if 'geometry' in obj:
+                path = bundle / obj['geometry']
+                if not path.is_file() or digest(json.loads(path.read_text())) != obj['geometry_sha256']:
+                    errors.append(f'{s["id"]}/{obj["name"]}: object geometry missing or changed')
         if assignments[s['scene_group']]!=s['split']:
             errors.append(f'{s["id"]}: persisted split mismatch')
     records = []

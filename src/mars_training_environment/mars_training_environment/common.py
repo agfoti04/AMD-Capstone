@@ -89,6 +89,10 @@ def _validate_candidates(config):
             raise ValueError(f'Invalid candidate size {key}')
     if not float(cand['spot_scale']) > 0:
         raise ValueError('spot_scale must be positive')
+    if not 0.001 <= float(cand['slab_surface_height_m']) <= 0.05:
+        raise ValueError('slab_surface_height_m must be between 0.001 and 0.05 m')
+    if not 0 < float(cand['slab_embed_m']) <= 0.1 or not 0 < float(cand['slab_edge_blend_m']) <= 0.2:
+        raise ValueError('Invalid mudstone embedding depth or edge blend')
 
 
 def stable_numbers(value):
