@@ -12,6 +12,7 @@ four_wheel_sim/maze.py
 four_wheel_sim/maze_waypoints.py
 four_wheel_sim/odom_gt.py
 four_wheel_sim/path_runner.py
+four_wheel_sim/survey.py
 four_wheel_sim/worlds.py
 four_wheel_sim.egg-info/PKG-INFO
 four_wheel_sim.egg-info/SOURCES.txt
