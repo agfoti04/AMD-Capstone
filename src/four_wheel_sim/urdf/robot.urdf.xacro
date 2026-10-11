@@ -69,6 +69,10 @@
       <command_interface name="velocity"><param name="min">-20</param><param name="max">20</param></command_interface>
       <state_interface name="position"/><state_interface name="velocity"/>
     </joint>
+    <joint name="head_pan_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
   </ros2_control>
 
   <gazebo>
@@ -96,9 +100,26 @@
       <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
     </inertial>
   </link>
+  <link name="head_link">
+    <visual>
+      <geometry><cylinder radius="0.04" length="0.04"/></geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <mass value="0.2"/>
+      <inertia ixx="0.0002" iyy="0.0002" izz="0.0002" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="head_pan_joint" type="continuous">
+    <parent link="base_link"/><child link="head_link"/>
+    <origin xyz="0 0 0.1"/><axis xyz="0 0 1"/>
+    <limit effort="5" velocity="2.0"/>
+    <dynamics damping="0.1"/>
+  </joint>
+
   <joint name="camera_joint" type="fixed">
-    <parent link="base_link"/><child link="camera_link"/>
-    <origin xyz="0.2 0 0.12" rpy="0 0.1 0"/>
+    <parent link="head_link"/><child link="camera_link"/>
+    <origin xyz="0.05 0 0.03" rpy="0 0.2 0"/>
   </joint>
 
   

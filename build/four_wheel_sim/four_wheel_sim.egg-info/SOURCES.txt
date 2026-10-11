@@ -20,6 +20,7 @@ four_wheel_sim.egg-info/entry_points.txt
 four_wheel_sim.egg-info/requires.txt
 four_wheel_sim.egg-info/top_level.txt
 four_wheel_sim.egg-info/zip-safe
+launch/camera_control.py
 launch/gazebo.launch.py
 launch/rtab_demo.py
 launch/sim.launch.py

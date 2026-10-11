@@ -19,11 +19,13 @@ def main():
     rclpy.init()
     nav = BasicNavigator()
     nav.waitUntilNav2Active(localizer='bt_navigator')
-    nav.goToPose(pose(nav, GOAL[0], GOAL[1], 0.0))
+    from four_wheel_sim.worlds import LAWNMOWER
+    route = [pose(nav, x, y, yaw) for x, y, yaw in LAWNMOWER]
+    nav.followWaypoints(route)
     while not nav.isTaskComplete():
         fb = nav.getFeedback()
         if fb:
-            print(f'Distance remaining: {fb.distance_remaining:.2f} m')
+            print(f'Waypoint {fb.current_waypoint + 1}/{len(route)}')
     print('Result:', nav.getResult())
     nav.lifecycleShutdown()
     rclpy.shutdown()

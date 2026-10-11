@@ -33,6 +33,7 @@ setup(
             'maze_waypoints = four_wheel_sim.maze_waypoints:main',
             'odom_gt = four_wheel_sim.odom_gt:main',
             'cmd_filter = four_wheel_sim.cmd_filter:main',
+            'head_scanner = four_wheel_sim.camera_control:main'
         ],
     },
 )
