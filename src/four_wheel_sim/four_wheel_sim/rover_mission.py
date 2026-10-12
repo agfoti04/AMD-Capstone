@@ -57,6 +57,9 @@ class Rover(Node):
             t = self.buf.lookup_transform(self.frame, 'base_link', Time())
         except Exception:
             return None
+        age = (self.get_clock().now() - Time.from_msg(t.header.stamp)).nanoseconds / 1e9
+        if age > 0.5:
+            return None
         q, p = t.transform.rotation, t.transform.translation
         yaw = math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
         return p.x, p.y, yaw

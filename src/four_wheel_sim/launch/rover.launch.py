@@ -45,9 +45,9 @@ def generate_launch_description():
         package='four_wheel_sim', executable='rover_mission', output='screen',
         parameters=[{
             'use_sim_time': True,
-            'target_x': 2.0, 'target_y': -3.0,    # grid bottom-left corner
-            'grid_w': 8.0, 'grid_h': 6.0,         # lanes at y = -3, -1, 1, 3
-            'lane_spacing': 2.0, 'speed': 0.2, 'sweep': True,
+            'target_x': 1.5, 'target_y': -1.0,    # grid bottom-left corner
+            'grid_w': 2.5, 'grid_h': 2.0,         # lanes at y = -1, 0, 1
+            'lane_spacing': 1.0, 'speed': 0.2, 'sweep': True,
         }])])
 
     return LaunchDescription([
