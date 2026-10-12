@@ -19,7 +19,7 @@ def generate_launch_description():
             os.path.join(pkg, 'launch', 'gazebo.launch.py')))
 
     # 2. RTAB-Map, delayed so the robot and camera are publishing first
-    rtabmap = TimerAction(period=15.0, actions=[
+    rtabmap = TimerAction(period=10.0, actions=[
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(rtab_dir, 'launch', 'rtabmap.launch.py')),
@@ -39,13 +39,13 @@ def generate_launch_description():
             }.items())])
 
     # 3. RViz (rviz:=false to skip)
-    rviz = TimerAction(period=10.0, actions=[
-        Node(package='rviz2', executable='rviz2',
-             parameters=[{'use_sim_time': True}],
-             arguments=['-d', os.path.join(pkg, 'config', 'demo.rviz')],
-             condition=IfCondition(LaunchConfiguration('rviz')))])
+    # rviz = TimerAction(period=10.0, actions=[
+    #     Node(package='rviz2', executable='rviz2',
+    #          parameters=[{'use_sim_time': True}],
+    #          arguments=['-d', os.path.join(pkg, 'config', 'demo.rviz')],
+    #          condition=IfCondition(LaunchConfiguration('rviz')))])
 
     return LaunchDescription([
         DeclareLaunchArgument('rviz', default_value='true'),
-        gazebo, rtabmap, rviz,
+        gazebo, rtabmap,
     ])

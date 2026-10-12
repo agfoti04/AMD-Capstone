@@ -38,7 +38,7 @@
       <dynamics damping="0.0" friction="0.0"/>
     </joint>
     <gazebo reference="${name}_wheel">
-      <mu1>0.9</mu1><mu2>0.8</mu2>
+      <mu1>0.9</mu1><mu2>0.5</mu2>
       <fdir1>1 0 0</fdir1>
       <material>Gazebo/Black</material>
       <minDepth>0.001</minDepth>
