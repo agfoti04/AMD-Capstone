@@ -20,6 +20,13 @@ its own `rover-live-sim` container. It never stops the capture container.
 
 ## Deploy the patch
 
+The corrected archive includes the complete `rover_perception` package, including
+its ROS resource marker, `setup.cfg` and Python `__init__.py`. Earlier Halo source
+bundles did not include this package, so transferring only its modified files
+was insufficient. The deployment archive is now built and checked with
+`scripts/package_halo_live.py --verify-build`, which builds the package from a
+fresh extraction rather than from the developer checkout.
+
 In Windows PowerShell:
 
 ```powershell
@@ -36,6 +43,12 @@ tar -xzf ~/halo-live-vision-20261013.tar.gz -C ~/capstone-training/mars-pilot50-
 cd ~/capstone-training/mars-pilot50-v2
 ```
 
+Verify the package bootstrap files before rebuilding:
+
+```bash
+ls -l src/rover_perception/resource/rover_perception src/rover_perception/setup.cfg src/rover_perception/rover_perception/__init__.py
+```
+
 ```bash
 sudo docker run --rm --init \
   --user "$(id -u):$(id -g)" -e HOME=/tmp \
@@ -45,10 +58,13 @@ sudo docker run --rm --init \
     colcon --log-base log_jazzy build --base-paths src \
       --build-base build_jazzy --install-base install_jazzy \
       --packages-select four_wheel_sim rover_training rover_perception mars_training_environment
+    source /work/install_jazzy/setup.bash
+    ros2 pkg executables rover_perception
   '
 ```
 
-Require all four packages to finish. The Docker bridge uses ROS/OpenCV packages
+Require all four packages to finish and the executable listing to include
+`rover_perception live_bridge`. The Docker bridge uses ROS/OpenCV packages
 already needed for capture. Inference uses the existing host `rover-yolo`
 environment, so there is no need to reinstall PyTorch or ROCm inside Docker.
 
@@ -197,6 +213,9 @@ sudo docker stop rover-live-sim
   DISPLAY/X11 cookie access. The launcher's desktop checks explain missing access.
 - GPU inference fails: verify `rover-yolo` is active; `--device cpu --fps 2` is an
   explicit slower fallback for diagnosing the display/bridge separately.
+- Build cannot copy `resource/rover_perception`: retransfer and extract the
+  corrected archive, then check all three bootstrap files above and rebuild.
+  Creating the marker alone does not supply the missing namespace/install config.
 
 The 12 live camera/control tests passed on Windows and Linux. They cover
 color/stride handling, all-class output, HTTP inference and controls, stale
@@ -208,5 +227,9 @@ were planned locally with the production generator; the 30-view quota audit
 returned `errors: []`. The local Browser connection and Docker were
 unavailable; a complete GUI + real-checkpoint + Halo GPU test remains required
 on the actual Halo after training.
+
+Three deployment regression tests passed on Windows and Linux. The corrected
+archive also passed a package build from a fresh extraction, confirming that
+its Python package, ROS marker, console entry point and browser page are included.
 
 The inference options follow [Ultralytics' prediction documentation](https://docs.ultralytics.com/modes/predict/).
