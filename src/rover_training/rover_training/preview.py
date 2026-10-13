@@ -3,12 +3,15 @@
 import argparse
 from pathlib import Path
 
+from rover_training.geometry import CLASS_NAMES
 from rover_training.image_io import read_bmp, write_image
 from rover_training.yolo_export import read_label_file
 
 
 def preview_dataset(dataset_dir):
     dataset_dir = Path(dataset_dir)
+    classes_path = dataset_dir / 'classes.txt'
+    class_names = classes_path.read_text(encoding='utf-8').splitlines() if classes_path.exists() else CLASS_NAMES
     written = []
     for split in ("train", "val", "test"):
         image_dir = dataset_dir / "images" / split
@@ -19,7 +22,7 @@ def preview_dataset(dataset_dir):
                 continue
             label_path = dataset_dir / "labels" / split / f"{image_path.stem}.txt"
             width, height, rgb = load_rgb(image_path)
-            labels = read_label_file(label_path, width, height) if label_path.exists() else []
+            labels = read_label_file(label_path, width, height, class_names) if label_path.exists() else []
             painted = draw_boxes(rgb, width, height, labels)
             dest = dataset_dir / "previews" / split / image_path.stem
             written.append(write_image(dest, width, height, painted))
@@ -30,7 +33,7 @@ def preview_dataset(dataset_dir):
 _BOX_COLORS = {
     0: (40, 220, 60),
     1: (80, 210, 230),
-    2: (170, 170, 190),
+    2: (240, 200, 40),
     3: (40, 200, 230),
     4: (210, 210, 220),
     5: (70, 140, 230),

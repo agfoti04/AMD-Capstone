@@ -8,6 +8,13 @@ from pathlib import Path
 
 import numpy as np
 
+from rover_training.geometry import APPEARANCE_CLASSES, CLASS_NAMES
+
+
+def require_label_schema(document):
+    if document.get('class_names') != list(CLASS_NAMES):
+        raise ValueError('Scene/bundle uses another label schema; generate a fresh three-class bundle and dataset')
+
 
 def config_path():
     local = Path(__file__).resolve().parents[1] / 'config' / 'sample.json'
@@ -61,10 +68,32 @@ def read_config(path=None):
         raise ValueError('View distances must lie safely inside camera operating range')
     if not 0 <= config['labels']['min_visible_fraction'] <= 1 or not 0 < config['labels']['bbox_min_iou'] <= 1:
         raise ValueError('Invalid visible fraction or box IoU threshold')
+    for key in ('training_imgsz', 'target_min_side_px', 'difficult_view_every', 'planning_width'):
+        if type(cap[key]) is not int or cap[key] <= 0:
+            raise ValueError(f'{key} must be a positive integer')
+    if cap['planning_width'] < 160 or cap['training_imgsz'] % 32:
+        raise ValueError('Use planning_width >= 160 and training_imgsz divisible by 32')
+    if not 0 <= cap['target_margin_fraction'] < .4 or not 0 < cap['target_min_visible_fraction'] <= 1:
+        raise ValueError('Invalid target framing policy')
+    if cap['target_min_side_px'] >= cap['training_imgsz'] * (1-2*cap['target_margin_fraction']):
+        raise ValueError('Target minimum size exceeds the usable training image')
+    for key in ('depth_support_fraction', 'patch_support_fraction'):
+        if not 0 < config['labels'][key] <= 1:
+            raise ValueError(f'{key} must be in (0, 1]')
+    if not 0 < config['labels']['depth_support_tolerance_m'] <= .08:
+        raise ValueError('Use a depth support tolerance between 0 and 0.08 m')
+    if not isinstance(cap['require_visibility_check'], bool):
+        raise ValueError('require_visibility_check must be boolean')
+    if cap['require_visibility_check'] and not cap['require_depth_check']:
+        raise ValueError('Visibility checks require synchronized sensor depth')
     _validate_candidates(config)
-    seeds = config['dataset']['seeds']
-    if len(set(seeds)) != len(seeds) or any(not isinstance(s, int) or s < 0 for s in seeds):
-        raise ValueError('Seeds must be unique nonnegative integers')
+    for key in ('seeds', 'empty_seeds', 'rocks_only_seeds'):
+        seeds = config['dataset'][key]
+        if (not isinstance(seeds, list) or any(type(s) is not int or s < 0 for s in seeds)
+                or len(set(seeds)) != len(seeds)):
+            raise ValueError(f'{key} must contain unique nonnegative integer seeds')
+    if set(config['dataset']['empty_seeds']) & set(config['dataset']['rocks_only_seeds']):
+        raise ValueError('Empty and rocks-only seeds must be disjoint')
     return config
 
 
@@ -72,12 +101,12 @@ def _validate_candidates(config):
     cand = config.get('candidates')
     if not cand:
         return
-    known = {'silica_soil', 'pale_lookalike', 'sulfur_rock', 'pale_stone', 'cheyava_rock', 'veined_lookalike'}
+    known = set(APPEARANCE_CLASSES)
     if not isinstance(cand.get('enabled'), bool) or not isinstance(cand.get('exaggerated_spots'), bool):
         raise ValueError('Candidate toggles must be booleans')
     categories = cand.get('categories')
     if not isinstance(categories, list) or set(categories) - known:
-        raise ValueError('Unknown sampling-candidate category')
+        raise ValueError('Unsupported three-class appearance category')
     for key in ('silica_count', 'pale_lookalike_count', 'sulfur_count', 'pale_stone_count',
                 'cheyava_count', 'veined_lookalike_count'):
         lo, hi = cand[key]

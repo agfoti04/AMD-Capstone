@@ -1,0 +1,9 @@
+# Run in the existing rover-yolo Conda environment; supply model= and data=.
+task: detect
+mode: train
+imgsz: 960
+batch: 4
+epochs: 30
+rect: false
+seed: 0
+plots: true

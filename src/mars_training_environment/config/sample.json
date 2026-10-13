@@ -21,8 +21,7 @@
   },
   "candidates": {
     "enabled": true,
-    "categories": ["silica_soil", "pale_lookalike", "sulfur_rock", "pale_stone",
-                   "cheyava_rock", "veined_lookalike"],
+    "categories": ["silica_soil", "pale_lookalike", "sulfur_rock", "pale_stone", "cheyava_rock", "veined_lookalike"],
     "silica_count": [1, 2], "pale_lookalike_count": [1, 2], "silica_size_m": [0.40, 1.20],
     "sulfur_count": [1, 2], "pale_stone_count": [2, 4], "sulfur_size_m": [0.08, 0.16],
     "cheyava_count": [1, 1], "veined_lookalike_count": [1, 1], "cheyava_size_m": [0.75, 1.05],
@@ -39,13 +38,18 @@
     "camera_info_topic": "/oak/camera_info", "boxes_topic": "/oak/boxes"
   },
   "capture": {
-    "views_per_scene": 10, "distance_m": [0.95, 3.2],
+    "views_per_scene": 10, "distance_m": [1.8, 3.2],
+    "training_imgsz": 960, "target_margin_fraction": 0.10,
+    "target_min_visible_fraction": 0.70, "target_min_side_px": 24,
+    "difficult_view_every": 5, "planning_width": 384,
     "settle_sim_sec": 0.7, "timeout_wall_sec": 180.0,
     "max_pose_gap_sec": 0.06, "save_depth": false, "previews": true,
-    "require_depth_check": true, "require_bbox_check": true
+    "require_depth_check": true, "require_bbox_check": true,
+    "require_visibility_check": true
   },
   "labels": {"min_visible_pixels": 24, "min_box_side_px": 5, "min_visible_fraction": 0.30,
-             "bbox_min_iou": 0.5},
+             "bbox_min_iou": 0.5, "depth_support_fraction": 0.90,
+             "depth_support_tolerance_m": 0.03, "patch_support_fraction": 0.85},
   "dataset": {"seeds": [100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119],
-              "empty_seeds": [100,110,117]}
+              "empty_seeds": [100,110,117], "rocks_only_seeds": [102,107,108,114]}
 }

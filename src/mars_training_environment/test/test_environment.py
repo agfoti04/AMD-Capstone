@@ -13,13 +13,15 @@ from mars_training_environment.annotation import Annotator, compare_boxes, label
 from mars_training_environment.candidates import (
     drape_mesh, mudstone_texture, paint_ground_regions, stone_texture, terrain_slab_mesh, world_to_pixels)
 from mars_training_environment.common import digest, quaternion, read_config, rotation, split_for_seed, write_json
-from mars_training_environment.generate import make_scene
+from mars_training_environment.generate import generate_bundle, make_scene
+from mars_training_environment.dataset import capture_bundle
 from mars_training_environment.dust import dust_images
 from mars_training_environment.ground import broad_field, composite_ground, periodic_field
 from mars_training_environment.meshes import build_ground, build_library, read_collada, sphere_mesh, write_dae
 from mars_training_environment.robot import sync_mast
 from mars_training_environment.terrain import Terrain, generate_terrain
 from mars_training_environment.validate import validate_scene
+from rover_training.geometry import class_id_for
 
 
 K = {'width':80,'height':60,'fx':50.,'fy':50.,'cx':40.,'cy':30.}
@@ -277,11 +279,32 @@ class GenerationTests(unittest.TestCase):
 
     def test_terrain_texture_coordinates_tile_at_the_configured_scale(self):
         ns = {'c':'http://www.collada.org/2005/11/COLLADASchema'}
-        dae = ET.parse(self.root/'scenes'/self.scene['id']/'terrain.dae')
+        empty = make_scene(self.root,self.config,100,self.assets)
+        dae = ET.parse(self.root/'scenes'/empty['id']/'terrain.dae')
         uv = np.fromstring(dae.find(".//c:source[@id='uv']/c:float_array",ns).text,sep=' ').reshape(-1,2)
         size, tile = self.config['terrain']['size_m'], self.config['terrain']['texture_tile_m']
         np.testing.assert_allclose(uv.min(axis=0), [-size/2/tile]*2)
         np.testing.assert_allclose(uv.max(axis=0), [size/2/tile]*2)
+
+    def test_painted_ground_uses_world_uvs_and_labels_match_appearance_mask(self):
+        ns = {'c':'http://www.collada.org/2005/11/COLLADASchema'}
+        dae = ET.parse(self.root/'scenes'/self.scene['id']/'terrain.dae')
+        uv = np.fromstring(dae.find(".//c:source[@id='uv']/c:float_array",ns).text,sep=' ').reshape(-1,2)
+        np.testing.assert_allclose(uv.min(axis=0),[0,0])
+        np.testing.assert_allclose(uv.max(axis=0),[1,1])
+        from rover_training.geometry import nominal_intrinsics
+        from mars_training_environment.framing import configured_extrinsics
+        annotator = Annotator(self.root,self.scene)
+        view = next(v for v in self.scene['views'] if v['target_class_id']==1 and not v['difficult'])
+        xyz = view['xyz'][:2]+[view['xyz'][2]-.01]
+        k = nominal_intrinsics(384,216,self.config['camera']['horizontal_fov_rad'])
+        annotator.annotate(xyz,quaternion(view['rpy']),configured_extrinsics(self.config['camera']),k)
+        observed = annotator.last_expected_depth.copy()
+        labels, _records, quality, _instances = annotator.annotate(
+            xyz,quaternion(view['rpy']),configured_extrinsics(self.config['camera']),k,observed)
+        check = next(c for c in quality['visibility_check']['objects'] if c['name']==view['target_name'])
+        self.assertTrue(check['passed'],check)
+        self.assertGreaterEqual(check['paint_support_fraction'],.85)
 
     def test_pose_quaternion_matches_the_placement_rotation(self):
         rpy = (0.2, -0.35, 1.1)
@@ -306,13 +329,16 @@ class GenerationTests(unittest.TestCase):
 
     def test_sampling_sites_mix_into_scenes_and_stay_out_of_empty_ones(self):
         classes = {obj.get('class_name') for obj in self.scene['objects']}
-        self.assertTrue({'sulfur_rock', 'pale_stone', 'cheyava_rock', 'veined_lookalike'} <= classes)
+        self.assertEqual(classes, {None, 'sulfur_rock', 'pale_stone', 'cheyava_rock', 'veined_lookalike'})
+        self.assertEqual(self.scene['class_names'], ['rock', 'pale_soil_patch', 'yellow_crystal_rock'])
+        self.assertEqual(self.scene['kind'], 'mixed')
         self.assertEqual({region['class_name'] for region in self.scene['regions']}, {'silica_soil', 'pale_lookalike'})
         self.assertTrue((self.root/'scenes'/self.scene['id']/'candidate_mask.png').is_file())
         self.assertTrue(all(view['id'].startswith('view_') for view in self.scene['views']))
         self.assertTrue(self.scene['appearance_notes'])
         self.assertTrue(any('not chemical' in note for note in self.scene['appearance_notes']))
         empty = make_scene(self.root, self.config, 100, self.assets)
+        self.assertEqual(empty['kind'], 'empty')
         self.assertEqual(empty['regions'], [])
         self.assertFalse(any(obj.get('class_name') for obj in empty['objects']))
         sulfur = next(obj for obj in self.scene['objects'] if obj.get('class_name') == 'sulfur_rock')
@@ -320,10 +346,81 @@ class GenerationTests(unittest.TestCase):
         self.assertFalse(sulfur['exaggerated_analogue'])
         self.assertTrue((self.root/sulfur['material_maps']['albedo']).is_file())
 
+    def test_rocks_only_scenes_keep_density_and_pale_stone_variation(self):
+        for seed in self.config['dataset']['rocks_only_seeds']:
+            scene = make_scene(self.root, self.config, seed, self.assets)
+            self.assertEqual(scene['kind'], 'rocks_only')
+            self.assertFalse(scene['empty'])
+            self.assertEqual(scene['regions'], [])
+            self.assertEqual({class_id_for(o.get('class_name', 'rock')) for o in scene['objects']}, {0})
+            normal = [o for o in scene['objects'] if o['name'].startswith('rock_')]
+            pale = [o for o in scene['objects'] if o.get('class_name') == 'pale_stone']
+            self.assertFalse(any(o['asset_id'].startswith('cand_') for o in normal))
+            self.assertTrue(38 <= len(normal) <= 55)
+            self.assertTrue(2 <= len(pale) <= 4)
+            self.assertEqual(validate_scene(scene, self.assets), [])
+
+    def test_label_reduction_keeps_clutter_and_randomization_settings(self):
+        normal = [o for o in self.scene['objects'] if o['name'].startswith('rock_')]
+        self.assertTrue(38 <= len(normal) <= 55)
+        config = read_config()
+        self.assertEqual(config['rocks']['count_range'], [38, 55])
+        self.assertEqual(config['rocks']['burial_fraction'], [.22, .44])
+        for key, expected in [('silica_count', [1, 2]), ('pale_lookalike_count', [1, 2]),
+                              ('sulfur_count', [1, 2]), ('pale_stone_count', [2, 4]),
+                              ('cheyava_count', [1, 1]), ('veined_lookalike_count', [1, 1])]:
+            self.assertEqual(config['candidates'][key], expected)
+        # Placement still samples sizes, burial depths and orientations.
+        for key in ('scale', 'burial_fraction'):
+            self.assertGreater(len({o[key] for o in normal}), 10)
+        self.assertGreater(len({tuple(o['rpy']) for o in normal}), 10)
+
+    def test_old_schema_is_rejected_before_capture_or_bundle_rewrite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp)/'old_bundle'
+            write_json(bundle/'plan.json', {'class_names':['rock', 'silica_soil', 'sulfur_rock']})
+            output = Path(tmp)/'capture'
+            with self.assertRaisesRegex(ValueError, 'another label schema'):
+                capture_bundle(bundle, output)
+            self.assertFalse(output.exists())
+            with self.assertRaisesRegex(ValueError, 'another label schema'):
+                generate_bundle(bundle, self.config)
+        stale = dict(self.scene)
+        stale.pop('class_names')
+        with self.assertRaisesRegex(ValueError, 'another label schema'):
+            Annotator(self.root, stale)
+
+    def test_invalid_scene_modes_and_unknown_categories_rejected(self):
+        path = self.root/'bad_modes.json'
+        for override in ({'dataset':{'rocks_only_seeds':[100]}},
+                         {'dataset':{'rocks_only_seeds':[102, 102]}},
+                         {'candidates':{'categories':['unknown_feature']}}):
+            path.write_text(json.dumps(override))
+            with self.assertRaises(ValueError):
+                read_config(path)
+
     def test_configured_seeds_cover_every_split(self):
         counts = Counter(split_for_seed(seed) for seed in self.config['dataset']['seeds'])
         self.assertEqual(set(counts), {'train', 'val', 'test'})
         self.assertTrue(set(self.config['dataset']['empty_seeds']) <= set(self.config['dataset']['seeds']))
+        rocks_only = set(self.config['dataset']['rocks_only_seeds'])
+        empty = set(self.config['dataset']['empty_seeds'])
+        self.assertEqual({split_for_seed(seed) for seed in rocks_only}, {'train', 'val', 'test'})
+        self.assertEqual((len(set(self.config['dataset']['seeds']) - empty - rocks_only),
+                          len(rocks_only), len(empty)), (13, 4, 3))
+
+    def test_every_populated_view_has_framed_target_and_one_difficult_view_per_five(self):
+        self.assertEqual(self.scene['schema_version'],5)
+        self.assertEqual(sum(v['difficult'] for v in self.scene['views']),2)
+        for view in self.scene['views']:
+            self.assertTrue(view['target_name'])
+            self.assertTrue(view['planned_framing']['passed'])
+            self.assertEqual(view['planning_resolution'],[1920,1080])
+            minimum = 12 if view['difficult'] else 24
+            self.assertGreaterEqual(view['planned_framing']['side_at_training_px'],minimum+2)
+            if not view['difficult']:
+                self.assertGreaterEqual(view['planned_framing']['visible_fraction'],.7)
+                self.assertGreaterEqual(view['planned_framing']['side_at_training_px'],24)
 
     def test_default_config_uses_scanned_rocks_and_ground(self):
         config = read_config()
@@ -568,8 +665,24 @@ class CandidateTests(unittest.TestCase):
         objects = [{'name':'silica_soil_000','asset_id':'silica_soil','class_name':'silica_soil','source':'ground_region'}]
         labels, _records = labels_from_instances(instances, [400], objects, POLICY)
         self.assertEqual(labels[0]['class_id'], 1)
-        self.assertEqual(labels[0]['class_name'], 'silica_soil')
+        self.assertEqual(labels[0]['class_name'], 'pale_soil_patch')
+        self.assertEqual(labels[0]['appearance_name'], 'silica_soil')
         self.assertEqual(labels[0]['source'], 'ground_region')
+
+    def test_appearance_variants_merge_without_merging_instances(self):
+        appearances = ['rock', 'pale_stone', 'silica_soil', 'pale_lookalike', 'sulfur_rock',
+                       'cheyava_rock', 'veined_lookalike']
+        instances = np.zeros((60, 80), int)
+        objects = []
+        for i, name in enumerate(appearances):
+            instances[10:20, 2+i*11:12+i*11] = i+1
+            objects.append({'name':f'object_{i}', 'asset_id':name, 'class_name':name})
+        labels, records = labels_from_instances(instances, [100]*7, objects, POLICY)
+        self.assertEqual([label['class_id'] for label in labels], [0, 0, 1, 1, 2, 0, 0])
+        self.assertEqual([label['class_name'] for label in labels],
+                         ['rock', 'rock', 'pale_soil_patch', 'pale_soil_patch', 'yellow_crystal_rock', 'rock', 'rock'])
+        self.assertEqual([record['appearance_name'] for record in records], appearances)
+        self.assertEqual(len({label['name'] for label in labels}), 7)
 
 
 if __name__ == '__main__':

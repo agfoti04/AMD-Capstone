@@ -8,14 +8,19 @@ from pathlib import Path
 
 import numpy as np
 
-from rover_training.geometry import CLASS_NAMES
-from .common import digest, split_for_seed, write_json
+from rover_training.geometry import CLASS_NAMES, class_id_for
+from .common import digest, require_label_schema, split_for_seed, write_json
 from .terrain import Terrain
+from .quality import frame_checks
 
 
 def validate_scene(scene,assets):
     errors = []
     ident = scene['id']
+    try:
+        require_label_schema(scene)
+    except ValueError as exc:
+        errors.append(f'{ident}: {exc}')
     document = dict(scene)
     expected = document.pop('content_sha256')
     if digest(document)!=expected:
@@ -34,6 +39,8 @@ def validate_scene(scene,assets):
         errors.append(f'{ident}: spawn pad is not at zero')
     by_id = {a['id']:a for a in assets}
     for index,obj in enumerate(scene['objects']):
+        if class_id_for(obj.get('class_name', 'rock')) not in (0, 2):
+            errors.append(f'{ident}: invalid mesh appearance class')
         if obj['asset_id'] not in by_id:
             errors.append(f'{ident}: unknown asset')
             continue
@@ -49,12 +56,23 @@ def validate_scene(scene,assets):
     if scene['empty'] and scene['objects']:
         errors.append(f'{ident}: empty scene has rocks')
     for region in scene.get('regions', []):
-        if region.get('class_name') not in CLASS_NAMES or region.get('source') != 'ground_region':
+        if class_id_for(region.get('class_name')) != 1 or region.get('source') != 'ground_region':
             errors.append(f'{ident}: invalid ground candidate')
         if math.hypot(*region['xyz'][:2]) - region['radius_m'] < scene['config']['terrain']['spawn_clearance_m']:
             errors.append(f'{ident}: sampling patch encroaches on spawn clearance')
     if scene['empty'] and scene.get('regions'):
         errors.append(f'{ident}: empty scene has sampling patches')
+    has_sites = bool(scene.get('regions')) or any(class_id_for(o.get('class_name', 'rock')) == 2
+                                                 for o in scene['objects'])
+    expected_kind = 'empty' if scene['empty'] else ('mixed' if has_sites else 'rocks_only')
+    if scene.get('kind') != expected_kind:
+        errors.append(f'{ident}: scene kind does not match its contents')
+    if scene['seed'] in scene['config']['dataset'].get('rocks_only_seeds', []) and has_sites:
+        errors.append(f'{ident}: rocks-only scene has sampling sites')
+    if scene.get('schema_version', 0) >= 5:
+        for view in scene['views']:
+            if not scene['empty'] and (not view.get('target_name') or not view.get('planned_framing', {}).get('passed')):
+                errors.append(f'{ident}/{view["id"]}: target framing was not planned')
     return errors
 
 
@@ -95,9 +113,13 @@ def contact_sheet(root,records):
 def validate_dataset(root,bundle,require_complete=True):
     root,bundle = Path(root),Path(bundle)
     plan = json.loads((bundle/'plan.json').read_text())
+    require_label_schema(plan)
     assignments = json.loads((bundle/'splits.json').read_text())
     assets = json.loads((bundle/'assets/catalog.json').read_text())
     errors = []
+    classes_path = root/'classes.txt'
+    if not classes_path.is_file() or classes_path.read_text().splitlines() != list(CLASS_NAMES):
+        errors.append('Dataset class index does not match the three-class schema')
     if digest(assets) != json.loads((bundle/'scenes'/plan['scenes'][0]['id']/'scene.json').read_text())['assets_sha256']:
         errors.append('Asset catalog changed after generation')
     for asset in assets:
@@ -156,6 +178,13 @@ def validate_dataset(root,bundle,require_complete=True):
             if len(parts)!=5 or parts[0] not in {str(i) for i in range(len(CLASS_NAMES))}:
                 errors.append(f'{file.name}: invalid YOLO row')
                 continue
+            if index < len(r['labels']):
+                label_record = r['labels'][index]
+                class_id = int(parts[0])
+                if (label_record.get('class_id') != class_id
+                        or label_record.get('class_name') != CLASS_NAMES[class_id]
+                        or class_id_for(label_record.get('appearance_name')) != class_id):
+                    errors.append(f'{file.name}: metadata/label class mismatch')
             xc,yc,bw,bh = map(float,parts[1:])
             if not all(math.isfinite(v) for v in (xc,yc,bw,bh)) or min(bw,bh)<=0:
                 errors.append(f'{file.name}: nonfinite or empty box')
@@ -180,6 +209,13 @@ def validate_dataset(root,bundle,require_complete=True):
         tiny += sum(o['rejected_reason'] in ('too_small','too_few_visible_pixels') for o in r['objects'])
         if r.get('depth_quality',{}).get('rock_depth_median_error_m',0)>.08:
             errors.append(f'{file.name}: geometric depth mismatch')
+        if s.get('schema_version', 0) >= 5:
+            view = next((v for v in s['views'] if v['id'] == r['view']), {})
+            checks = frame_checks(view, r['labels'], r.get('depth_quality', {}), intrinsics, s['config']['capture'])
+            if not checks['passed']:
+                errors.append(f'{file.name}: capture checks failed: {checks["errors"]}')
+            if not r.get('capture_checks', {}).get('passed'):
+                errors.append(f'{file.name}: capture acceptance marker missing')
         check = r.get('bbox_check')
         if check is None:
             if s['config']['capture'].get('require_bbox_check'):
@@ -234,6 +270,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     report = validate_dataset(args.dataset,args.bundle,not args.allow_partial)
     write_json(args.dataset/'validation.json',report)
+    from .review import write_review_page
+    write_review_page(args.dataset)
     print(json.dumps(report,indent=2))
     raise SystemExit(bool(report['errors']))
 

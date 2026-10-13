@@ -8,9 +8,9 @@ from pathlib import Path
 
 import numpy as np
 
-from rover_training.geometry import camera_rigid_from_base, class_id_for
-from .candidates import drape_mesh
-from .common import rotation
+from rover_training.geometry import CLASS_NAMES, camera_rigid_from_base, class_id_for
+from .candidates import drape_mesh, world_to_pixels, _inside
+from .common import require_label_schema, rotation
 from .terrain import Terrain
 
 
@@ -64,7 +64,7 @@ def _rasterize_small(tri, output, fx, fy, cx, cy):
 
 
 def rasterize(vertices, faces, intrinsics, near, far, batch_small=True):
-    """Return optical-axis depth at pixel centers, infinity for empty pixels."""
+    """Optical-axis depth with Ogre2 RGB-D near-Z and radial-far clipping."""
     h,w = int(intrinsics['height']),int(intrinsics['width'])
     output = np.full((h,w), np.inf, dtype=np.float32)
     vertices = np.asarray(vertices)
@@ -119,11 +119,56 @@ def rasterize(vertices, faces, intrinsics, near, far, batch_small=True):
             z = np.where(inside & (inv_z>0), 1/np.maximum(inv_z,1e-12), np.inf)
             region = output[y0:y1+1,x0:x1+1]
             np.minimum(region, z, out=region)
+    # Ogre2's RGB-D depth shader clips by length(point) at the far boundary,
+    # while retaining optical-axis depth in the published image. Its near
+    # boundary uses forward depth. Pure Z clipping invents off-axis objects
+    # that the sensor replaces with background RGB and infinite depth.
+    yy, xx = np.nonzero(np.isfinite(output))
+    z = output[yy,xx]
+    distance = z*np.sqrt(1+((xx+.5-cx)/fx)**2+((yy+.5-cy)/fy)**2)
+    clipped = (distance>far-1e-6)|(z<near+1e-6)
+    output[yy[clipped],xx[clipped]] = np.inf
     return output
+
+
+def ground_region_instances(terrain_depth, occluded, regions, cam_r, cam_t, intrinsics, size_m, paint_mask=None):
+    """Assign painted regions to real terrain ray hits, never a lifted mesh.
+
+    Use the terrain-only raster for projected support, then remove pixels
+    covered by physical meshes. A region on the far side of a ridge cannot
+    produce a label above the terrain silhouette or over foreground ground.
+    The painted category mask further clips region boundaries after generation.
+    """
+    instances = np.zeros(terrain_depth.shape,dtype=np.int32)
+    yy, xx = np.nonzero(np.isfinite(terrain_depth))
+    if not len(xx):
+        return instances, [0]*len(regions)
+    z = terrain_depth[yy,xx]
+    optical = np.column_stack([(xx+.5-intrinsics['cx'])/intrinsics['fx']*z,
+                               (yy+.5-intrinsics['cy'])/intrinsics['fy']*z,z])
+    world = (optical-np.asarray(cam_t)) @ np.asarray(cam_r)
+    projected = []
+    for ident, region in enumerate(regions,1):
+        polygon = np.asarray(region['polygon_xy'],dtype=float)
+        lower, upper = polygon.min(axis=0), polygon.max(axis=0)
+        candidates = np.flatnonzero(((world[:,:2]>=lower)&(world[:,:2]<=upper)).all(axis=1))
+        selected = candidates[_inside(polygon,world[candidates,:2])]
+        if paint_mask is not None and len(selected):
+            col, row = world_to_pixels(world[selected,:2],size_m,paint_mask.shape[1])
+            col, row = np.rint(col).astype(int), np.rint(row).astype(int)
+            inside = (col>=0)&(col<paint_mask.shape[1])&(row>=0)&(row<paint_mask.shape[0])
+            matching = np.zeros(len(selected),bool)
+            matching[inside] = paint_mask[row[inside],col[inside]] == region['mask_id']
+            selected = selected[matching]
+        projected.append(len(selected))
+        visible = selected[~occluded[yy[selected],xx[selected]]]
+        instances[yy[visible],xx[visible]] = ident
+    return instances, projected
 
 
 class Annotator:
     def __init__(self, bundle, scene):
+        require_label_schema(scene)
         bundle = Path(bundle)
         assets = json.loads((bundle/'assets/catalog.json').read_text())
         by_id = {a['id']:a for a in assets}
@@ -143,6 +188,14 @@ class Annotator:
         self.scene = scene
         self.regions = list(scene.get('regions', []))
         self.field = Terrain(t['heights'], t['size_m'])
+        self.region_meshes = [drape_mesh(self.field, region['polygon_xy']) for region in self.regions]
+        self.paint_mask = None
+        if scene.get('ground', {}).get('candidate_mask'):
+            import cv2
+            mask_path = bundle/'scenes'/scene['id']/scene['ground']['candidate_mask']
+            self.paint_mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+            if self.paint_mask is None:
+                raise FileNotFoundError(f'Missing ground appearance mask: {mask_path}')
 
     def annotate(self, base_xyz, base_quat, extrinsics, intrinsics, observed_depth=None):
         cam_r,cam_t = camera_rigid_from_base(base_xyz,base_quat,extrinsics)
@@ -151,6 +204,7 @@ class Annotator:
         near,far = camera['near_m'],camera['far_m']
         v,f = self.terrain
         zbuffer = rasterize(v @ r.T+t, f, intrinsics, near, far)
+        terrain_depth = zbuffer.copy() if self.regions else None
         instances = np.zeros(zbuffer.shape,dtype=np.int32)
         projected = []
         for ident,(obj,v,f) in enumerate(self.meshes,1):
@@ -162,20 +216,19 @@ class Annotator:
             projected.append(count)
         labels,objects = labels_from_instances(instances,projected,[m[0] for m in self.meshes],
                                                 self.scene['config']['labels'])
+        all_instances = instances.copy()
         if self.regions:
-            region_instances = np.zeros(zbuffer.shape, dtype=np.int32)
-            region_projected = []
-            for ident, region in enumerate(self.regions, 1):
-                rv, rf = drape_mesh(self.field, region['polygon_xy'])
-                depth = rasterize(rv @ r.T + t, rf, intrinsics, near, far)
-                region_projected.append(int(np.isfinite(depth).sum()))
-                visible = np.isfinite(depth) & (depth < zbuffer - 1e-4)
-                region_instances[visible] = ident
+            region_instances, region_projected = ground_region_instances(
+                terrain_depth,instances>0,self.regions,r,t,intrinsics,self.field.size,self.paint_mask)
             region_labels, region_records = labels_from_instances(
                 region_instances, region_projected, self.regions, self.scene['config']['labels'])
             labels.extend(region_labels)
             objects.extend(region_records)
-        quality = {}
+            ground = region_instances > 0
+            all_instances[ground] = region_instances[ground] + len(self.meshes)
+        quality = {'camera_range_model':'ogre2_rgbd_radial_far'}
+        if self.regions:
+            quality['ground_region_projection'] = 'visible_terrain_surface'
         if observed_depth is not None:
             observed = np.asarray(observed_depth).reshape(zbuffer.shape)
             valid = np.isfinite(observed)&(observed>near)&(observed<far)&np.isfinite(zbuffer)
@@ -185,7 +238,120 @@ class Annotator:
                     quality[name+'_depth_median_error_m'] = float(np.median(errors))
                     quality[name+'_depth_p95_error_m'] = float(np.percentile(errors,95))
                     quality[name+'_compared_pixels'] = len(errors)
+        checks = instance_depth_support(all_instances, zbuffer, observed_depth, objects, labels,
+                                        self.scene['config']['labels'], near, far)
+        if self.paint_mask is not None and self.regions:
+            for ident, region in enumerate(self.regions, len(self.meshes)+1):
+                mask = all_instances == ident
+                check = next((c for c in checks if c['name'] == region['name']), None)
+                if check is None or not mask.any():
+                    continue
+                yy, xx = np.nonzero(mask)
+                surface_depth = zbuffer[mask]
+                finite_surface = np.isfinite(surface_depth)
+                z = np.where(finite_surface,surface_depth,0.)
+                optical = np.column_stack([(xx+.5-intrinsics['cx'])/intrinsics['fx']*z,
+                                           (yy+.5-intrinsics['cy'])/intrinsics['fy']*z, z])
+                world = (optical-t) @ r
+                col, row = world_to_pixels(world[:, :2], self.field.size, self.paint_mask.shape[1])
+                col, row = np.rint(col).astype(int), np.rint(row).astype(int)
+                inside = finite_surface&(col>=0)&(col<self.paint_mask.shape[1])&(row>=0)&(row<self.paint_mask.shape[0])
+                matching = np.zeros(len(col), bool)
+                matching[inside] = self.paint_mask[row[inside], col[inside]] == region['mask_id']
+                check['paint_support_fraction'] = float(matching.mean())
+                if check['paint_support_fraction'] < self.scene['config']['labels'].get('patch_support_fraction', .85):
+                    check['reasons'].append('ground_appearance_mask_mismatch')
+                    check['passed'] = False
+        by_name = {check['name']:check for check in checks}
+        for record in labels + objects:
+            if record['name'] in by_name:
+                record['visibility_check'] = by_name[record['name']]
+        quality['visibility_check'] = {'checked': observed_depth is not None, 'objects': checks,
+                                       'failures': [c['name'] for c in checks if not c['passed']]}
+        self.last_instances, self.last_expected_depth = all_instances, zbuffer
         return labels,objects,quality,instances
+
+
+def instance_depth_support(instances, expected, observed, objects, labels, policy, near, far):
+    """Check every exported object mask, including invalid/missing sensor pixels.
+
+    Checking the full rectangle would count unrelated ground as evidence.
+    The instance mask and the expected surface depth are the comparison inputs.
+    """
+    observed = None if observed is None else np.asarray(observed).reshape(expected.shape)
+    retained = {label['name'] for label in labels}
+    checks = []
+    tolerance = policy.get('depth_support_tolerance_m', .03)
+    required = policy.get('depth_support_fraction', .9)
+    for ident, obj in enumerate(objects, 1):
+        if obj['name'] not in retained:
+            continue
+        mask = instances == ident
+        count = int(mask.sum())
+        sensor_valid = np.zeros(count, bool) if observed is None else (
+            np.isfinite(observed[mask]) & (observed[mask]>near) & (observed[mask]<far))
+        valid = sensor_valid & np.isfinite(expected[mask])
+        errors = np.abs(observed[mask][valid]-expected[mask][valid]) if observed is not None else np.array([])
+        supported = int((errors<=tolerance).sum())
+        fraction = supported/max(count, 1)
+        reasons = []
+        if observed is None:
+            reasons.append('sensor_depth_missing')
+        elif fraction < required:
+            reasons.append('insufficient_sensor_depth_support')
+        checks.append({'name':obj['name'], 'source':obj.get('source', 'mesh'),
+                       'visible_pixels':count, 'valid_depth_pixels':int(valid.sum()),
+                       'sensor_valid_depth_pixels':int(sensor_valid.sum()),
+                       'supported_pixels':supported, 'support_fraction':fraction,
+                       'median_error_m':float(np.median(errors)) if len(errors) else None,
+                       'passed':not reasons, 'reasons':reasons})
+    return checks
+
+
+def check_sky_rgb(rgb, instances, objects, checks):
+    """Flag an exported mask containing only the uniform rendered sky color.
+
+    Use this extra check only when the top border supplies an unambiguous sky
+    sample. A flat rock material alone is never evidence of a bad label.
+    """
+    h, w = instances.shape
+    image = np.frombuffer(rgb, dtype=np.uint8).reshape(h, w, 3).astype(np.int16)
+    border = image[:min(8,h), ::8].reshape(-1, 3)
+    sky = np.median(border, axis=0)
+    if np.mean(np.max(np.abs(border-sky), axis=1)<=2) < .98:
+        return
+    by_name = {obj['name']:i for i,obj in enumerate(objects, 1)}
+    for check in checks:
+        pixels = image[instances == by_name[check['name']]]
+        fraction = float(np.mean(np.max(np.abs(pixels-sky), axis=1)<=2)) if len(pixels) else 0.
+        check['sky_rgb_fraction'] = fraction
+        if fraction >= .98:
+            check['reasons'].append('label_covers_only_sky_rgb')
+            check['passed'] = False
+
+
+def discard_confirmed_sky_labels(labels, objects, quality):
+    """Remove mesh labels with sky RGB and no sensor surface; keep the audit.
+
+    Other failed visibility checks remain fatal. In particular, finite sensor
+    depth at the wrong distance cannot silently remove a real visible target.
+    The capture framing check still rejects a discarded primary target.
+    """
+    visibility = quality['visibility_check']
+    rejected = [check for check in visibility['objects']
+                if visibility['checked'] and not check['passed']
+                and check.get('source') == 'mesh' and check['visible_pixels'] > 0
+                and check.get('sensor_valid_depth_pixels') == 0
+                and {'insufficient_sensor_depth_support', 'label_covers_only_sky_rgb'}
+                <= set(check['reasons'])]
+    names = {check['name'] for check in rejected}
+    for obj in objects:
+        if obj['name'] in names:
+            obj['rejected_reason'] = 'renderer_invisible_sky'
+    visibility['objects'] = [check for check in visibility['objects'] if check['name'] not in names]
+    visibility['rejected_objects'] = visibility.get('rejected_objects', []) + rejected
+    visibility['failures'] = [check['name'] for check in visibility['objects'] if not check['passed']]
+    return [label for label in labels if label['name'] not in names]
 
 
 def iou(a, b):
@@ -275,7 +441,8 @@ def labels_from_instances(instances, projected, objects, policy):
         class_id = class_id_for(class_name)
         if class_id is None:
             raise ValueError(f'Unknown label class {class_name}')
-        record = {'name':obj['name'],'asset_id':obj['asset_id'],'class_name':class_name,
+        record = {'name':obj['name'],'asset_id':obj['asset_id'],'class_name':CLASS_NAMES[class_id],
+                  'appearance_name':class_name,
                   'source':obj.get('source', 'mesh'),'projected_pixels':total,'visible_pixels':count,
                   'visible_fraction':fraction,'rejected_reason':reason,'bbox_xyxy':bounds,
                   'truncated': bool(bounds and (bounds[0]==0 or bounds[1]==0 or bounds[2]==w or bounds[3]==h))}

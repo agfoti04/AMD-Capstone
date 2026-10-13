@@ -1,0 +1,10 @@
+{
+  "capture": {
+    "views_per_scene": 5
+  },
+  "dataset": {
+    "seeds": [101, 102, 103, 104, 105, 107, 110, 114, 115, 118],
+    "empty_seeds": [110],
+    "rocks_only_seeds": [102, 107, 114]
+  }
+}

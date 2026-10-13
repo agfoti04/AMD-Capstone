@@ -11,6 +11,20 @@ The default world is 20 m by 20 m. Size, relief, rock counts, lighting, and
 camera settings come from `config/sample.json`. Earth gravity (`0 0 -9.81`)
 stays on, because the physical rover is tested on Earth.
 
+## Latest verified capture: October 12, 2026
+
+The Halo v2 pilot completed all 50 images across ten scenes with `errors: []`,
+split 30 train / 10 val / 10 test. All 324 exported mesh labels matched a
+Gazebo box, with no missing renderer matches and median IoU 0.9336. Thirteen
+frames retain 18 unexplained renderer boxes as review flags; 37 frames have
+full box agreement. Ground patches use separate depth/paint-mask checks.
+
+The capture is complete. Manual review and a corrected export come next;
+no completed v2 model training or evaluation result is recorded yet. The
+[main README](../../README.md) provides the current build, capture, review,
+and training workflow. The verification history later in this document
+describes the individual fixes leading to this completed run.
+
 ## Look: scanned rocks and ground
 
 Rocks and ground textures are photogrammetry scans from
@@ -68,45 +82,42 @@ are not modeled.
 
 ## Sampling-site appearances
 
-`candidates` in `config/sample.json` adds three visual analogues on top of the
-sand, ripples, and dust. They are not copies of the NASA photographs in
-`Mars_Gazebo_Reference_Pack`. Those photos are appearance references. Patch
-sizes, crystal grain, and spot diameters are simulation choices, stored on
-each scene record. Category names are assigned ground truth. They are not
-chemical measurements, and they are not written into the RGB filenames.
+The detector uses three broad visual classes. Appearance names in
+`candidates.categories` select the original meshes and materials; the exporter
+maps those appearances to the labels below. Pale stones and both soil looks
+remain in the simulation, with separate instances and their existing textures.
 
-| Category | What is generated | Lookalike control |
+| Class ID | Detection class | Included appearances |
 | --- | --- | --- |
-| `silica_soil` | Irregular pale soil blended into the ground, with a broken edge and small embedded stones | `pale_lookalike`, a pale patch of similar brightness and a smoother surface |
-| `sulfur_rock` | A pale stone with yellow crystals only on one fracture face | `pale_stone`, an intact pale stone with no yellow |
-| `cheyava_rock` | A mudstone slab with pale veins and millimetre-scale pale spots that have dark rims | `veined_lookalike`, the same kind of slab with veins and no spots |
+| 0 | `rock` | Ordinary scanned rocks, intact `pale_stone` rocks, and the `cheyava_rock` / `veined_lookalike` mudstone appearances |
+| 1 | `pale_soil_patch` | Irregular `silica_soil` patches with embedded stones and smoother `pale_lookalike` patches |
+| 2 | `yellow_crystal_rock` | `sulfur_rock`, a pale fractured stone with yellow crystals on one face |
 
-The silica patches are painted into the ground image and saved as
-`candidate_mask.png` in the scene folder. That mask is not a camera image.
-Labels for those patches come from the polygon draped on the terrain. Sulfur
-and Cheyava targets are meshes, so they use the same box labeler as rocks.
-`exaggerated_spots` multiplies the Cheyava spot diameter by 8 and tags that
-rock as an exaggerated analogue. Leave it false to keep the photographed
-millimetre scale. Rover abrasion circles and the drill hole are not
-reproduced. The PIXL map's purple, pink, and green display colors are not
-used as surface colors.
+These are appearance labels, not chemical measurements. The NASA photographs
+in `Mars_Gazebo_Reference_Pack` are visual references, not textures copied into
+the simulator. Original appearance names are retained in scene records and in
+each annotation's `appearance_name` for later analysis.
 
-Cheyava and veined-lookalike mudstone exposures follow the visual terrain,
-including its ripples. Their per-object meshes are clipped along the terrain
-triangles, with tops up to `slab_surface_height_m` (8 mm) above the surface,
-1 mm rims blended over `slab_edge_blend_m` (3 cm), and undersides buried by
-`slab_embed_m` (2 cm). These settings are in `config/sample.json`; placement
-and mesh generation are in `mars_training_environment/candidates.py`.
-Rendering, collision, and labels use the same per-object geometry. Ordinary
-rocks and sulfur stones remain separate protruding rocks. Older scene bundles
-retain their original geometry; generate into a new folder and recapture to
-see this change.
+The ordinary-rock count stays at 38–55 per populated scene. Mixed scenes also
+keep 1–2 of each pale-patch appearance, 1–2 yellow crystal rocks, 2–4 pale
+stones, and one of each mudstone appearance. Rock sizes, burial, orientation,
+dust coating, terrain, and lighting variation retain their existing settings.
+The mudstone slabs retain their terrain-following geometry and textures but
+are labeled as ordinary `rock`, without separate vein or spot classes.
 
-Empty seeds stay empty: no rocks and no sampling candidates. Other scenes mix
-the candidates with the ordinary rocks. Set `candidates.enabled` to false to
-generate the previous ground only. Remove a name from `categories` to drop
-that target. The camera pose is unchanged: the optical center stays 0.762 m
-above level ground.
+Pale soil is painted into the ground texture and saved as `candidate_mask.png`.
+That mask records appearance variants, not YOLO class IDs or camera pixels.
+Patch boxes come from visible terrain ray hits within the region polygons
+and painted category mask. Yellow crystal rocks
+and pale stones use the same mesh labeler as ordinary rocks.
+
+`dataset.rocks_only_seeds` produces ordinary rocks and pale stones without
+soil patches, yellow crystal rocks, or mudstone sampling-site appearances.
+These scenes still have class-0 boxes.
+`dataset.empty_seeds` has no rocks or candidate patches and produces empty
+label files. The two seed lists must be disjoint. Remaining seeds mix all
+enabled appearances. Set `candidates.enabled` to false to keep ordinary rocks
+and terrain only. The optical center stays 0.762 m above level ground.
 
 The offline unit tests still use 16 procedural shapes and the four Open
 Robotics Fuel rocks from `rover_training`, so they need no download. Set
@@ -127,15 +138,25 @@ pixels.
 | Partly in frame | Box clipped to the image |
 | Empty scene | Empty `.txt` file, which is a valid YOLO label |
 
-Class ids are `rock`, `silica_soil`, `pale_lookalike`, `sulfur_rock`,
-`pale_stone`, `cheyava_rock`, and `veined_lookalike`, in that order. Ordinary
-ground stays background. Clean images are written under `images/`. Boxes are
-drawn only under `previews/`.
+Class IDs are `0: rock`, `1: pale_soil_patch`, and `2: yellow_crystal_rock`.
+Ordinary ground stays background. Clean images are written under `images/`.
+Boxes are drawn only under `previews/`. A scene manifest uses schema version 5,
+and a bundle plan uses version 3; both carry the exact ordered `class_names`.
+Older bundles and dataset indexes cannot be resumed with this label mapping:
+use fresh output directories when generation and capture are next requested.
+Existing datasets remain unchanged; the preview tool reads their own
+`classes.txt` so old numeric IDs retain their original names.
 
-Two independent checks run on every frame:
+The following checks run on every frame:
 
 - **Depth.** The capture refuses the frame when the median difference between
   `/oak/depth/image_raw` and the label mesh on rock pixels is above 8 cm.
+- **Each retained object's visibility.** At least 90% of its predicted visible
+  instance pixels must have valid sensor depth within 3 cm of the expected
+  surface. Invalid depth counts against support. Ground patches compare with
+  actual terrain depth and must also have at least 85% agreement with the
+  painted appearance mask. A mask containing only the uniform sky color is
+  rejected even if the other geometry checks pass.
 - **Gazebo's bounding-box camera.** Every rock carries Harmonic's `Label`
   plugin, and the rover has a `boundingbox_camera` with the same pose and
   optics as the RGB camera. Its boxes arrive on `/oak/boxes`
@@ -145,6 +166,41 @@ Two independent checks run on every frame:
   it matches a rock our policy rejected, or when it is already below the
   minimum box size. Anything else is listed in `unexplained_boxes`.
   `validation.json` sums this as `gazebo_bbox_check`.
+
+The per-object checks are stored under `depth_quality.visibility_check`.
+When a mesh's projected pixels match uniform sky and have no valid sensor
+surface depth, its label is removed as `renderer_invisible_sky`. Its original
+failed checks remain in `visibility_check.rejected_objects`, and the review
+page flags the removed object by name. This does not remove finite-depth
+mismatches, ground-patch failures, or a visible mesh with a sky-colored material.
+If the removed object is the primary target, the framing check still fails.
+Frames that fail visibility or intended-target framing are stopped before an
+image/label pair is exported. RGB, box overlays, sensor/expected depth,
+instance masks, pose, and failure reasons are saved under
+`diagnostics/<scene>/<view>/`. They appear in the review page as diagnostic
+frames, separate from accepted training images. These checks detect unsupported
+labels; the failed examples still need inspection to determine the rendering
+or geometry cause.
+
+## Target framing
+
+Capture positions are 1.8–3.2 m from the lens to the target. Camera height,
+tilt, original 1920×1080 resolution, object counts, and appearance randomization
+are unchanged. The planner projects the actual target mesh and rasterizes a
+candidate view to test terrain/rock occlusion before accepting the pose.
+
+Four views in each group of five must show the primary target fully within a
+10% image margin, with at least 70% visible and a shorter box side of at least
+24 pixels after resizing to `capture.training_imgsz` (960). One view in each
+group is deliberately more difficult: it allows edge clipping, requires 30%
+visibility, and uses a 12-pixel minimum. The rules apply only to the intended
+target; small incidental rocks retain their labels. Empty scenes remain valid
+background examples. Target identity and planned framing are stored in each
+view; capture checks the actual settled pose again before writing a frame.
+
+The default thresholds are starting values, not a claim about model accuracy.
+An infeasible target or failed rendered frame produces diagnostics rather than
+silently weakening the policy or exporting a bad example.
 
 With `require_bbox_check` true, a frame is not written until a Gazebo box
 message near the image time has arrived.
@@ -195,6 +251,17 @@ Every frame from one seed stays in one split. The split is a hash of the seed,
 so adding seeds does not move an existing scene. The sample seeds 100–119
 produce 14 train, 2 val, and 4 test scenes, 10 views each, 200 images.
 Seeds 100, 110, and 117 are empty. Seed 100 is an empty test scene.
+Seeds 102, 107, 108, and 114 contain only the rock class, covering train, val,
+and test. The default plan has 13 mixed scenes, 4 rock-only scenes, and 3 empty
+scenes. This is a configured plan; changing the config does not capture it.
+
+For an initial 50-image run, pass `--config` with `config/pilot50.json` to
+`mars_generate` (or to `mars_dataset --generate`). This overrides only the
+scene seeds and views per scene: 10 scenes with 5 views each, giving 30 train,
+10 val, and 10 test images. Six scenes are mixed, three contain ordinary rocks
+and pale stones, and one is empty. Both val and test include a mixed scene
+and a rock-only scene; train includes all three scene types. Clutter and
+appearance settings are inherited from `sample.json`.
 
 `data.yaml` points Ultralytics at `images/train`, `images/val`, and
 `images/test`. `classes.txt` lists the class names above. Nothing in this
@@ -232,7 +299,7 @@ clash with Humble builds:
 source /opt/ros/jazzy/setup.bash
 cd /work
 colcon --log-base log_jazzy build --build-base build_jazzy --install-base install_jazzy \
-  --packages-select four_wheel_sim rover_training mars_training_environment
+  --base-paths src --packages-select four_wheel_sim rover_training mars_training_environment
 source install_jazzy/setup.bash
 ```
 
@@ -293,7 +360,142 @@ ros2 run mars_training_environment mars_validate \
 `dataset/` and `assets_cache/` are gitignored. Do not commit images, worlds,
 or downloaded assets.
 
+## Automatic review and corrections
+
+Every capture creates `review/index.html` and `review/index.json` automatically,
+including partial runs and rejected-frame diagnostics. The HTML can be opened
+directly for a read-only review. With the review server running, new frames
+appear every five seconds and corrections can be saved.
+
+On the Halo host, in the existing `rover-yolo` Conda environment, run from the
+copied project folder (outside the ROS container):
+
+```bash
+conda activate rover-yolo
+PYTHONPATH="$PWD/src/mars_training_environment:$PWD/src/rover_training" \
+  python -m mars_training_environment.review --dataset dataset/pilot50_v2
+```
+
+The server listens on `127.0.0.1:8765`. In a VS Code Remote-SSH window, use
+the Ports panel to forward port 8765 and open its local browser address.
+Alternatively, from Windows open a dedicated SSH tunnel:
+
+```powershell
+ssh -N -L 8765:127.0.0.1:8765 ian@halo-strix
+```
+
+Then open `http://127.0.0.1:8765` locally. No Gazebo GUI or remote desktop is
+needed to review the saved images.
+
+The page supports split/class/status filters, 640/960/1280 previews, flags,
+target information, drawing/removing boxes, coordinate and class corrections,
+review notes, and excluding/re-including frames. **Restore original capture**
+restores the original labels and includes the frame again. Unsaved edits are
+preserved during automatic refresh; stale edits are rejected if another editor
+has changed that frame. If a partial scene is recaptured, old corrections are
+preserved but flagged as stale rather than applied to the replacement image.
+Review or restore that frame before exporting.
+
+Corrections are reversible sidecars in `review/edits/`, with an audit history
+in `review/history.jsonl`. Raw capture images, YOLO labels, and metadata stay
+unchanged. **Export reviewed training data** writes a new dataset under
+`review/exports/<revision>/`, retaining the original scene splits and omitting
+excluded frames. It returns a `data.yaml` with the host's actual paths and a
+`review_export.json` recording source revisions, reviewed labels and file hashes.
+Export requires a complete, validated capture and at least one included image
+in every split. Exclusion can reduce the reviewed image count below 50.
+
+Later, YOLO predictions saved as `predictions/<split>/<frame>.txt` can be
+displayed as dashed boxes. Standard normalized YOLO xywh rows with an optional
+sixth confidence value are supported. The page flags wrong classes, missing
+detections, and extra detections using one-to-one box matching at IoU 0.5.
+An empty prediction file represents zero detections. These are review hints;
+full performance measurement still uses held-out validation.
+
+To regenerate a page for an existing three-class capture, or export from the
+command line:
+
+```bash
+PYTHONPATH="$PWD/src/mars_training_environment:$PWD/src/rover_training" \
+  python -m mars_training_environment.review --dataset dataset/pilot50 --build-only
+
+PYTHONPATH="$PWD/src/mars_training_environment:$PWD/src/rover_training" \
+  python -m mars_training_environment.review --dataset dataset/pilot50_v2 --export
+```
+
+Old captures can be reviewed; their missing per-object visibility audit is
+flagged. New captures require a fresh version-3 bundle and output folder.
+
+## Preliminary training on the Halo
+
+`config/train960.yaml` sets `imgsz=960`, `batch=4`, 30 epochs, square
+letterboxing, and seed 0. It does not start training automatically. After
+review/export, supply the returned YAML and the model used for the initial
+Ultralytics smoke test:
+
+```bash
+conda activate rover-yolo
+yolo train cfg=src/mars_training_environment/config/train960.yaml \
+  model=/path/to/pretrained-model.pt data=/path/from/review/export/data.yaml device=0
+```
+
+Keep the original high-resolution captures. Review pixel sizes are measured
+after resizing, and higher resolutions do not fix missing or clipped targets.
+
 ## What has been run
+
+The earlier three-class revision passed 24 offline tests in `rover_training`
+and 47 in this package. A 50-image pilot was subsequently captured on the
+Halo (30 train / 10 val / 10 test). Its geometry checks passed, but visual
+review found sky-only boxes and poor target framing, motivating the current
+visibility and review revision. The first v2 Halo run completed scene 101 in
+26.8 seconds, then correctly identified an unsupported sky-only `rock_006` label
+in scene 102/view 001. The follow-up change removes only confirmed invisible
+mesh labels while preserving their failed evidence and the other acceptance
+checks. The Halo retry then reached scene 102/view 004, whose target measured
+11 pixels at training size despite the coarse planner predicting 12.5 pixels.
+The framing correction adds conservative coarse bounds and a full-resolution
+planning pass. Existing plans can recover a size-only failure using at most
+three closer, collision-checked poses within the configured distance range.
+Every new image must pass the unchanged capture checks. Corrections are saved
+in metadata, flagged as `target_reframed` in review, and failed attempts remain
+available as diagnostics. The historical
+captures below predate the three-class change.
+
+The prior framing revision had 90 passing tests (89 in the full
+run, followed by the final 35-test quality/review suite after one extra test).
+The earlier 24 rover tests also passed; rover code was unchanged by this fix.
+The original scene 102 was recaptured locally in headless Gazebo after the
+framing correction: five images, `errors: []`, 175.1 seconds. View 004 recovered
+from 11 to 13 pixels after one closer pose. All 51 labels matched renderer
+boxes; one extra box near rock_014 remained flagged for manual review. The
+user subsequently completed scenes 102
+and 103 on the Halo; scene 104 exposed an off-axis far-clipping mismatch.
+Ogre2 RGB-D clips at radial range 8 m, but the annotation raster previously
+clipped only forward Z. It now matches the sensor's radial far/forward near
+rule. Ground labels also use the actual terrain ray hits and paint-mask
+categories, replacing lifted proxy surfaces. Earlier accepted ground-region
+frames are flagged `legacy_ground_region_projection` for manual review.
+No sensor-depth, sky, or primary-target acceptance threshold was lowered.
+The corrected original scene 104 passed a local rendered capture: five images,
+`errors: []`, 158.4 seconds. The first view's primary ground patch had 100%
+depth and paint-mask support; the nonexistent off-axis patch was not labeled.
+All 39 mesh labels matched renderer boxes; two extra boxes in view 001 remain
+flagged for manual review. 102 distinct environment/review tests are verified:
+101 passed in the final full run; an old size-regression fixture was then moved
+inside the corrected sensor range, and all 36 quality/review tests passed.
+No production code changed after the full run. The subsequent Halo deployment
+completed all 50 v2 frames with `errors: []`; see the latest capture summary
+above for its remaining review flags. The clipping rule matches the installed Ogre2 shader:
+https://github.com/gazebosim/gz-rendering/blob/gz-rendering8/ogre2/src/media/materials/programs/GLSL/depth_camera_fs.glsl
+The review editor was exercised in a browser with synthetic fixtures, including
+class edits, box drawing/removal, exclusion/restoration, and curated export.
+The 50-view plan was also checked against the actual cached scanned assets in
+temporary folders, preserving 30 train / 10 val / 10 test views. The final
+Halo run passed the capture visibility checks on all accepted frames.
+Additional regression checks cover sky-only label removal, preservation of
+real sensor/geometry failures, primary-target rejection, review flags, and
+surfacing capture exceptions in the outer dataset log.
 
 All in `rover-jazzy` on this laptop with software rendering, after the camera
 change to 1920 × 1080 at 30 Hz and a 0.762 m optical center. Earlier checks

@@ -83,9 +83,12 @@ def slab_mesh(seed=21, aspect=0.62, thickness=0.045):
     return vertices, np.asarray(faces, dtype=int), _planar_uv(vertices)
 
 
-def add_candidates(rng, config, field, driveable, assets, root, objects, regions, scene_folder):
+def add_candidates(rng, config, field, driveable, assets, root, objects, regions, scene_folder,
+                   allowed_categories=None):
     """Append mesh candidates and ground regions. Empty scenes call this never."""
     selected = set(config['candidates']['categories'])
+    if allowed_categories is not None:
+        selected &= set(allowed_categories)
     by_id = {asset['id']: asset for asset in assets}
     occupied = [(np.asarray(obj['xyz'][:2], dtype=float), obj['radius_m']) for obj in objects]
     for category, key, size_key in (

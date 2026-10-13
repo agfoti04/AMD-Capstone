@@ -8,9 +8,10 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from rover_training.geometry import CLASS_NAMES
-from .common import read_config, write_json
+from rover_training.yolo_export import write_dataset_index
+from .common import read_config, require_label_schema, write_json
 from .generate import generate_bundle
+from .review import write_review_page
 
 
 def stop_group(process):
@@ -49,24 +50,37 @@ def _remove_scene_files(output, ident):
                 path.unlink()
 
 
+def capture_failure_hint(log_path):
+    """Surface the capture exception even when ROS launch shuts down with zero."""
+    try:
+        lines = Path(log_path).read_text(errors='replace').splitlines()
+    except OSError:
+        return ''
+    for line in reversed(lines):
+        if '[mars_capture' in line and ('Error:' in line or 'Exception:' in line):
+            return line.split('] ', 1)[-1].strip()[:2000]
+    return ''
+
+
 def capture_bundle(bundle,output,resume=False,scene_ids=None):
     bundle,output = Path(bundle).resolve(),Path(output).resolve()
     plan = json.loads((bundle/'plan.json').read_text())
+    require_label_schema(plan)
+    if plan.get('schema_version',0) < 3:
+        raise ValueError('Bundle predates visibility/framing checks; generate fresh scenes into a new directory')
     output.mkdir(parents=True,exist_ok=True)
     stored = output/'plan.json'
     if stored.exists() and json.loads(stored.read_text()) != plan:
         raise ValueError('Dataset belongs to a different scene plan; use another output directory')
+    write_dataset_index(output)
     write_json(stored,plan)
     write_json(output/'splits.json',json.loads((bundle/'splits.json').read_text()))
     (output/'logs').mkdir(exist_ok=True)
     (output/'scenes').mkdir(exist_ok=True)
-    names = '\n'.join(f'  {index}: {name}' for index, name in enumerate(CLASS_NAMES))
-    (output/'data.yaml').write_text(
-        f'path: {output.as_posix()}\ntrain: images/train\nval: images/val\ntest: images/test\nnames:\n{names}\n')
-    (output/'classes.txt').write_text('\n'.join(CLASS_NAMES) + '\n')
     for split in ('train','val','test'):
         (output/'images'/split).mkdir(parents=True,exist_ok=True)
         (output/'labels'/split).mkdir(parents=True,exist_ok=True)
+    write_review_page(output)
     begin = time.monotonic()
     completed = []
     for entry in plan['scenes']:
@@ -75,6 +89,7 @@ def capture_bundle(bundle,output,resume=False,scene_ids=None):
             continue
         scene_path = bundle/'scenes'/ident/'scene.json'
         scene = json.loads(scene_path.read_text())
+        require_label_schema(scene)
         write_json(output/'scenes'/f'{ident}.json',scene)
         report_path = output/'reports'/f'{ident}.json'
         if report_path.exists():
@@ -105,6 +120,9 @@ def capture_bundle(bundle,output,resume=False,scene_ids=None):
                 code = 'timeout'
             if not report_path.exists():
                 print(f'{ident} attempt {attempt} failed with exit {code}', flush=True)
+                hint = capture_failure_hint(log_path)
+                if hint:
+                    print(f'Capture error: {hint}', flush=True)
                 continue
             report = json.loads(report_path.read_text())
             if report['frames']==entry['views'] and report['scene_sha256']==entry['content_sha256']:
@@ -113,7 +131,9 @@ def capture_bundle(bundle,output,resume=False,scene_ids=None):
             report_path.unlink()
             report = None
         if report is None:
-            raise RuntimeError(f'{ident} failed after 3 attempts; inspect {output/"logs"/(ident+".log")}')
+            hint = capture_failure_hint(log_path)
+            detail = f'{hint}; ' if hint else ''
+            raise RuntimeError(f'{ident} failed after 3 attempts; {detail}inspect {log_path}')
         report['launch_wall_seconds'] = time.monotonic()-start
         write_json(report_path, report)
         completed.append(ident)
@@ -123,6 +143,7 @@ def capture_bundle(bundle,output,resume=False,scene_ids=None):
     result['this_run_wall_seconds'] = time.monotonic()-begin
     result['this_run_scenes'] = completed
     write_json(output/'validation.json',result)
+    write_review_page(output)
     print(json.dumps(result,indent=2),flush=True)
     if result['errors']:
         raise RuntimeError('Dataset validation failed')

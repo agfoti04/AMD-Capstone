@@ -10,17 +10,25 @@ import re
 
 CLASS_NAMES = (
     "rock",
-    "silica_soil",
-    "pale_lookalike",
-    "sulfur_rock",
-    "pale_stone",
-    "cheyava_rock",
-    "veined_lookalike",
+    "pale_soil_patch",
+    "yellow_crystal_rock",
 )
+
+# Scene appearance names also select meshes/materials. Merge them only when
+# assigning detection labels, so the original visual variation is preserved.
+APPEARANCE_CLASSES = {
+    "silica_soil": "pale_soil_patch",
+    "pale_lookalike": "pale_soil_patch",
+    "sulfur_rock": "yellow_crystal_rock",
+    "pale_stone": "rock",
+    "cheyava_rock": "rock",
+    "veined_lookalike": "rock",
+}
 
 
 def class_id_for(class_name):
     key = str(class_name).strip().lower()
+    key = APPEARANCE_CLASSES.get(key, key)
     if key not in CLASS_NAMES:
         return None
     return CLASS_NAMES.index(key)
@@ -325,7 +333,7 @@ def annotate_rocks(rocks, camera_rigid, intrinsics, depth=None,
         if fraction is not None and fraction < min_visible_fraction:
             continue
         labels.append({
-            "class_name": "rock",
+            "class_name": CLASS_NAMES[class_id],
             "class_id": class_id,
             "asset_id": rock.get("asset_id", ""),
             "model_name": rock.get("name", ""),

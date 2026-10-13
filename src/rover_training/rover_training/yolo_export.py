@@ -29,7 +29,7 @@ def write_label_file(path, labels, width, height):
     return path
 
 
-def read_label_file(path, width, height):
+def read_label_file(path, width, height, class_names=CLASS_NAMES):
     text = Path(path).read_text(encoding="utf-8").strip()
     if not text:
         return []
@@ -37,10 +37,12 @@ def read_label_file(path, width, height):
     for line in text.splitlines():
         class_id, xc, yc, box_w, box_h = line.split()
         class_id = int(class_id)
+        if not 0 <= class_id < len(class_names):
+            raise ValueError(f'class id {class_id} is outside {class_names}')
         xc, yc, box_w, box_h = (float(value) for value in (xc, yc, box_w, box_h))
         labels.append({
             "class_id": class_id,
-            "class_name": CLASS_NAMES[class_id],
+            "class_name": class_names[class_id],
             "xmin": (xc - box_w * 0.5) * width,
             "ymin": (yc - box_h * 0.5) * height,
             "xmax": (xc + box_w * 0.5) * width,
@@ -51,6 +53,9 @@ def read_label_file(path, width, height):
 
 def write_dataset_index(dataset_dir):
     dataset_dir = Path(dataset_dir)
+    classes_path = dataset_dir / "classes.txt"
+    if classes_path.exists() and classes_path.read_text(encoding="utf-8").splitlines() != list(CLASS_NAMES):
+        raise ValueError('Dataset uses another label schema; choose a fresh output directory')
     names = "\n".join(f"  {index}: {name}" for index, name in enumerate(CLASS_NAMES))
     data_yaml = (
         f"path: {dataset_dir.as_posix()}\n"

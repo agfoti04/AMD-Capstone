@@ -142,8 +142,8 @@ def generate_terrain(seed, config, folder):
     collision_v, collision_f = base.mesh()
     write_dae(folder/'terrain_collision.dae', collision_v, collision_f)
     visual_v, visual_f = visual.mesh()
-    # A scanned ground image covers the whole patch once. The procedural
-    # fallback still repeats every texture_tile_m.
+    # Scanned ground covers the patch once. Unpainted procedural ground repeats
+    # every texture_tile_m; generation uses world UVs when painting candidates.
     if config['ground_textures']:
         uv = np.column_stack([(visual_v[:, 0]+size/2)/size, (visual_v[:, 1]+size/2)/size])
     else:

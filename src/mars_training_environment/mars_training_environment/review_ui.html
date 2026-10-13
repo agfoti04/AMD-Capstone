@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rover dataset review</title>
+<style>
+body{margin:0;background:#111827;color:#f1f5f9;font:15px/1.45 system-ui,sans-serif}
+header{padding:18px 24px;background:#1e293b}h1{font-size:24px;margin:0 0 8px}p{margin:6px 0}
+button,select,input,textarea{font:inherit;border-radius:5px;padding:7px;border:1px solid #64748b}
+button{cursor:pointer;background:#334155;color:white}button:disabled{opacity:.45;cursor:default}
+button.active{background:#0369a1}input,textarea,select{background:#0f172a;color:white}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 20px}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:16px;padding:0 20px 20px}
+aside{max-height:85vh;overflow:auto}.frame{width:100%;text-align:left;margin:0 0 10px;padding:8px}
+.frame img{display:block;width:100%;height:110px;object-fit:contain;background:#111827}
+.frame small{display:block}.chosen{outline:2px solid #38bdf8}.excluded{opacity:.6}
+.warn{color:#fbbf24}.ok{color:#86efac}#message{min-height:24px;white-space:pre-wrap}
+.canvas-wrap{overflow:auto;background:#0b1220}canvas{display:block;max-width:100%;height:auto;touch-action:none}
+canvas.native{max-width:none}table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border-bottom:1px solid #475569;padding:6px;text-align:left}td input{width:75px}
+.selected{background:#1e3a5f}textarea{width:min(650px,95%);height:48px}small{color:#cbd5e1}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.summary{color:#cbd5e1}
+@media(max-width:850px){.layout{grid-template-columns:1fr}aside{max-height:220px;display:flex;gap:10px}.frame{min-width:220px}}
+</style>
+</head>
+<body>
+<header><h1>Rover dataset review</h1>
+<p id="summary" class="summary"></p><p id="mode"></p><p id="message" role="status"></p></header>
+<div class="controls">
+<label>Split <select id="split"><option value="all">All</option><option>train</option><option>val</option><option>test</option><option>diagnostic</option></select></label>
+<label>Status <select id="filter"><option value="all">All frames</option><option value="flagged">Flagged</option><option value="unreviewed">Unreviewed</option><option value="excluded">Excluded</option><option value="predictions">Prediction disagreements</option></select></label>
+<label>Class <select id="classFilter"><option value="all">All classes</option></select></label>
+<input id="search" placeholder="Search scene or view" aria-label="Search frames">
+<button id="refresh">Refresh</button><button id="export">Export reviewed training data</button>
+</div>
+<div class="layout"><aside id="frames"></aside><main>
+<h2 id="title">Waiting for captured images</h2><p id="flags" class="warn"></p><p id="target"></p>
+<div class="controls">
+<label>Training size <select id="size"><option>640</option><option selected>960</option><option>1280</option></select></label>
+<label><input type="checkbox" id="native"> Native pixels</label>
+<label><input type="checkbox" id="showLabels" checked> Ground-truth boxes</label>
+<label><input type="checkbox" id="showPredictions" checked> Predictions (dashed)</label>
+<button id="selectTool" class="active">Select box</button><button id="drawTool">Draw new box</button>
+<select id="drawClass" aria-label="Class of new box"></select>
+</div>
+<div class="canvas-wrap"><canvas id="canvas" width="960" height="960"></canvas></div>
+<small>Native pixels shows one canvas pixel per screen pixel at 100% browser zoom. Select a box to edit its class or original-image coordinates below. Draw mode adds a box by dragging. Incidental small rocks keep their labels.</small>
+<table><thead><tr><th>Object / pixels at training size</th><th>Class</th><th>x min</th><th>y min</th><th>x max</th><th>y max</th><th></th></tr></thead><tbody id="labels"></tbody></table>
+<label>Review note<br><textarea id="note" placeholder="What was wrong or why this frame is excluded"></textarea></label>
+<div class="actions"><button id="save">Save corrections / mark reviewed</button><button id="exclude">Exclude frame</button><button id="restore">Restore original capture</button></div>
+<small>Exclusions remove frames from the reviewed training export. Original captures are preserved, and all edits are logged. Diagnostic frames were rejected by capture and cannot be exported.</small>
+</main></div>
+<script>
+let data=__REVIEW_DATA__;
+const online=location.protocol==='http:'||location.protocol==='https:';
+const $=id=>document.getElementById(id);
+let active=null,working=[],selected=-1,dirty=false,busy=false,tool='select',picture=null,loadNumber=0,drag=null;
+const colors=['#28dc3c','#50d2e6','#f0c828'];
+function message(text,error=false){$('message').textContent=text;$('message').className=error?'warn':'ok';}
+function imageURL(path){return online?'/file/'+path.split('/').map(encodeURIComponent).join('/'):'../'+path;}
+function editable(){return online&&Boolean(data.token)&&active&&active.accepted&&!busy;}
+function updateActions(){
+  for(const id of ['save','exclude','restore','drawTool'])$(id).disabled=!editable();
+  $('export').disabled=!online||busy;
+  $('note').disabled=!editable();
+  document.querySelectorAll('#frames button').forEach(button=>button.disabled=busy);
+  document.querySelectorAll('#labels input,#labels select,#labels button').forEach(control=>control.disabled=!editable());
+}
+function setBusy(value){busy=value;updateActions();}
+function populate(){
+  $('summary').textContent=`${data.accepted_frames} captured · ${data.excluded_frames} excluded · Splits: ${JSON.stringify(data.split_counts)} · Class instances: ${JSON.stringify(data.class_counts)}`;
+  $('mode').textContent=online?'Live review: new captures appear automatically. Saved corrections feed a separate reviewed export.':'Read-only review. Start mars_review for this dataset to save corrections and exclusions.';
+  if($('drawClass').options.length===0){
+    data.class_names.forEach((name,i)=>{$('drawClass').add(new Option(name,i));$('classFilter').add(new Option(name,i));});
+  }
+  updateActions();
+  const list=$('frames');list.replaceChildren();
+  for(const frame of data.frames){
+    if($('split').value!=='all'&&frame.split!==$('split').value)continue;
+    const filter=$('filter').value;
+    if(filter==='flagged'&&!frame.flags.length)continue;
+    if(filter==='unreviewed'&&frame.reviewed)continue;
+    if(filter==='excluded'&&!frame.excluded)continue;
+    if(filter==='predictions'&&!frame.flags.includes('prediction_disagreement'))continue;
+    if($('classFilter').value!=='all'&&!frame.labels.some(l=>l.class_id===Number($('classFilter').value)))continue;
+    if(!frame.id.toLowerCase().includes($('search').value.toLowerCase()))continue;
+    const button=document.createElement('button');button.disabled=busy;button.className='frame'+(frame.id===active?.id?' chosen':'')+(frame.excluded?' excluded':'');
+    const img=document.createElement('img');img.src=imageURL(frame.image);img.loading='lazy';img.alt=frame.id;
+    const name=document.createElement('small');name.textContent=frame.id;
+    const info=document.createElement('small');info.textContent=`${frame.split} · ${frame.labels.length} boxes · ${frame.excluded?'excluded':frame.reviewed?'reviewed':'unreviewed'}`;
+    const warning=document.createElement('small');warning.className='warn';warning.textContent=frame.flags.join(', ');
+    button.append(img,name,info,warning);button.onclick=()=>openFrame(frame);list.append(button);
+  }
+  if(!active&&data.frames.length)openFrame(data.frames[0]);
+}
+async function refresh(){
+  if(!online){populate();return;}
+  try{
+    const response=await fetch('/api/index',{cache:'no-store'});if(!response.ok)throw new Error('Could not refresh dataset');
+    const fresh=await response.json();data=fresh;
+    if(active&&!dirty&&!busy){const frame=data.frames.find(f=>f.id===active.id);if(frame&&(frame.revision!==active.revision||JSON.stringify(frame.predictions)!==JSON.stringify(active.predictions)||JSON.stringify(frame.flags)!==JSON.stringify(active.flags)))openFrame(frame);}
+    populate();
+  }catch(error){message(error.message,true);}
+}
+function openFrame(frame,internal=false){
+  if(busy&&!internal)return;
+  if(dirty&&!confirm('Discard unsaved label changes?'))return;
+  active=frame;working=structuredClone(frame.labels);selected=-1;dirty=false;$('note').value=frame.note||'';
+  $('title').textContent=frame.id;
+  $('flags').textContent=frame.flags.join(' · ');
+  $('target').textContent=`Target: ${frame.target_name||'background / legacy capture'}${frame.prediction_errors?' · Prediction hints: '+JSON.stringify(frame.prediction_errors):''}`;
+  updateActions();
+  $('exclude').textContent=frame.excluded?'Include frame again':'Exclude frame';
+  picture=null;const image=new Image(),ticket=++loadNumber;
+  image.onload=()=>{if(ticket===loadNumber){picture=image;draw();}};
+  image.onerror=()=>message('Could not load frame image',true);image.src=imageURL(frame.image);
+  renderLabels();populate();
+}
+function edited(){dirty=true;message('Unsaved corrections');}
+function renderLabels(){
+  const tbody=$('labels');tbody.replaceChildren();
+  working.forEach((label,index)=>{
+    const row=document.createElement('tr');if(index===selected)row.className='selected';
+    const name=document.createElement('td');const scale=Number($('size').value)/Math.max(active.width,active.height);
+    name.textContent=`${label.name} · ${((label.xmax-label.xmin)*scale).toFixed(1)} × ${((label.ymax-label.ymin)*scale).toFixed(1)} px`;
+    name.onclick=()=>{selected=index;renderLabels();draw();};row.append(name);
+    const classCell=document.createElement('td'),select=document.createElement('select');
+    data.class_names.forEach((name,i)=>select.add(new Option(name,i)));select.value=label.class_id;select.disabled=!editable();
+    select.onchange=()=>{label.class_id=Number(select.value);edited();draw();};classCell.append(select);row.append(classCell);
+    for(const key of ['xmin','ymin','xmax','ymax']){const cell=document.createElement('td'),input=document.createElement('input');input.type='number';input.step='0.1';input.value=Math.round(label[key]*10)/10;input.disabled=!editable();input.onchange=()=>{label[key]=Number(input.value);edited();renderLabels();draw();};cell.append(input);row.append(cell);}
+    const cell=document.createElement('td'),button=document.createElement('button');button.textContent='Remove box';button.disabled=!editable();button.onclick=()=>{working.splice(index,1);selected=-1;edited();renderLabels();draw();};cell.append(button);row.append(cell);tbody.append(row);
+  });
+}
+function draw(){
+  if(!picture||!active)return;
+  const canvas=$('canvas'),size=Number($('size').value);canvas.width=size;canvas.height=size;canvas.classList.toggle('native',$('native').checked);
+  const ctx=canvas.getContext('2d'),scale=size/Math.max(active.width,active.height),dx=(size-active.width*scale)/2,dy=(size-active.height*scale)/2;
+  ctx.fillStyle='rgb(114,114,114)';ctx.fillRect(0,0,size,size);ctx.drawImage(picture,dx,dy,active.width*scale,active.height*scale);
+  function box(label,dashed=false,index=-1){
+    ctx.strokeStyle=index===selected?'#f472b6':colors[label.class_id];ctx.lineWidth=index===selected?3:1;ctx.setLineDash(dashed?[6,4]:[]);
+    const x=dx+label.xmin*scale,y=dy+label.ymin*scale;ctx.strokeRect(x,y,(label.xmax-label.xmin)*scale,(label.ymax-label.ymin)*scale);
+    ctx.font='12px system-ui';ctx.fillStyle=ctx.strokeStyle;ctx.fillText(`${dashed?'pred ':''}${data.class_names[label.class_id]}`,x,Math.max(12,y-3));
+  }
+  if($('showLabels').checked)working.forEach((label,i)=>box(label,false,i));
+  if($('showPredictions').checked)(active.predictions||[]).forEach(label=>box(label,true));
+  if(drag){box({class_id:Number($('drawClass').value),xmin:Math.min(drag.start.x,drag.end.x),ymin:Math.min(drag.start.y,drag.end.y),xmax:Math.max(drag.start.x,drag.end.x),ymax:Math.max(drag.start.y,drag.end.y)});}
+}
+function coordinate(event){
+  if(!active)return null;const canvas=$('canvas'),rect=canvas.getBoundingClientRect(),size=canvas.width,scale=size/Math.max(active.width,active.height);
+  const x=((event.clientX-rect.left)*size/rect.width-(size-active.width*scale)/2)/scale;
+  const y=((event.clientY-rect.top)*size/rect.height-(size-active.height*scale)/2)/scale;
+  return {x:Math.max(0,Math.min(active.width,x)),y:Math.max(0,Math.min(active.height,y))};
+}
+$('canvas').onpointerdown=event=>{
+  const point=coordinate(event);if(!point)return;
+  if(tool==='draw'&&editable()){drag={start:point,end:point};$('canvas').setPointerCapture(event.pointerId);}
+  else{selected=working.map((l,i)=>({l,i})).filter(({l})=>l.xmin<=point.x&&point.x<=l.xmax&&l.ymin<=point.y&&point.y<=l.ymax).sort((a,b)=>(a.l.xmax-a.l.xmin)*(a.l.ymax-a.l.ymin)-(b.l.xmax-b.l.xmin)*(b.l.ymax-b.l.ymin))[0]?.i??-1;renderLabels();draw();}
+};
+$('canvas').onpointermove=event=>{if(drag){drag.end=coordinate(event);draw();}};
+$('canvas').onpointerup=event=>{
+  if(!drag)return;drag.end=coordinate(event);const a=drag.start,b=drag.end;drag=null;
+  if(Math.abs(a.x-b.x)>1&&Math.abs(a.y-b.y)>1){working.push({name:'manual_'+Date.now(),class_id:Number($('drawClass').value),xmin:Math.min(a.x,b.x),ymin:Math.min(a.y,b.y),xmax:Math.max(a.x,b.x),ymax:Math.max(a.y,b.y)});selected=working.length-1;edited();renderLabels();}draw();
+};
+$('canvas').onpointercancel=()=>{drag=null;draw();};
+async function post(route,payload){const response=await fetch('/api/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Review-Token':data.token},body:JSON.stringify(payload)});const result=await response.json();if(!response.ok)throw new Error(result.error||'Request failed');return result;}
+async function save(excluded=active.excluded){
+  if(!editable())return;setBusy(true);
+  try{const frame=await post('save',{id:active.id,revision:active.revision,labels:working,excluded,reviewed:true,note:$('note').value});dirty=false;openFrame(frame,true);await refresh();message('Saved. Original capture preserved.');}catch(error){message(error.message,true);}finally{setBusy(false);}
+}
+$('save').onclick=()=>save();$('exclude').onclick=()=>save(!active.excluded);
+$('restore').onclick=async()=>{if(!editable())return;setBusy(true);try{const frame=await post('restore',{id:active.id,revision:active.revision});dirty=false;openFrame(frame,true);await refresh();message('Original labels restored and frame included.');}catch(error){message(error.message,true);}finally{setBusy(false);}};
+$('export').onclick=async()=>{if(busy)return;if(dirty){message('Save or discard current edits before exporting.',true);return;}setBusy(true);try{const result=await post('export',{});message(`Exported ${result.frames} images. Splits: ${JSON.stringify(result.split_counts)}\nUltralytics data YAML: ${result.data_yaml}`);}catch(error){message(error.message,true);}finally{setBusy(false);}};
+$('note').oninput=edited;
+for(const id of ['split','filter','classFilter'])$(id).onchange=populate;$('search').oninput=populate;$('refresh').onclick=refresh;
+for(const id of ['native','showLabels','showPredictions'])$(id).onchange=draw;$('size').onchange=()=>{renderLabels();draw();};
+$('selectTool').onclick=()=>{tool='select';$('selectTool').classList.add('active');$('drawTool').classList.remove('active');};
+$('drawTool').onclick=()=>{tool='draw';$('drawTool').classList.add('active');$('selectTool').classList.remove('active');};
+populate();if(online){refresh();setInterval(refresh,5000);}
+</script>
+</body></html>

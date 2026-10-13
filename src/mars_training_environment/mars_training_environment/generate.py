@@ -7,12 +7,16 @@ from xml.sax.saxutils import escape
 
 import numpy as np
 
+from rover_training.geometry import CLASS_NAMES, class_id_for, nominal_intrinsics
+
 from .asset_cache import default_cache
+from .annotation import Annotator
 from .candidates import NOTES, add_candidates, paint_procedural_ground, write_candidate_materials
-from .common import digest, read_config, rotation, split_for_seed, write_json
+from .common import digest, quaternion, read_config, require_label_schema, rotation, split_for_seed, write_json
 from .dust import bake_scene_dust
 from .ground import composite_ground
-from .meshes import build_ground, build_library
+from .framing import configured_extrinsics, planning_size_guard, projected_target_fits, target_framing
+from .meshes import build_ground, build_library, write_dae
 from .terrain import Terrain, generate_terrain
 
 WORLD_NAME = 'mars_training'
@@ -27,16 +31,20 @@ def make_scene(root, config, seed, assets, ground=()):
     config_hash = digest(config)
     if manifest_path.exists():
         existing = json.loads(manifest_path.read_text())
+        require_label_schema(existing)
         if existing['config_sha256'] != config_hash:
             raise ValueError(f'{ident} already exists with another config; use a new output directory')
     rng = np.random.RandomState(seed)
     field, driveable, terrain = generate_terrain(seed, config['terrain'], folder)
     split = split_for_seed(seed)
-    pool = [a for a in assets if a['held_out'] == (split == 'test')]
+    # Candidate meshes are placed explicitly below with their appearance name.
+    # Do not randomly instantiate a slab or crystal mesh as an ordinary rock.
+    pool = [a for a in assets if not a.get('shared_shape') and a['held_out'] == (split == 'test')]
     if not pool:
         raise ValueError('No rock assets in this split')
     rc = config['rocks']
     empty = seed in config['dataset']['empty_seeds']
+    rocks_only = seed in config['dataset'].get('rocks_only_seeds', [])
     count = 0 if empty else int(rng.randint(rc['count_range'][0], rc['count_range'][1]+1))
     objects = []
     size = field.size
@@ -79,13 +87,29 @@ def make_scene(root, config, seed, assets, ground=()):
                         'radius_m': radius, 'burial_fraction': burial, 'burial_m': support-z, 'color': color})
     regions = []
     if not empty and config.get('candidates', {}).get('enabled'):
-        add_candidates(rng, config, field, driveable, assets, root, objects, regions, folder)
+        add_candidates(rng, config, field, driveable, assets, root, objects, regions, folder,
+                       allowed_categories={'pale_stone'} if rocks_only else None)
     views = []
-    targets = list(objects) + [{'xyz': region['xyz'], 'radius_m': region['radius_m'], 'class_name': region['class_name']}
-                               for region in regions]
-    priority = [item for item in targets if item.get('class_name')]
+    targets = list(objects) + list(regions)
+    priority = [item for item in targets if class_id_for(item.get('class_name', 'rock')) not in (None, 0)]
+    planner_config = json.loads(json.dumps(config))
+    pw = config['capture']['planning_width']
+    ph = round(pw * config['camera']['height']/config['camera']['width'])
+    planning_k = nominal_intrinsics(pw, ph, config['camera']['horizontal_fov_rad'])
+    ratio = pw/config['camera']['width']
+    planner_config['labels']['min_box_side_px'] = max(1, config['labels']['min_box_side_px']*ratio)
+    planner_config['labels']['min_visible_pixels'] = max(1, config['labels']['min_visible_pixels']*ratio*ratio)
+    planner = Annotator(root, {'id':ident, 'class_names':list(CLASS_NAMES), 'config':planner_config,
+                              'terrain':terrain, 'objects':objects, 'regions':regions})
+    full_k = nominal_intrinsics(config['camera']['width'], config['camera']['height'],
+                                config['camera']['horizontal_fov_rad'])
+    full_planner = Annotator(root, {'id':ident, 'class_names':list(CLASS_NAMES), 'config':config,
+                                   'terrain':terrain, 'objects':objects, 'regions':regions})
+    target_vertices = {o['name']:v for o,v,_f in planner.meshes}
+    target_vertices.update({region['name']:mesh[0] for region,mesh in zip(regions,planner.region_meshes)})
     for index in range(config['capture']['views_per_scene']):
         found = None
+        difficult = bool(targets) and (index+1) % config['capture']['difficult_view_every'] == 0
         for attempt in range(1000):
             if targets:
                 if priority and index % 2 == 0:
@@ -104,8 +128,8 @@ def make_scene(root, config, seed, assets, ground=()):
                 gap = float(rng.uniform(max(lo, min_gap), hi))
                 angle = float(rng.uniform(-math.pi, math.pi))
                 x,y = tx-(gap+lens)*math.cos(angle), ty-(gap+lens)*math.sin(angle)
-                # Last two views intentionally place targets near the image border.
-                offset = rng.uniform(-.12,.12) if index % 5 < 3 else rng.choice([-1,1])*rng.uniform(.35,.58)
+                # One difficult view per group, with a target still required in frame.
+                offset = (rng.choice([-1,1])*rng.uniform(.25,.48) if difficult else rng.uniform(-.08,.08))
                 yaw = angle+offset
             else:
                 x,y = rng.uniform(-size*.3,size*.3,2)
@@ -125,16 +149,47 @@ def make_scene(root, config, seed, assets, ground=()):
                 continue
             roll = math.atan(-gx*math.sin(yaw)+gy*math.cos(yaw))
             pitch = -math.atan(gx*math.cos(yaw)+gy*math.sin(yaw))
-            found = {'id': f'view_{index:03d}', 'xyz':[float(x),float(y),float(field.height(x,y))+.09],
-                     'rpy':[roll,pitch,float(yaw)]}
+            candidate_view = {'id': f'view_{index:03d}', 'xyz':[float(x),float(y),float(driveable.height(x,y))+.09],
+                              'rpy':[roll,pitch,float(yaw)], 'difficult':difficult}
+            if targets:
+                # Predict at wheel-rest height; Gazebo settles the commanded pose.
+                settled = dict(candidate_view, xyz=candidate_view['xyz'][:2]+[candidate_view['xyz'][2]-.01])
+                if not projected_target_fits(target_vertices[target['name']], settled, config['camera'],
+                                             planning_k, config['capture'], difficult):
+                    continue
+                planned_labels, _records, _quality, _instances = planner.annotate(
+                    settled['xyz'], quaternion(settled['rpy']), configured_extrinsics(config['camera']), planning_k)
+                framing = target_framing(planned_labels, target['name'], planning_k, config['capture'], difficult,
+                                         size_guard_px=planning_size_guard(planning_k, config['capture']))
+                if not framing['passed']:
+                    continue
+                # Coarse raster bounds can overestimate a small visible target.
+                # Confirm the final choice at capture resolution, with room for
+                # settling. Actual capture retains the unmodified acceptance floor.
+                full_labels, _records, _quality, _instances = full_planner.annotate(
+                    settled['xyz'], quaternion(settled['rpy']), configured_extrinsics(config['camera']), full_k)
+                full_framing = target_framing(full_labels, target['name'], full_k, config['capture'], difficult,
+                                              size_guard_px=planning_size_guard(full_k, config['capture']))
+                if not full_framing['passed']:
+                    continue
+                candidate_view.update(target_name=target['name'], target_class_id=class_id_for(target.get('class_name','rock')),
+                                      planned_framing=full_framing, coarse_planned_framing=framing,
+                                      planning_resolution=[full_k['width'], full_k['height']])
+            found = candidate_view
             break
         if found is None:
-            raise ValueError('Could not place a collision-free camera viewpoint')
+            raise ValueError(f'{ident}/view_{index:03d}: no collision-free pose satisfies target framing; '
+                             'inspect target sizes, camera pose, distances or framing thresholds')
         views.append(found)
     ground_recipe = (composite_ground(root, list(ground), config['terrain'], seed, folder, regions) if ground
                      else {'layers': [], 'procedural': 'ground.png'})
     if regions and not ground:
         paint_procedural_ground(folder, regions, config['terrain']['size_m'], seed)
+        # Painted candidate masks use one world-sized image, including the
+        # procedural fallback. Repeating its UVs would move/duplicate patches.
+        vertices, faces = field.mesh()
+        uv = (vertices[:, :2]+field.size/2)/field.size
+        write_dae(folder/'terrain.dae',vertices,faces,uv=uv)
         ground_recipe['candidate_mask'] = 'candidate_mask.png'
         ground_recipe['mask_ids'] = {'background': 0, 'silica_soil': 1, 'pale_lookalike': 2}
     dust_bgr = ground_recipe.get('dust_bgr') or [96.0, 128.0, 168.0]
@@ -144,7 +199,9 @@ def make_scene(root, config, seed, assets, ground=()):
                      if ground_recipe.get('dust_bgr') else {})
     # Mars sky: dusty butterscotch by day, varied per scene.
     sky = np.array([.80, .62, .46])*rng.uniform(.85, 1.08)
-    scene = {'schema_version':3, 'simulator':'gazebo-harmonic', 'id':ident, 'seed':seed,
+    kind = 'empty' if empty else ('mixed' if priority else 'rocks_only')
+    scene = {'schema_version':5, 'simulator':'gazebo-harmonic', 'id':ident, 'seed':seed,
+             'class_names':list(CLASS_NAMES), 'kind':kind,
              'scene_group':f'seed_{seed}', 'split':split,
              'config_sha256':config_hash, 'config':config, 'empty':empty, 'terrain':terrain,
              'ground':ground_recipe, 'dust_textures':dust_textures, 'objects':objects, 'regions':regions,
@@ -237,14 +294,15 @@ def generate_bundle(output, config, seeds=None, cache=None):
     plan_path = output/'plan.json'
     if plan_path.exists():
         existing = json.loads(plan_path.read_text())
+        require_label_schema(existing)
         if existing['config_sha256'] != config_hash:
             raise ValueError('Output contains another configuration; use a fresh directory')
     assets = build_library(output/'assets', config['rocks'], cache)
     ground = build_ground(output/'assets'/'ground', config['terrain']['ground_textures'], cache)
     scenes = [make_scene(output, config, int(seed), assets, ground) for seed in seeds]
-    plan = {'schema_version':1, 'config_sha256':config_hash, 'config':config,
+    plan = {'schema_version':3, 'class_names':list(CLASS_NAMES), 'config_sha256':config_hash, 'config':config,
             'scenes':[{'id':s['id'],'seed':s['seed'],'split':s['split'], 'content_sha256':s['content_sha256'],
-                       'views':len(s['views'])} for s in scenes],
+                       'views':len(s['views']), 'kind':s['kind']} for s in scenes],
             'reserved_meshes':[a['id'] for a in assets if a['held_out']]}
     write_json(plan_path, plan)
     write_json(output/'splits.json', {s['scene_group']:s['split'] for s in scenes})

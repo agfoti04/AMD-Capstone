@@ -6,6 +6,7 @@ from pathlib import Path
 
 from rover_training.assets import build_catalog, catalog_path, load_assets, models_dir
 from rover_training.geometry import (
+    CLASS_NAMES,
     annotate_rocks,
     camera_rigid_from_base,
     class_id_for,
@@ -79,6 +80,41 @@ class GeometryTests(unittest.TestCase):
         intrinsics = _small_camera()
         labels = annotate_rocks([_front_rock()], _identity_camera(), intrinsics, depth=_flat_depth(intrinsics, 0.4))
         self.assertEqual(labels, [])
+
+    def test_appearance_aliases_export_three_consistent_class_names(self):
+        expected = [('rock', 0, 'rock'), ('pale_stone', 0, 'rock'),
+                    ('silica_soil', 1, 'pale_soil_patch'), ('pale_lookalike', 1, 'pale_soil_patch'),
+                    ('sulfur_rock', 2, 'yellow_crystal_rock'),
+                    ('cheyava_rock', 0, 'rock'), ('veined_lookalike', 0, 'rock')]
+        intrinsics = _small_camera()
+        for appearance, ident, name in expected:
+            with self.subTest(appearance=appearance):
+                rock = _front_rock()
+                rock['class_name'] = appearance
+                labels = annotate_rocks([rock], _identity_camera(), intrinsics)
+                self.assertEqual(len(labels), 1)
+                self.assertEqual((labels[0]['class_id'], labels[0]['class_name']), (ident, name))
+                exported = write_and_read(labels, intrinsics)
+                self.assertEqual((exported[0]['class_id'], exported[0]['class_name']), (ident, name))
+        self.assertIsNone(class_id_for('unknown_feature'))
+
+    def test_dataset_index_refuses_to_relabel_an_old_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_dataset_index(root)
+            self.assertEqual((root/'classes.txt').read_text().splitlines(), list(CLASS_NAMES))
+            self.assertIn('  2: yellow_crystal_rock\n', (root/'data.yaml').read_text())
+            old_names = ['rock', 'silica_soil', 'pale_lookalike', 'sulfur_rock',
+                         'pale_stone', 'cheyava_rock', 'veined_lookalike']
+            (root/'classes.txt').write_text('\n'.join(old_names)+'\n')
+            with self.assertRaisesRegex(ValueError, 'another label schema'):
+                write_dataset_index(root)
+            label = root/'legacy.txt'
+            label.write_text('2 0.5 0.5 0.2 0.2\n6 0.5 0.5 0.2 0.2\n')
+            self.assertEqual([r['class_name'] for r in read_label_file(label, 100, 80, old_names)],
+                             ['pale_lookalike', 'veined_lookalike'])
+            with self.assertRaisesRegex(ValueError, 'outside'):
+                read_label_file(label, 100, 80)
 
     def test_partial_occlusion_keeps_the_full_box(self):
         intrinsics = _small_camera()

@@ -24,9 +24,22 @@ from rover_training.image_io import decode_ros_depth, decode_ros_image, write_im
 from rover_training.preview import draw_boxes
 from rover_training.yolo_export import write_label_file
 
-from .annotation import Annotator, compare_boxes
+from .annotation import Annotator, check_sky_rgb, compare_boxes, discard_confirmed_sky_labels
 from .common import quaternion, write_json
 from .generate import ROCK_LABEL, WORLD_NAME
+from .quality import frame_checks
+from .reframing import closer_target_view
+
+
+class FrameRejectedError(ValueError):
+    def __init__(self, checks, diagnostics):
+        self.checks = checks
+        framing = checks.get('target_framing') or {}
+        detail = ''
+        if 'side_at_training_px' in framing:
+            detail = (f'; target side {framing["side_at_training_px"]:.2f}px, '
+                      f'minimum {framing["minimum_side_at_training_px"]:.2f}px at training resolution')
+        super().__init__(f'Frame rejected before export: {checks["errors"]}{detail}; diagnostics: {diagnostics}')
 
 
 def stamp(msg):
@@ -167,21 +180,32 @@ class Capture(Node):
         sim_start = stamp(self.odometry[-1])
         for view in self.scene['views']:
             view_started = time.monotonic()
-            before = stamp(self.images[-1])
-            if not self.set_pose(view):
-                raise RuntimeError('Gazebo set_pose rejected the viewpoint')
-            # Require odometry at the commanded XY, then a full settling interval
-            # in simulation time. Never fall back to commanded pose or stale RGB.
-            def arrived():
-                if not self.odometry or stamp(self.odometry[-1]) <= before:
-                    return False
-                xyz,_ = pose_values(self.odometry[-1])
-                return np.linalg.norm(xyz[:2]-np.asarray(view['xyz'][:2]))<.10
-            self.wait(arrived,'Rover did not reach the requested viewpoint')
-            after = stamp(self.odometry[-1]) + self.cap['settle_sim_sec']
-            sample = self.wait(lambda:self.synchronized(after),
-                                lambda: 'No synchronized RGB / camera info / odometry sample; '+self._sync_hint())
-            self.save(view,sample,time.monotonic()-view_started)
+            while True:
+                before = stamp(self.images[-1])
+                if not self.set_pose(view):
+                    raise RuntimeError('Gazebo set_pose rejected the viewpoint')
+                # Require odometry at the commanded XY, then a full settling interval
+                # in simulation time. Never fall back to commanded pose or stale RGB.
+                def arrived():
+                    if not self.odometry or stamp(self.odometry[-1]) <= before:
+                        return False
+                    xyz,_ = pose_values(self.odometry[-1])
+                    return np.linalg.norm(xyz[:2]-np.asarray(view['xyz'][:2]))<.10
+                self.wait(arrived,'Rover did not reach the requested viewpoint')
+                after = stamp(self.odometry[-1]) + self.cap['settle_sim_sec']
+                sample = self.wait(lambda:self.synchronized(after),
+                                    lambda: 'No synchronized RGB / camera info / odometry sample; '+self._sync_hint())
+                try:
+                    self.save(view,sample,time.monotonic()-view_started)
+                    break
+                except FrameRejectedError as error:
+                    corrected = closer_target_view(self.scene, view, error.checks, sample[3][0])
+                    if corrected is None:
+                        raise
+                    self.get_logger().warning(
+                        f'{view["id"]}: target is {error.checks["target_framing"]["side_at_training_px"]:.2f}px; '
+                        f'reframing attempt {len(corrected["framing_adjustments"])} from a closer safe pose')
+                    view = corrected
         elapsed = time.monotonic()-started
         sim_elapsed = stamp(self.odometry[-1])-sim_start
         report = {'scene_id':self.scene['id'],'config_sha256':self.scene['config_sha256'],
@@ -201,6 +225,10 @@ class Capture(Node):
             measured = decode_ros_depth(depth)
         began = time.monotonic()
         labels,objects,quality,instances = self.annotator.annotate(xyz,quat,self.extrinsics,intrinsics,measured)
+        visibility = quality['visibility_check']
+        check_sky_rgb(rgb, self.annotator.last_instances, objects, visibility['objects'])
+        labels = discard_confirmed_sky_labels(labels, objects, quality)
+        checks = frame_checks(view, labels, quality, intrinsics, self.cap)
         annotation_seconds = time.monotonic()-began
         # Independent second check from Gazebo's renderer. Recorded, never used as labels.
         bbox_check = None
@@ -209,16 +237,23 @@ class Capture(Node):
             bbox_check['timestamp_sim_sec'] = stamp(boxes)
         # Geometric cross-check independent of labels. Fail on gross calibration,
         # stale-pose, mesh scale or transform errors rather than write a bad dataset.
-        if quality.get('rock_depth_median_error_m',0)>.08:
+        if not checks['passed']:
             diagnostics = self.root/'diagnostics'/self.scene['id']/view['id']
+            if view.get('framing_adjustments'):
+                diagnostics = diagnostics/f'reframe_{len(view["framing_adjustments"]):02d}'
             diagnostics.mkdir(parents=True,exist_ok=True)
             write_image(diagnostics/'rgb',width,height,rgb)
             write_image(diagnostics/'boxes',width,height,draw_boxes(rgb,width,height,labels))
-            np.savez_compressed(diagnostics/'geometry.npz',instances=instances,depth=measured,
+            np.savez_compressed(diagnostics/'geometry.npz',instances=self.annotator.last_instances,
+                                expected_depth=self.annotator.last_expected_depth, depth=measured,
                                 xyz=xyz,quaternion=quat)
             write_json(diagnostics/'camera.json',{'intrinsics':intrinsics,'extrinsics':self.extrinsics,
-                                                  'objects':objects,'quality':quality})
-            raise ValueError(f'Rock mesh / sensor depth disagree: {quality}')
+                                                  'objects':objects, 'labels':labels, 'quality':quality,
+                                                  'scene_id':self.scene['id'], 'view':view, 'checks':checks,
+                                                  'timestamp_sim_sec':stamp(image)})
+            from .review import write_review_page
+            write_review_page(self.root)
+            raise FrameRejectedError(checks, diagnostics)
         split = self.scene['split']
         stem = self.scene['id']+'_'+view['id']
         metadata_path = self.root/'metadata'/split/(stem+'.json')
@@ -241,8 +276,12 @@ class Capture(Node):
                   'base_xyz':xyz.tolist(),'base_quaternion':quat.tolist(),'pose_source':'interpolated_ground_truth_odom',
                   'pose_bracket_sim_sec':bracket,'camera_extrinsics':self.extrinsics,
                   'objects':objects,'labels':labels,'depth_quality':quality,'bbox_check':bbox_check,
+                  'capture_checks':checks, 'target_name':view.get('target_name'), 'difficult':view.get('difficult',False),
+                  'capture_view':view, 'framing_adjustments':view.get('framing_adjustments', []),
                   'wait_seconds':wait_seconds,'annotation_seconds':annotation_seconds,'clean_rgb':True}
         write_json(metadata_path,record)
+        from .review import write_review_page
+        write_review_page(self.root)
         self.records.append(metadata_path.relative_to(self.root).as_posix())
         agreement = 'n/a' if bbox_check is None else (
             f"{bbox_check['matched']}/{len(labels)} matched, {bbox_check['gazebo_boxes_unexplained']} unexplained")
