@@ -90,7 +90,7 @@
   </link>
   <joint
     name="Joint_1"
-    type="revolute">
+    type="continuous">
     <origin
       xyz="0 0 0.0520999749999999"
       rpy="0 0 0" />
@@ -101,8 +101,6 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-3.14"
-      upper="3.14"
       effort="2.92"
       velocity="4.5" />
   </joint>
@@ -217,8 +215,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-1.57"
-      upper="1.57"
+      lower="-2.10"
+      upper="2.10"
       effort="2.94"
       velocity="4.5" />
   </joint>
@@ -322,7 +320,7 @@
   </link>
   <joint
     name="Joint_5"
-    type="revolute">
+    type="fixed">
     <origin
       xyz="0.0344999999999794 0 0"
       rpy="0 0 0" />
@@ -330,13 +328,6 @@
       link="Link_4" />
     <child
       link="Link_5" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      lower="-1.46"
-      upper="1.57"
-      effort="2.92"
-      velocity="4.5" />
   </joint>
   <link
     name="Link_6">
@@ -502,11 +493,6 @@
       <state_interface name="velocity"/>
     </joint>
     <joint name="Joint_4">
-      <command_interface name="position"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-    </joint>
-    <joint name="Joint_5">
       <command_interface name="position"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
