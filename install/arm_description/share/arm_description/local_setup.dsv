@@ -1,2 +1,1 @@
-source;share/arm_description/environment/ament_prefix_path.sh
-source;share/arm_description/environment/path.sh
+/root/Capstone/AMD-Capstone/build/arm_description/ament_cmake_environment_hooks/local_setup.dsv
