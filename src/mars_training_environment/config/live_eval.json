@@ -1,0 +1,17 @@
+{
+  "capture": {
+    "views_per_scene": 10,
+    "target_class_views": {"rock": 4, "pale_soil_patch": 3, "yellow_crystal_rock": 3},
+    "class_quota_scene_attempts": 12
+  },
+  "candidates": {
+    "silica_count": [2, 3],
+    "pale_lookalike_count": [2, 3],
+    "sulfur_count": [2, 3]
+  },
+  "dataset": {
+    "seeds": [50000, 50001, 50002],
+    "empty_seeds": [],
+    "rocks_only_seeds": []
+  }
+}

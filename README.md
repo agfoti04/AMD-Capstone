@@ -14,6 +14,17 @@ resumes; newer plans also use full-resolution framing checks.
 
 Branch: `perception/mars-pilot50-v2-review`.
 
+## Live driving with trained vision
+
+The [Halo live-vision guide](scripts/HALO_LIVE_VISION.md) prepares a separate
+interactive Gazebo session, three new evaluation scenes, and a browser camera
+view with predictions for all three classes. Hold keyboard keys or direction
+buttons to drive; command expiry and camera freshness checks stop movement on
+disconnect. ROS stays in Docker while inference uses the host's existing ROCm
+Conda environment. Optional recordings preserve frames, predictions and weights
+provenance. Deploy after capture completes and run after training. Local checks
+do not replace a full Gazebo/ROCm verification on the Halo.
+
 ## Balanced class coverage for the next dataset
 
 `config/coverage500_balanced.json` in the environment package defines 50 new

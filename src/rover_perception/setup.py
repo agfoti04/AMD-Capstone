@@ -9,6 +9,7 @@ setup(
     name=package_name,
     version="0.1.0",
     packages=find_packages(exclude=["test"]),
+    package_data={package_name: ["live_dashboard.html"]},
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
@@ -24,6 +25,7 @@ setup(
     entry_points={
         "console_scripts": [
             "rock_detector = rover_perception.detector_node:main",
+            "live_bridge = rover_perception.live_bridge:main",
         ],
     },
 )
