@@ -16,6 +16,7 @@ from .common import digest, quaternion, read_config, require_label_schema, rotat
 from .dust import bake_scene_dust
 from .ground import composite_ground
 from .framing import configured_extrinsics, planning_size_guard, projected_target_fits, target_framing
+from .planning import ViewPlanningError, class_coverage, class_view_schedule, targets_for_class
 from .meshes import build_ground, build_library, write_dae
 from .terrain import Terrain, generate_terrain
 
@@ -24,6 +25,22 @@ ROCK_LABEL = 1
 
 
 def make_scene(root, config, seed, assets, ground=()):
+    quotas = config['capture'].get('target_class_views', {})
+    mixed = (seed not in config['dataset']['empty_seeds']
+             and seed not in config['dataset'].get('rocks_only_seeds', []))
+    attempts = config['capture'].get('class_quota_scene_attempts',8) if quotas and mixed else 1
+    for attempt in range(attempts):
+        layout_seed = seed if attempt == 0 else int(digest({'scene_seed':seed,'layout_attempt':attempt})[:8],16)
+        try:
+            return _make_scene(root,config,seed,assets,ground,layout_seed,attempt+1)
+        except ViewPlanningError as error:
+            if attempt+1 == attempts:
+                raise ViewPlanningError(f'scene_{seed:06d}: unable to satisfy target framing after {attempts} '
+                                        f'layouts; {error}') from error
+            print(f'Retrying scene_{seed:06d} layout {attempt+2}/{attempts}: {error}',flush=True)
+
+
+def _make_scene(root, config, seed, assets, ground, layout_seed, layout_attempt):
     root = Path(root).resolve()
     ident = f'scene_{seed:06d}'
     folder = root/'scenes'/ident
@@ -34,7 +51,7 @@ def make_scene(root, config, seed, assets, ground=()):
         require_label_schema(existing)
         if existing['config_sha256'] != config_hash:
             raise ValueError(f'{ident} already exists with another config; use a new output directory')
-    rng = np.random.RandomState(seed)
+    rng = np.random.RandomState(layout_seed)
     field, driveable, terrain = generate_terrain(seed, config['terrain'], folder)
     split = split_for_seed(seed)
     # Candidate meshes are placed explicitly below with their appearance name.
@@ -89,9 +106,11 @@ def make_scene(root, config, seed, assets, ground=()):
     if not empty and config.get('candidates', {}).get('enabled'):
         add_candidates(rng, config, field, driveable, assets, root, objects, regions, folder,
                        allowed_categories={'pale_stone'} if rocks_only else None)
-    views = []
+    views = [None]*config['capture']['views_per_scene']
     targets = list(objects) + list(regions)
     priority = [item for item in targets if class_id_for(item.get('class_name', 'rock')) not in (None, 0)]
+    schedule_rng = np.random.RandomState(int(digest({'scene_seed':seed,'purpose':'class_view_schedule'})[:8],16))
+    schedule = class_view_schedule(config['capture'],schedule_rng,empty=empty,rocks_only=rocks_only)
     planner_config = json.loads(json.dumps(config))
     pw = config['capture']['planning_width']
     ph = round(pw * config['camera']['height']/config['camera']['width'])
@@ -107,12 +126,24 @@ def make_scene(root, config, seed, assets, ground=()):
                                    'terrain':terrain, 'objects':objects, 'regions':regions})
     target_vertices = {o['name']:v for o,v,_f in planner.meshes}
     target_vertices.update({region['name']:mesh[0] for region,mesh in zip(regions,planner.region_meshes)})
-    for index in range(config['capture']['views_per_scene']):
+    # Plan the most constrained class first, so an infeasible crystal layout
+    # does not waste time planning the other views before a bounded retry.
+    order = list(range(config['capture']['views_per_scene']))
+    if config['capture'].get('target_class_views') and not empty and not rocks_only:
+        order.sort(key=lambda index:({2:0,1:1,0:2}[schedule[index]],index))
+    for index in order:
         found = None
+        requested = schedule[index]
+        pool = targets if requested is None else targets_for_class(targets,requested)
+        if targets and requested is not None and not pool:
+            raise ViewPlanningError(f'{ident}/view_{index:03d}: no {CLASS_NAMES[requested]} target in this layout')
+        class_offset = schedule[:index].count(requested)
         difficult = bool(targets) and (index+1) % config['capture']['difficult_view_every'] == 0
         for attempt in range(1000):
             if targets:
-                if priority and index % 2 == 0:
+                if requested is not None:
+                    target = pool[(class_offset+attempt) % len(pool)]
+                elif priority and index % 2 == 0:
                     target = priority[(index // 2 + attempt) % len(priority)]
                 else:
                     target = targets[(index + attempt) % len(targets)]
@@ -175,12 +206,15 @@ def make_scene(root, config, seed, assets, ground=()):
                 candidate_view.update(target_name=target['name'], target_class_id=class_id_for(target.get('class_name','rock')),
                                       planned_framing=full_framing, coarse_planned_framing=framing,
                                       planning_resolution=[full_k['width'], full_k['height']])
+                if requested is not None:
+                    candidate_view['requested_target_class_id'] = requested
             found = candidate_view
             break
         if found is None:
-            raise ValueError(f'{ident}/view_{index:03d}: no collision-free pose satisfies target framing; '
-                             'inspect target sizes, camera pose, distances or framing thresholds')
-        views.append(found)
+            target_class = 'target' if requested is None else CLASS_NAMES[requested]
+            raise ViewPlanningError(f'{ident}/view_{index:03d}: no collision-free pose satisfies {target_class} framing; '
+                                    'inspect target sizes, camera pose, distances or framing thresholds')
+        views[index] = found
     ground_recipe = (composite_ground(root, list(ground), config['terrain'], seed, folder, regions) if ground
                      else {'layers': [], 'procedural': 'ground.png'})
     if regions and not ground:
@@ -212,6 +246,12 @@ def make_scene(root, config, seed, assets, ground=()):
                          'intensity':float(rng.uniform(.75,1.15)), 'ambient':float(rng.uniform(.32,.50)),
                          'sky_rgb':np.clip(sky,0,1).tolist()},
              'assets_sha256':digest(assets), 'ground_sha256':digest(list(ground))}
+    if config['capture'].get('target_class_views'):
+        scene['view_planning'] = {'policy':'class_quotas_v1','layout_seed':layout_seed,'layout_attempt':layout_attempt}
+        coverage = class_coverage([scene])
+        if coverage['errors']:
+            raise ViewPlanningError('; '.join(coverage['errors']))
+        scene['view_planning']['primary_target_counts'] = coverage['primary_target_counts'][split]
     scene['content_sha256'] = digest(scene)
     write_json(manifest_path, scene)
     write_world(root, scene, assets)
@@ -299,11 +339,22 @@ def generate_bundle(output, config, seeds=None, cache=None):
             raise ValueError('Output contains another configuration; use a fresh directory')
     assets = build_library(output/'assets', config['rocks'], cache)
     ground = build_ground(output/'assets'/'ground', config['terrain']['ground_textures'], cache)
-    scenes = [make_scene(output, config, int(seed), assets, ground) for seed in seeds]
+    scenes = []
+    for index, seed in enumerate(seeds,1):
+        print(f'Planning scene_{int(seed):06d} ({index}/{len(seeds)}, {split_for_seed(int(seed))})',flush=True)
+        scene = make_scene(output,config,int(seed),assets,ground)
+        scenes.append(scene)
+        counts = scene.get('view_planning',{}).get('primary_target_counts',{})
+        print(f'Finished planning {scene["id"]}: {len(scene["views"])} views'+
+              (f', targets {counts}' if counts else ''),flush=True)
     plan = {'schema_version':3, 'class_names':list(CLASS_NAMES), 'config_sha256':config_hash, 'config':config,
             'scenes':[{'id':s['id'],'seed':s['seed'],'split':s['split'], 'content_sha256':s['content_sha256'],
                        'views':len(s['views']), 'kind':s['kind']} for s in scenes],
             'reserved_meshes':[a['id'] for a in assets if a['held_out']]}
+    if config['capture'].get('target_class_views'):
+        plan['class_coverage'] = class_coverage(scenes)
+        if plan['class_coverage']['errors']:
+            raise ValueError('Plan does not satisfy class quotas: '+str(plan['class_coverage']['errors']))
     write_json(plan_path, plan)
     write_json(output/'splits.json', {s['scene_group']:s['split'] for s in scenes})
     return plan

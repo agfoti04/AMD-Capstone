@@ -8,6 +8,10 @@ def frame_checks(view, labels, quality, intrinsics, capture):
     if view.get('target_name'):
         framing = target_framing(labels, view['target_name'], intrinsics, capture, view.get('difficult', False))
         errors.extend(framing['reasons'])
+        required_class = view.get('requested_target_class_id')
+        target = next((label for label in labels if label['name']==view['target_name']),None)
+        if required_class is not None and target is not None and target['class_id'] != required_class:
+            errors.append('target_class_does_not_match_requested_quota')
     if capture.get('require_visibility_check'):
         visibility = quality.get('visibility_check', {})
         if not visibility.get('checked'):

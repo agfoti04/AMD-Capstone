@@ -77,6 +77,8 @@ def read_config(path=None):
         raise ValueError('Invalid target framing policy')
     if cap['target_min_side_px'] >= cap['training_imgsz'] * (1-2*cap['target_margin_fraction']):
         raise ValueError('Target minimum size exceeds the usable training image')
+    from .planning import validate_class_quotas
+    validate_class_quotas(cap)
     for key in ('depth_support_fraction', 'patch_support_fraction'):
         if not 0 < config['labels'][key] <= 1:
             raise ValueError(f'{key} must be in (0, 1]')
@@ -94,6 +96,16 @@ def read_config(path=None):
             raise ValueError(f'{key} must contain unique nonnegative integer seeds')
     if set(config['dataset']['empty_seeds']) & set(config['dataset']['rocks_only_seeds']):
         raise ValueError('Empty and rocks-only seeds must be disjoint')
+    quotas = cap.get('target_class_views', {})
+    mixed = (set(config['dataset']['seeds'])-set(config['dataset']['empty_seeds'])
+             -set(config['dataset']['rocks_only_seeds']))
+    if quotas and mixed:
+        candidates = config['candidates']
+        available = set(candidates['categories']) if candidates['enabled'] else set()
+        for name, choices in [('pale_soil_patch',[('silica_soil','silica_count'),('pale_lookalike','pale_lookalike_count')]),
+                              ('yellow_crystal_rock',[('sulfur_rock','sulfur_count')])]:
+            if quotas.get(name,0) and not any(category in available and candidates[key][1]>0 for category,key in choices):
+                raise ValueError(f'target_class_views requests {name}, but no such candidates are enabled')
     return config
 
 

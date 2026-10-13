@@ -19,8 +19,10 @@ Gazebo box, with no missing renderer matches and median IoU 0.9336. Thirteen
 frames retain 18 unexplained renderer boxes as review flags; 37 frames have
 full box agreement. Ground patches use separate depth/paint-mask checks.
 
-The capture is complete. Manual review and a corrected export come next;
-no completed v2 model training or evaluation result is recorded yet. The
+The capture and first reviewed-export training run are complete. The best
+checkpoint's validation mAP50 was 0.573 and mAP50–95 was 0.425, with only three
+soil and one crystal validation instances. The independent test evaluation
+stopped on an incorrect checkpoint path; its result remains pending. The
 [main README](../../README.md) provides the current build, capture, review,
 and training workflow. The verification history later in this document
 describes the individual fixes leading to this completed run.
@@ -183,6 +185,24 @@ labels; the failed examples still need inspection to determine the rendering
 or geometry cause.
 
 ## Target framing
+
+An optional `capture.target_class_views` maps canonical class names to exact
+primary-target counts for mixed scenes; counts must sum to `views_per_scene`.
+The `coverage500_balanced.json` profile requests 4 rock / 3 pale soil / 3 yellow
+crystal views. Explicit rock-only seeds retain all-rock views and empty seeds
+retain background views. A failed crystal pose cannot be replaced by a soil
+target. Bounded layout retries preserve size/distance/burial ranges, the
+original split seed and held-out mesh selection; layout seed/attempt are saved
+under `view_planning`. All accepted poses still pass both raster resolutions.
+
+Audit a generated bundle with:
+
+```bash
+python -m mars_training_environment.planning --bundle dataset/coverage500_balanced_scenes \
+  --require-quotas --expected-frames 500
+```
+
+See [balanced Halo instructions](../../scripts/HALO_COVERAGE500_BALANCED.md).
 
 Capture positions are 1.8–3.2 m from the lens to the target. Camera height,
 tilt, original 1920×1080 resolution, object counts, and appearance randomization

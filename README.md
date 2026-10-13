@@ -8,11 +8,31 @@ and visibility checks, resumable capture, a browser review editor, and a
 
 **October 12, 2026 milestone:** the Halo/Strix completed the v2 pilot with
 **50 images, no validation errors, and 30 train / 10 validation / 10 test images**.
-Manual label review, a corrected export, and v2 training/evaluation are the next
-steps. The completed capture came from the existing v2 scene bundle through
+The reviewed export has completed its first 30-epoch training run. The separate
+test evaluation and a larger balanced capture come next. The completed capture came from the existing v2 scene bundle through
 resumes; newer plans also use full-resolution framing checks.
 
 Branch: `perception/mars-pilot50-v2-review`.
+
+## Balanced class coverage for the next dataset
+
+`config/coverage500_balanced.json` in the environment package defines 50 new
+scenes and 500 views, split 300 train / 100 val / 100 test. Mixed scenes require
+4 rock, 3 pale-soil and 3 yellow-crystal primary targets per ten views. Five
+rock-only scenes and five background scenes are retained. Expected soil and
+crystal targets are 72 each in training and 24 each in val/test.
+
+The planner chooses the class first and retries only targets of that class.
+Infeasible mixed layouts can be resampled deterministically within the same
+physical ranges and split; visibility/framing thresholds are preserved.
+Per-scene progress and a quota audit prevent a low-crystal plan from silently
+passing as balanced. See the [balanced Halo generation/capture guide](scripts/HALO_COVERAGE500_BALANCED.md).
+
+The original pilot has now completed 30 training epochs on the Halo. Its final
+validation mAP50 was 0.573 and mAP50–95 was 0.425, with only three soil and one
+crystal validation instances. The separate test evaluation stopped on an
+incorrect checkpoint path, so no held-out test result is recorded yet. These
+limited minority-class observations motivated the balanced expansion.
 
 ## What has been implemented
 
@@ -223,12 +243,20 @@ yolo train cfg=src/mars_training_environment/config/train960.yaml \
   data=/path/to/reviewed-export/data.yaml device=0
 ```
 
-The placeholders must be replaced with actual files. No completed v2 training
-or test-set model result is recorded yet. Review can load optional YOLO files
+The placeholders must be replaced with actual files. The initial v2 training
+result is recorded above; a held-out test-set result remains pending. Use an
+absolute `project` path for future runs and the checkpoint path printed by
+training: the first run saved under `runs/detect/runs/detect/pilot50_v2_960`.
+Review can load optional YOLO files
 under `predictions/<split>/<frame>.txt` for prediction overlays and matching hints.
 
 ## Verification and remaining work
 
+- The class-quota update passed all 113 environment/review tests on Linux and
+  24 rover-training tests on Windows. The complete 500-view plan was checked
+  against the cached real assets using the same per-scene planner, with exact
+  quotas, preserved framing and no audit errors. New balanced rendered capture
+  remains pending on the Halo; local Docker was unavailable for this update.
 - 102 distinct environment/review tests were verified across the final full run
   and a focused quality/review rerun after correcting a synthetic fixture's
   camera range. Earlier rover-training verification passed 24 tests.
