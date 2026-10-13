@@ -17,7 +17,7 @@ class CmdFilter(Node):
         w, v = m.angular.z, m.linear.x
         if abs(w) < DEAD_W:
             m.angular.z = 0.0
-        elif abs(w) < MIN_W:
+        elif abs(v) < DEAD_V and abs(w) < MIN_W:
             m.angular.z = MIN_W if w > 0 else -MIN_W
         if abs(v) < DEAD_V:
             m.linear.x = 0.0

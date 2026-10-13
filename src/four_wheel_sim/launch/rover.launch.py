@@ -25,10 +25,11 @@ def generate_launch_description():
                 os.path.join(rtab, 'launch', 'rtabmap.launch.py')),
             launch_arguments={
                 'rtabmap_args': '--delete_db_on_start '
-                                '--Vis/MinInliers 25 --RGBD/OptimizeMaxError 1.0 '
+                                '--Vis/MinInliers 28 --RGBD/OptimizeMaxError 0.5 '
                                 '--Grid/FromDepth true --Grid/RayTracing true '
                                 '--Grid/RangeMax 6.0 --Grid/MaxGroundHeight 0.05 '
-                                '--Grid/MaxObstacleHeight 1.0 --Grid/CellSize 0.05',
+                                '--Grid/MaxObstacleHeight 1.0 --Grid/CellSize 0.05', 
+                              
                 'rgb_topic': '/oak/image_raw',
                 'depth_topic': '/oak/depth/image_raw',
                 'camera_info_topic': '/oak/camera_info',
@@ -41,16 +42,19 @@ def generate_launch_description():
                 'rtabmap_viz': LaunchConfiguration('viz'),
             }.items())])
 
-    mission = TimerAction(period=20.0, actions=[Node(
+    mission = TimerAction(period=25.0, actions=[Node(
         package='four_wheel_sim', executable='rover_mission', output='screen',
         parameters=[{
             'use_sim_time': True,
             'target_x': 1.5, 'target_y': -1.0,    # grid bottom-left corner
             'grid_w': 2.5, 'grid_h': 2.0,         # lanes at y = -1, 0, 1
-            'lane_spacing': 1.0, 'speed': 0.2, 'sweep': True,
+            'lane_spacing': 1.0, 'speed': 0.2, 'sweep': False,
         }])])
+
+    localization = TimerAction(period=20.0, actions=[
+        include(os.path.join(pkg, 'launch', 'localization.launch.py'))])
 
     return LaunchDescription([
         DeclareLaunchArgument('viz', default_value='true'),
-        gazebo, rtabmap, mission,
+        gazebo, rtabmap, mission, localization
     ])

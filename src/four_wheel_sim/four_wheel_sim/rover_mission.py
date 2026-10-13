@@ -9,7 +9,9 @@ from sensor_msgs.msg import Image
 from tf2_ros import Buffer, TransformListener
 
 STOP_DIST = 0.6               # m, obstacle distance that triggers avoidance
-TURN_MIN, TURN_MAX = 0.6, 1.0  # rad/s, spin speeds that actually move the robot
+TURN_MIN, TURN_MAX = 0.5, 1.0  # rad/s, spin speeds that actually move the robot
+PULSE_SEC = 0.22   # length of each fine-turn pulse
+
 
 
 def wrap(a):
@@ -82,26 +84,31 @@ class Rover(Node):
         return c['C'] < STOP_DIST or min(c['L'], c['R']) < STOP_DIST * 0.7
 
     # ---------- motion primitives ----------
-    def rotate_to(self, heading, tol=0.07):
-        for _ in range(3):
-            t0 = self.now()
-            while rclpy.ok():
-                self.tick()
+    def rotate_to(self, heading, tol=0.10):
+        t0 = self.now()
+        while rclpy.ok() and self.now() - t0 < 25.0:
+            self.tick()
+            p = self.pose()
+            if p is None:
+                continue
+            err = wrap(heading - p[2])
+
+            if abs(err) < tol:
+                self.hold(0.5)                      # let it stop, then confirm
                 p = self.pose()
-                if p is None:
-                    continue
-                err = wrap(heading - p[2])
-                if int(self.now() * 2) != getattr(self, '_rlog', -1):
-                    self._rlog = int(self.now() * 2)
-                    self.get_logger().info(f'rotate: yaw={p[2]:.2f} target={heading:.2f} err={err:.2f}')
-                if abs(err) < tol or self.now() - t0 > 20.0:
-                    break
+                if p and abs(wrap(heading - p[2])) < 1.5 * tol:
+                    return
+                continue
+
+            if abs(err) > 0.35:                     # far away: spin continuously
                 w = min(TURN_MAX, max(TURN_MIN, 1.5 * abs(err)))
                 self.send(w=math.copysign(w, err))
-            self.hold(0.6)
-            p = self.pose()
-            if p and abs(wrap(heading - p[2])) < 2 * tol:
-                return
+            else:                                   # close: one short pulse, then settle
+                t1 = self.now()
+                while self.now() - t1 < PULSE_SEC:
+                    self.send(w=math.copysign(TURN_MIN, err))
+                    self.tick()
+                self.hold(0.5)
             
 
     def move(self, v, dist, watch=False):

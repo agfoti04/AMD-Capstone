@@ -1,0 +1,22 @@
+[0.488s] Invoking command in '/root/Capstone/AMD-Capstone/build/four_wheel_sim': PYTHONPATH=/root/Capstone/AMD-Capstone/build/four_wheel_sim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /root/Capstone/AMD-Capstone/build/four_wheel_sim/build --no-deps symlink_data
+[0.623s] running develop
+[0.698s] running egg_info
+[0.698s] writing four_wheel_sim.egg-info/PKG-INFO
+[0.699s] writing dependency_links to four_wheel_sim.egg-info/dependency_links.txt
+[0.699s] writing entry points to four_wheel_sim.egg-info/entry_points.txt
+[0.699s] writing requirements to four_wheel_sim.egg-info/requires.txt
+[0.699s] writing top-level names to four_wheel_sim.egg-info/top_level.txt
+[0.700s] reading manifest file 'four_wheel_sim.egg-info/SOURCES.txt'
+[0.700s] writing manifest file 'four_wheel_sim.egg-info/SOURCES.txt'
+[0.701s] running build_ext
+[0.701s] Creating /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.10/site-packages/four-wheel-sim.egg-link (link to .)
+[0.702s] Installing cmd_filter script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[0.702s] Installing head_scanner script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[0.702s] Installing maze_waypoints script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[0.702s] Installing my_teleop script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[0.702s] Installing odom_gt script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[0.702s] Installing rover_mission script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[0.702s] 
+[0.702s] Installed /root/Capstone/AMD-Capstone/build/four_wheel_sim
+[0.702s] running symlink_data
+[0.717s] Invoked command in '/root/Capstone/AMD-Capstone/build/four_wheel_sim' returned '0': PYTHONPATH=/root/Capstone/AMD-Capstone/build/four_wheel_sim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /root/Capstone/AMD-Capstone/build/four_wheel_sim/build --no-deps symlink_data
