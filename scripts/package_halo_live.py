@@ -121,7 +121,7 @@ def verify_extracted_build(archive_path):
 def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=root.parent / 'halo-live-vision-20261013.tar.gz')
+    parser.add_argument('--output', type=Path, default=root.parent / 'halo-live-controls-fix-20261013.tar.gz')
     parser.add_argument('--verify-build', action='store_true')
     args = parser.parse_args(argv)
     files = make_patch(root, args.output)

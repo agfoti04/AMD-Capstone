@@ -21,6 +21,7 @@ def setup(context):
     bridge = Node(package='rover_perception', executable='live_bridge', output='screen',
                   parameters=[{'image_topic': camera['image_topic'],
                                'port': int(LaunchConfiguration('bridge_port').perform(context)),
+                               'camera_timeout_sec': float(LaunchConfiguration('camera_timeout').perform(context)),
                                'use_sim_time': False}])
     return [world, bridge]
 
@@ -30,4 +31,5 @@ def generate_launch_description():
         DeclareLaunchArgument('scene', description='scene.json from a separate live-evaluation bundle'),
         DeclareLaunchArgument('gui', default_value='true'),
         DeclareLaunchArgument('bridge_port', default_value='8770'),
+        DeclareLaunchArgument('camera_timeout', default_value='3.0'),
         OpaqueFunction(function=setup)])

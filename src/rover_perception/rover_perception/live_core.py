@@ -6,6 +6,19 @@ import time
 import numpy as np
 
 
+DEFAULT_CAMERA_TIMEOUT = 3.0
+
+
+def camera_timeout(value):
+    """Bound the simulation camera grace period without changing the drive lease."""
+    if isinstance(value, bool):
+        raise ValueError('Camera timeout must be between 0.1 and 10 seconds')
+    value = float(value)
+    if not math.isfinite(value) or not 0.1 <= value <= 10:
+        raise ValueError('Camera timeout must be between 0.1 and 10 seconds')
+    return value
+
+
 def image_to_bgr(msg):
     """Decode ROS row padding and preserve Ultralytics' NumPy BGR convention."""
     if msg.encoding.lower() not in ('rgb8', 'bgr8'):

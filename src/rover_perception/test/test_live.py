@@ -15,7 +15,7 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from rover_perception.live_core import DriveLease, image_to_bgr
+from rover_perception.live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr
 from rover_perception.live_dashboard import LiveSession, dashboard_handler
 
 
@@ -112,6 +112,17 @@ class CoreTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 DriveLease().set(value, 0)
 
+    def test_camera_timeout_is_finite_bounded_and_separate_from_drive_lease(self):
+        self.assertEqual(camera_timeout(3), 3.0)
+        for value in (float('nan'), float('inf'), True, 0, 11, 'invalid'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                camera_timeout(value)
+        now = [10.0]
+        lease = DriveLease(clock=lambda: now[0])
+        lease.set(0.3, 0)
+        now[0] += 0.36
+        self.assertEqual(lease.get(), (0, 0))
+
 
 class LiveHTTPTests(unittest.TestCase):
     def setUp(self):
@@ -119,6 +130,8 @@ class LiveHTTPTests(unittest.TestCase):
         self.node.lock = threading.Lock()
         self.node.frame, self.node.sequence, self.node.received = image_message(), 1, time.monotonic()
         self.node.lease = DriveLease()
+        self.node.camera_timeout = DEFAULT_CAMERA_TIMEOUT
+        self.node.stream_id = 'test-stream'
         self.published = []
         self.node.pub = types.SimpleNamespace(publish=self.published.append)
         self.bridge, self.url = run_server(bridge_handler(self.node))
@@ -161,7 +174,7 @@ class LiveHTTPTests(unittest.TestCase):
 
     def test_stale_camera_stops_rover_even_with_renewed_command(self):
         self.process_frame()
-        self.node.received = time.monotonic() - 2
+        self.node.received = time.monotonic() - 4
         self.node.lease.set(0.3, 0.8)
         self.node.drive()
         self.assertEqual((self.published[-1].linear.x, self.published[-1].angular.z), (0, 0))
@@ -169,6 +182,79 @@ class LiveHTTPTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as error:
             urllib.request.urlopen(self.url + '/frame.png')
         self.assertEqual(error.exception.code, 503)
+        await_condition(lambda: bool(self.session.snapshot()['error']))
+        self.assertIn('Camera stopped updating', self.session.snapshot()['error'])
+        self.assertNotIn('HTTPError', self.session.snapshot()['error'])
+
+    def test_observed_1_41_second_gap_still_allows_inference_and_driving(self):
+        self.node.received = time.monotonic() - 1.41
+        self.process_frame()
+        status = self.session.snapshot()
+        self.assertTrue(status['camera_delayed'])
+        self.assertEqual(status['camera_timeout_seconds'], 3.0)
+        post(self.web + '/command', dict(linear=0.3, angular=0))
+        self.node.drive()
+        self.assertEqual(self.published[-1].linear.x, 0.3)
+        time.sleep(0.15)
+        self.assertTrue(self.session.snapshot()['ready'])
+        self.assertEqual(len(self.model.calls), 1)
+
+    def test_unchanged_frame_returns_304_without_encoding_again(self):
+        with patch('rover_perception.live_bridge.cv2.imencode', wraps=cv2.imencode) as encode:
+            with urllib.request.urlopen(self.url + '/frame.png') as response:
+                etag = response.headers['ETag']
+                response.read()
+            request = urllib.request.Request(self.url + '/frame.png', headers={'If-None-Match': etag})
+            with self.assertRaises(urllib.error.HTTPError) as unchanged:
+                urllib.request.urlopen(request)
+            self.assertEqual(unchanged.exception.code, 304)
+            unchanged.exception.close()
+            self.assertEqual(encode.call_count, 1)
+            self.node.on_image(image_message())
+            with urllib.request.urlopen(request) as response:
+                self.assertNotEqual(response.headers['ETag'], etag)
+                response.read()
+            self.assertEqual(encode.call_count, 2)
+
+    def test_expired_cached_frame_is_rejected_instead_of_returning_304(self):
+        with urllib.request.urlopen(self.url + '/frame.png') as response:
+            etag = response.headers['ETag']
+            response.read()
+        self.node.received = time.monotonic() - 4
+        request = urllib.request.Request(self.url + '/frame.png', headers={'If-None-Match': etag})
+        with self.assertRaises(urllib.error.HTTPError) as expired:
+            urllib.request.urlopen(request)
+        self.assertEqual(expired.exception.code, 503)
+        expired.exception.close()
+
+    def test_stricter_camera_timeout_is_honored(self):
+        self.session.camera_timeout = 0.5
+        self.node.received = time.monotonic() - 0.8
+        self.session.thread.start()
+        await_condition(lambda: bool(self.session.snapshot()['error']))
+        self.assertFalse(self.session.snapshot()['ready'])
+
+    def test_bridge_timeout_limits_dashboard_even_if_its_setting_is_longer(self):
+        self.node.camera_timeout = 0.5
+        self.process_frame()
+        self.assertEqual(self.session.snapshot()['camera_timeout_seconds'], 0.5)
+        self.session.captured = time.monotonic() - 0.7
+        self.assertFalse(self.session.snapshot()['ready'])
+
+    def test_camera_recovers_after_prolonged_gap_without_cached_error_sticking(self):
+        self.process_frame()
+        self.node.received = time.monotonic() - 4
+        await_condition(lambda: bool(self.session.snapshot()['error']))
+        self.assertFalse(self.session.snapshot()['ready'])
+        self.node.on_image(image_message())
+        await_condition(lambda: self.session.snapshot()['ready'])
+        self.assertIsNone(self.session.snapshot()['error'])
+
+    def test_bridge_restart_with_same_sequence_and_timestamp_still_gets_processed(self):
+        self.process_frame()
+        self.node.stream_id = 'restarted-stream'
+        self.node.received = time.monotonic()
+        await_condition(lambda: len(self.model.calls) == 2)
 
     def test_inference_failure_disables_controls(self):
         self.process_frame()

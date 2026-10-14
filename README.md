@@ -22,7 +22,10 @@ view with predictions for all three classes. Hold keyboard keys or direction
 buttons to drive; command expiry and camera freshness checks stop movement on
 disconnect. ROS stays in Docker while inference uses the host's existing ROCm
 Conda environment. Optional recordings preserve frames, predictions and weights
-provenance. Deploy after capture completes and run after training. Local checks
+provenance. Live controls tolerate camera gaps up to three seconds, with a
+separate 0.35-second command expiry. Conditional camera requests avoid encoding
+unchanged images; longer stalls pause driving and display a useful status message.
+Deploy after capture completes and run after training. Local checks
 do not replace a full Gazebo/ROCm verification on the Halo.
 
 ## Balanced class coverage for the next dataset

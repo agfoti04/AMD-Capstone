@@ -13,7 +13,7 @@ body{margin:0;background:#101923;color:#e4edf4;font:16px system-ui,sans-serif}ma
 <button data-key="a" aria-label="Turn left">A ←</button><button id="stop">Stop</button><button data-key="d" aria-label="Turn right">D →</button>
 <span></span><button data-key="s" aria-label="Drive backward">S ↓</button><span></span>
 </div><div><p>Hold W/A/S/D or a direction button to move.<br>Release to stop. Space stops all movement.</p>
-<p class="note">Speed: 0.30 m/s · Turn rate: 0.80 rad/s<br>Controls stop if the page or camera loses connection.</p></div></div>
+<p class="note">Speed: 0.30 m/s · Turn rate: 0.80 rad/s<br>Controls expire without heartbeats; prolonged camera gaps pause driving.</p></div></div>
 <p id="detections">No predictions received yet.</p></main>
 <script>
 const held=new Set(), statusBox=document.querySelector('#status');
@@ -43,8 +43,8 @@ document.querySelectorAll('[data-key]').forEach(b=>{
 setInterval(()=>{if(held.size)send();},100);
 async function refresh(){
  try{const r=await fetch('/status',{signal:AbortSignal.timeout(1000)});if(!r.ok)throw Error('Dashboard unavailable');const s=await r.json();ready=s.ready&&!s.error;
- statusBox.className=ready?'ready':'';
- statusBox.textContent=ready?`Live · ${s.loop_fps.toFixed(1)} processed FPS · ${s.inference_ms.toFixed(1)} ms inference · camera age ${s.frame_age_seconds.toFixed(2)} s`:s.error||'Camera stale. Driving is paused.';
+ statusBox.className=ready&&!s.camera_delayed?'ready':'';
+ statusBox.textContent=ready?`${s.camera_delayed?'Camera delayed':'Live'} · ${s.loop_fps.toFixed(1)} processed FPS · ${s.inference_ms.toFixed(1)} ms inference · camera age ${s.frame_age_seconds.toFixed(2)} s${s.camera_delayed?` (driving pauses at ${s.camera_timeout_seconds.toFixed(1)} s)`:''}`:s.error||'Camera stopped updating. Driving is paused; release controls and wait for the camera.';
  document.querySelector('#detections').textContent=s.detections.length?s.detections.map(d=>`${d.class_name}: ${(d.confidence*100).toFixed(0)}%`).join('\n'):'No objects detected in this view.';
  if(!ready&&held.size)stop();
  }catch(e){ready=false;stop();statusBox.className='';statusBox.textContent='Dashboard disconnected. Driving is paused.';}

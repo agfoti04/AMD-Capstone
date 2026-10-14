@@ -30,13 +30,13 @@ fresh extraction rather than from the developer checkout.
 In Windows PowerShell:
 
 ```powershell
-& 'C:\Windows\System32\OpenSSH\scp.exe' C:\Projects\Capstone\halo-live-vision-20261013.tar.gz ian@halo-strix:~/
+& 'C:\Windows\System32\OpenSSH\scp.exe' C:\Projects\Capstone\halo-live-controls-fix-20261013.tar.gz ian@halo-strix:~/
 ```
 
 On the Halo, after capture completes:
 
 ```bash
-tar -xzf ~/halo-live-vision-20261013.tar.gz -C ~/capstone-training/mars-pilot50-v2
+tar -xzf ~/halo-live-controls-fix-20261013.tar.gz -C ~/capstone-training/mars-pilot50-v2
 ```
 
 ```bash
@@ -135,14 +135,14 @@ cd ~/capstone-training/mars-pilot50-v2
 conda activate rover-yolo
 ```
 
-Select the exact checkpoint printed by your training run. To try the already
-completed 50-image baseline first:
+Use the completed 500-image model:
 
 ```bash
-export ROVER_LIVE_MODEL="$HOME/capstone-training/mars-pilot50-v2/runs/detect/runs/detect/pilot50_v2_960/weights/best.pt"
+export ROVER_LIVE_MODEL="$HOME/capstone-training/mars-pilot50-v2/runs/detect/coverage500_balanced_960/weights/best.pt"
 ```
 
-After balanced training, replace that value with its `best.pt` path.
+For another training run, substitute its exact `best.pt` path. The earlier
+50-image baseline remains at `runs/detect/runs/detect/pilot50_v2_960/weights/best.pt`.
 
 ```bash
 bash scripts/halo_live_vision.sh "$ROVER_LIVE_MODEL" --scene scene_050000
@@ -169,9 +169,30 @@ bash scripts/halo_live_vision.sh "$ROVER_LIVE_MODEL" --scene scene_050000 --conf
 
 The bridge clamps movement to 0.30 m/s and 0.80 rad/s. Browser release, blur and
 hidden-page events request a stop. Commands expire after 0.35 seconds without
-a heartbeat; stale camera data also stops motion. A paused simulator therefore
-cannot preserve a drive command indefinitely. On a disconnected page, release
-the physical keys and press them again after reconnection.
+a heartbeat. The live camera has a separate three-second freshness limit:
+short rendering gaps can show "Camera delayed" while held controls continue;
+longer gaps pause driving. A paused simulator therefore cannot preserve a
+drive command indefinitely. After a stop/disconnect, release the physical keys
+and press them again after the feed recovers.
+
+The original live bridge rejected frames older than one second. A measured
+1.41-second camera gap on the Halo triggered HTTP 503 and cleared held keys
+even though the camera resumed. The updated bridge and dashboard use the same
+bounded camera timeout, avoid re-encoding unchanged PNGs with conditional HTTP
+requests, and explain camera stalls in the status banner. True bridge/inference
+errors still disable driving immediately; the command heartbeat expiry is
+independent of the camera timeout.
+
+To change camera tolerance, set this in **both** Halo launch terminals before
+starting their scripts (valid range 0.1–10 seconds):
+
+```bash
+export ROVER_CAMERA_TIMEOUT=3.0
+```
+
+The vision command also accepts `--camera-timeout`. The dashboard uses the
+stricter of its setting and the bridge's setting. Keep both launchers on the
+same value for predictable behavior.
 
 ## Optionally record evidence
 
@@ -207,6 +228,10 @@ sudo docker stop rover-live-sim
 
 - Waiting for camera: make sure Gazebo is playing, controllers have loaded and
   `http://127.0.0.1:8770/status` reports a changing sequence and recent camera age.
+- Intermittent HTTP 503 while driving: deploy the controls-fix archive, rebuild
+  both packages and restart Gazebo/vision; refresh the browser. The bridge status
+  should report `camera_timeout_seconds: 3.0`. If camera gaps exceed three seconds,
+  inspect simulator performance or pause state before increasing the limit.
 - Port in use: close the prior live session; ports 8770/8771 are independent of
   the dataset review ports 8765/8766.
 - GUI cannot open: rerun inside the remote Ubuntu desktop terminal and check
@@ -217,16 +242,18 @@ sudo docker stop rover-live-sim
   corrected archive, then check all three bootstrap files above and rebuild.
   Creating the marker alone does not supply the missing namespace/install config.
 
-The 12 live camera/control tests passed on Windows and Linux. They cover
+The 20 live camera/control tests passed on Windows and Linux. They cover
 color/stride handling, all-class output, HTTP inference and controls, stale
 frames, command expiry and recording, using controlled ROS/model doubles.
+They reproduce the measured 1.41-second camera gap, verify conditional frame
+requests and recovery, and confirm that longer stalls still stop driving.
 The shipped browser script also passed a DOM/event harness for keyboard,
-pointer, heartbeat, release, blur, hidden-page and reconnection behavior.
+pointer, heartbeat, camera grace/expiry, release, blur, hidden-page and reconnection behavior.
 Bash syntax checks and a package build passed. All three evaluation seeds
 were planned locally with the production generator; the 30-view quota audit
-returned `errors: []`. The local Browser connection and Docker were
-unavailable; a complete GUI + real-checkpoint + Halo GPU test remains required
-on the actual Halo after training.
+returned `errors: []`. The local Browser connection and Docker were unavailable.
+The base live workflow has since run on the Halo; verify this controls update
+there after deployment.
 
 Three deployment regression tests passed on Windows and Linux. The corrected
 archive also passed a package build from a fresh extraction, confirming that

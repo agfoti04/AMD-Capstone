@@ -3,6 +3,7 @@
 set -euo pipefail
 project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 scene_rel="${1:-dataset/live_eval_scenes/scenes/scene_050000/scene.json}"
+camera_timeout="${ROVER_CAMERA_TIMEOUT:-3.0}"
 scene_abs="$(realpath -- "$project_dir/$scene_rel")"
 if [[ "$scene_abs" != "$project_dir/dataset/live_eval_scenes/"*/scene.json ]]; then
   echo 'Choose a scene.json inside dataset/live_eval_scenes (a separate evaluation bundle).' >&2
@@ -23,11 +24,13 @@ sudo docker run --rm --init -it --name rover-live-sim --network host --shm-size=
   -e QT_X11_NO_MITSHM=1 -e QT_QPA_PLATFORM=xcb -e LIBGL_ALWAYS_SOFTWARE=1 \
   -e ROS_DOMAIN_ID=86 -e ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST \
   -e GZ_PARTITION="rover_live_$(id -u)" -e LIVE_SCENE="$scene_container" \
+  -e LIVE_CAMERA_TIMEOUT="$camera_timeout" \
   -v "$project_dir:/work" -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
   -v "$task_xauth:/tmp/rover-live.xauth:ro" \
   -w /work rover-jazzy bash -c '
     set -e
     source /opt/ros/jazzy/setup.bash
     source /work/install_jazzy/setup.bash
-    exec ros2 launch mars_training_environment mars_live.launch.py scene:="$LIVE_SCENE"
+    exec ros2 launch mars_training_environment mars_live.launch.py \
+      scene:="$LIVE_SCENE" camera_timeout:="$LIVE_CAMERA_TIMEOUT"
   '

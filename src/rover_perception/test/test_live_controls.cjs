@@ -13,7 +13,8 @@ const buttons = ['w', 'a', 's', 'd'].map(element);
 const status = element(), stop = element(), detections = element();
 const events = {}, intervals = new Map(), requests = [];
 let camera = {ready: true, error: null, loop_fps: 8, inference_ms: 20,
-              frame_age_seconds: 0.1, detections: []};
+              frame_age_seconds: 0.1, camera_timeout_seconds: 3,
+              camera_delayed: false, detections: []};
 let commandFailed = false;
 let delayCommand = false, finishCommand;
 const document = {hidden: false, events: {},
@@ -42,6 +43,23 @@ const latest = () => requests.at(-1);
   assert.deepEqual(latest(), {linear: 0.3, angular: 0});
   intervals.get(100)(); await tick();
   assert.deepEqual(latest(), {linear: 0.3, angular: 0}); // heartbeat while held
+  camera = {...camera, frame_age_seconds: 1.41, camera_delayed: true};
+  await intervals.get(500)(); await tick();
+  assert.equal(vm.runInContext('held.size', context), 1);
+  assert.match(status.textContent, /Camera delayed/);
+  intervals.get(100)(); await tick();
+  assert.deepEqual(latest(), {linear: 0.3, angular: 0}); // brief camera gap preserves held input
+  camera = {...camera, frame_age_seconds: 0.1, camera_delayed: false};
+  camera = {...camera, ready: false, frame_age_seconds: 3.2};
+  await intervals.get(500)(); await tick();
+  assert.equal(vm.runInContext('held.size', context), 0);
+  assert.deepEqual(latest(), {linear: 0, angular: 0});
+  assert.match(status.textContent, /Driving is paused/);
+  camera = {...camera, ready: true, frame_age_seconds: 0.1};
+  await intervals.get(500)(); await tick();
+  key('w', 'keydown', true); await tick();
+  assert.equal(vm.runInContext('held.size', context), 0);
+  key('w'); await tick();
   key('d'); await tick();
   assert.deepEqual(latest(), {linear: 0.3, angular: -0.8});
   key('w', 'keyup'); await tick();
@@ -85,5 +103,5 @@ const latest = () => requests.at(-1);
   assert.match(status.textContent, /disconnected/);
   events.pagehide(); await tick();
   assert.deepEqual(latest(), {linear: 0, angular: 0});
-  console.log('PASS: keyboard, arrows, heartbeat, release, Stop/Space, pointer cancellation, blur, hidden page, stale camera, reconnect and command failure');
+  console.log('PASS: keyboard, arrows, heartbeats, 1.41-second camera grace, three-second camera stop, release, Stop/Space, pointer cancellation, blur, hidden page, reconnect and command failure');
 })().catch(error => {console.error(error); process.exitCode = 1;});

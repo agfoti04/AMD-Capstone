@@ -7,20 +7,24 @@ import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.client import HTTPException
 from pathlib import Path
 from urllib.parse import urlparse
 
 import cv2
 import numpy as np
 
-from .live_core import DriveLease, detection_rows
+from .live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, detection_rows
 
 
 class LiveSession:
-    def __init__(self, model, bridge, imgsz=960, conf=0.25, device='0', fps=8, record=None):
+    def __init__(self, model, bridge, imgsz=960, conf=0.25, device='0', fps=8, record=None,
+                 camera_timeout_sec=DEFAULT_CAMERA_TIMEOUT):
         self.model, self.bridge = model, bridge.rstrip('/')
         self.imgsz, self.conf, self.device, self.fps = imgsz, conf, device, fps
         self.record = record
+        self.camera_timeout = camera_timeout(camera_timeout_sec)
+        self.bridge_camera_timeout = self.camera_timeout
         self.condition = threading.Condition()
         self.stop = threading.Event()
         self.jpeg = None
@@ -32,7 +36,10 @@ class LiveSession:
     def snapshot(self):
         with self.condition:
             age = time.monotonic() - self.captured if self.captured else None
-            return dict(self.status, frame_age_seconds=age, ready=age is not None and age < 1.5)
+            limit = min(self.camera_timeout, self.bridge_camera_timeout)
+            return dict(self.status, frame_age_seconds=age, camera_timeout_seconds=limit,
+                        camera_delayed=age is not None and 1.0 < age < limit,
+                        ready=age is not None and age < limit and not self.status.get('error'))
 
     def command(self, linear, angular):
         validator = DriveLease()
@@ -48,23 +55,29 @@ class LiveSession:
 
     def run(self):
         previous = None
+        etag = None
         last_processed = None
         while not self.stop.is_set():
             started = time.monotonic()
             try:
-                with urllib.request.urlopen(self.bridge + '/frame.png', timeout=2) as response:
+                request = urllib.request.Request(self.bridge + '/frame.png',
+                                                 headers={'If-None-Match': etag} if etag else {})
+                with urllib.request.urlopen(request, timeout=2) as response:
+                    headers_received = time.monotonic()
                     sequence = int(response.headers['X-Frame-Sequence'])
                     sim_time = float(response.headers['X-Sim-Time'])
                     age = float(response.headers['X-Frame-Age'])
+                    bridge_limit = camera_timeout(response.headers.get('X-Camera-Timeout', self.camera_timeout))
+                    received_etag = response.headers.get('ETag')
                     raw = response.read()
-                # Count request/transfer time too; never present an old frame as fresh.
-                captured = started - age
-                if age > 1.0:
-                    raise ValueError('Simulator camera is stale')
-                if (sequence, sim_time) == previous:
+                # Age was measured just before response headers, so count body
+                # transfer and inference once rather than counting encoding twice.
+                captured = headers_received - age
+                if age >= min(self.camera_timeout, bridge_limit):
+                    raise ValueError('Camera stopped updating; driving is paused.')
+                if (received_etag, sequence, sim_time) == previous:
                     self.stop.wait(0.05)
                     continue
-                previous = (sequence, sim_time)
                 image = cv2.imdecode(np.frombuffer(raw, dtype=np.uint8), cv2.IMREAD_COLOR)
                 if image is None:
                     raise ValueError('Cannot decode simulator PNG')
@@ -92,13 +105,32 @@ class LiveSession:
                 with self.condition:
                     self.jpeg = encoded.tobytes()
                     self.captured = captured
+                    self.bridge_camera_timeout = bridge_limit
                     self.version += 1
                     self.status = status
                     self.condition.notify_all()
+                # Cache only successfully processed samples, so failed inference
+                # can retry the same frame and a restarted bridge has a new ETag.
+                previous = (received_etag, sequence, sim_time)
+                etag = received_etag
+            except urllib.error.HTTPError as error:
+                if error.code == 304:
+                    # A normal wait for the next camera sample; preserve the
+                    # last processed frame's age and the current held controls.
+                    error.close()
+                else:
+                    try:
+                        message = json.loads(error.read(4096)).get('error')
+                    except (ValueError, AttributeError, OSError, HTTPException):
+                        message = None
+                    finally:
+                        error.close()
+                    with self.condition:
+                        self.status = dict(self.status, error=message or f'Camera bridge returned HTTP {error.code}')
+                    self.stop.wait(0.25)
             except Exception as error:
                 with self.condition:
                     self.status = dict(self.status, error=f'{type(error).__name__}: {error}')
-                    self.captured = 0.0
                 self.stop.wait(0.25)
             self.stop.wait(max(0, 1 / self.fps - (time.monotonic() - started)))
 
@@ -187,6 +219,8 @@ def main(argv=None):
     parser.add_argument('--imgsz', type=int, default=960)
     parser.add_argument('--conf', type=float, default=0.25)
     parser.add_argument('--fps', type=float, default=8)
+    parser.add_argument('--camera-timeout', type=float, default=DEFAULT_CAMERA_TIMEOUT,
+                        help='Stop driving when camera data is older than this many wall seconds (0.1–10)')
     parser.add_argument('--record-dir', type=Path)
     parser.add_argument('--scene', default='', help='Scene ID for recording provenance')
     args = parser.parse_args(argv)
@@ -194,6 +228,10 @@ def main(argv=None):
         parser.error(f'Checkpoint does not exist: {args.model}')
     if args.imgsz <= 0 or not 0 < args.conf <= 1 or not 0 < args.fps <= 30:
         parser.error('Require imgsz > 0, 0 < conf <= 1 and 0 < fps <= 30')
+    try:
+        camera_timeout(args.camera_timeout)
+    except ValueError as error:
+        parser.error(str(error))
     bridge = urlparse(args.bridge)
     if bridge.scheme != 'http' or bridge.hostname not in ('127.0.0.1', 'localhost'):
         parser.error('The simulator bridge must be on localhost')
@@ -206,10 +244,12 @@ def main(argv=None):
         manifest = dict(weights=str(args.model.resolve()),
                         weights_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
                         scene=args.scene, imgsz=args.imgsz, conf=args.conf, device=args.device,
+                        camera_timeout_seconds=args.camera_timeout,
                         class_names=model.names, started_wall_time=time.time())
         (args.record_dir / 'session.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     page = Path(__file__).with_name('live_dashboard.html').read_bytes()
-    session = LiveSession(model, args.bridge, args.imgsz, args.conf, args.device, args.fps, args.record_dir)
+    session = LiveSession(model, args.bridge, args.imgsz, args.conf, args.device, args.fps, args.record_dir,
+                          args.camera_timeout)
     server = ThreadingHTTPServer(('127.0.0.1', args.port), dashboard_handler(session, page))
     server.daemon_threads = True
     session.thread.start()

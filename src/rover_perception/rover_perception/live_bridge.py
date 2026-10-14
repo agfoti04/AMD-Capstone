@@ -2,6 +2,7 @@
 import json
 import threading
 import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import cv2
@@ -11,7 +12,7 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
-from .live_core import DriveLease, image_to_bgr
+from .live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr
 
 
 class LiveBridge(Node):
@@ -19,6 +20,9 @@ class LiveBridge(Node):
         super().__init__('rover_live_bridge')
         self.declare_parameter('image_topic', '/oak/image_raw')
         self.declare_parameter('port', 8770)
+        self.declare_parameter('camera_timeout_sec', DEFAULT_CAMERA_TIMEOUT)
+        self.camera_timeout = camera_timeout(self.get_parameter('camera_timeout_sec').value)
+        self.stream_id = uuid.uuid4().hex
         self.lease = DriveLease()
         self.lock = threading.Lock()
         self.frame = None
@@ -49,7 +53,7 @@ class LiveBridge(Node):
     def drive(self):
         _, _, received = self.snapshot()
         linear, angular = self.lease.get()
-        if not received or time.monotonic() - received > 1.0:
+        if not received or time.monotonic() - received >= self.camera_timeout:
             linear, angular = 0.0, 0.0
         msg = Twist()
         msg.linear.x, msg.angular.z = linear, angular
@@ -82,10 +86,21 @@ def handler(node):
             age = time.monotonic() - received if received else None
             if self.path == '/status':
                 self.reply(200, json.dumps({'sequence': sequence, 'camera_age_seconds': age,
+                                           'camera_timeout_seconds': node.camera_timeout,
+                                           'camera_ready': frame is not None and age < node.camera_timeout,
                                            'command': node.lease.get()}).encode())
             elif self.path == '/frame.png':
-                if frame is None or age > 1.0:
-                    self.reply(503, b'{"error":"Waiting for a fresh camera image"}')
+                if frame is None or age >= node.camera_timeout:
+                    message = ('Waiting for the simulator camera.' if frame is None else
+                               'Camera stopped updating. Check Gazebo is playing; driving is paused.')
+                    self.reply(503, json.dumps({'error': message, 'camera_age_seconds': age,
+                                                'camera_timeout_seconds': node.camera_timeout}).encode())
+                    return
+                etag = f'"{node.stream_id}:{sequence}"'
+                if self.headers.get('If-None-Match') == etag:
+                    # The camera is still within its freshness limit. Let the
+                    # consumer wait for a new sample without encoding the same PNG.
+                    self.reply(304, b'', headers={'ETag': etag})
                     return
                 try:
                     ok, encoded = cv2.imencode('.png', image_to_bgr(frame), [cv2.IMWRITE_PNG_COMPRESSION, 1])
@@ -95,6 +110,8 @@ def handler(node):
                     self.reply(200, encoded.tobytes(), 'image/png',
                                {'X-Frame-Sequence': sequence,
                                 'X-Frame-Age': time.monotonic() - received,
+                                'ETag': etag,
+                                'X-Camera-Timeout': node.camera_timeout,
                                 'X-Sim-Time': stamp.sec + stamp.nanosec / 1e9})
                 except ValueError as error:
                     self.reply(422, json.dumps({'error': str(error)}).encode())
