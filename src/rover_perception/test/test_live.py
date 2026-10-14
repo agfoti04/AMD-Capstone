@@ -15,7 +15,7 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from rover_perception.live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr
+from rover_perception.live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr, rover_model_names
 from rover_perception.live_dashboard import LiveSession, dashboard_handler
 from rover_perception.drive_mode import GAZEBO_COMMAND_TIMEOUT, GAZEBO_DRIVE_TOPIC, control_mode
 
@@ -84,7 +84,7 @@ class FakeModel:
             raise RuntimeError('Controlled inference failure')
         self.calls.append((image.copy(), options))
         boxes = [types.SimpleNamespace(cls=[index], conf=[0.8 + index * 0.05],
-                                        xyxy=np.array([[0, 0, 1, 1]])) for index in range(3)]
+                                        xyxy=np.array([[0, 0, 1, 1]])) for index in range(len(self.names))]
         return [types.SimpleNamespace(boxes=boxes, names=self.names, plot=lambda: image.copy())]
 
 
@@ -113,6 +113,16 @@ def await_condition(predicate):
 
 
 class CoreTests(unittest.TestCase):
+    def test_three_and_four_class_weights_keep_stable_ids_and_reject_other_schemas(self):
+        three = {0: 'rock', 1: 'pale_soil_patch', 2: 'yellow_crystal_rock'}
+        self.assertEqual(rover_model_names(three), three)
+        four = dict(three)
+        four[3] = 'mudstone_slab'
+        self.assertEqual(rover_model_names(four), four)
+        for invalid in ({0: 'person'}, dict(four, **{'3': 'mudstone_slab'}),
+                        {0: 'mudstone_slab', 1: 'rock', 2: 'pale_soil_patch', 3: 'yellow_crystal_rock'}):
+            with self.assertRaises(ValueError):
+                rover_model_names(invalid)
     def test_padded_rgb_and_bgr_have_same_correct_colors(self):
         rgb = image_message()
         actual = image_to_bgr(rgb)
@@ -192,6 +202,14 @@ class LiveHTTPTests(unittest.TestCase):
         self.assertEqual([row['class_name'] for row in status['detections']], list(self.model.names.values()))
         self.assertEqual(status['sim_time'], 42.0000005)
         self.assertEqual(len(self.model.calls), 1)
+
+    def test_four_class_predictions_reach_dashboard_without_relabeling_existing_rocks(self):
+        self.model.names[3] = 'mudstone_slab'
+        self.process_frame()
+        status = self.session.snapshot()
+        self.assertEqual([row['class_name'] for row in status['detections']],
+                         ['rock', 'pale_soil_patch', 'yellow_crystal_rock', 'mudstone_slab'])
+        self.assertEqual(status['class_names'][3], 'mudstone_slab')
 
     def test_raw_camera_transport_preserves_pixels_without_png_compression(self):
         with patch('rover_perception.live_bridge.cv2.imencode') as encode:

@@ -19,6 +19,15 @@ The Halo has also run live predictions while manually driving in new scenes.
 
 Branch: `perception/mars-pilot50-v2-review`.
 
+The [four-class Halo workflow](scripts/HALO_FOUR_CLASS.md) creates a separate
+reviewable dataset from the approved 500-image export. It reuses exact images,
+edited boxes, exclusions and scene splits, and relabels both mudstone slab
+appearances as class 3, `mudstone_slab`. Changed or uncertain classes require
+review before export. A coverage audit counts independent scenes as well as
+images and instances before the training helper starts a separate model run.
+The browser accepts existing three-class weights and the four-class model.
+Real counts, class review, training and test metrics are obtained on the Halo.
+
 ## Live driving with trained vision
 
 The [Halo live-vision guide](scripts/HALO_LIVE_VISION.md) prepares a separate

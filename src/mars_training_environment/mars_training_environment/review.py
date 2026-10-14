@@ -19,7 +19,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from rover_training.geometry import CLASS_NAMES
-from rover_training.yolo_export import write_dataset_index, write_label_file
+from rover_training.yolo_export import dataset_class_names, write_dataset_index, write_label_file
 from .annotation import iou
 from .common import digest
 
@@ -50,13 +50,13 @@ def _inside(root, relative, prefixes=None):
     return path
 
 
-def _label_boxes(labels, width, height):
+def _label_boxes(labels, width, height, class_names=CLASS_NAMES):
     if not isinstance(labels, list) or len(labels) > 1000:
         raise ValueError('Expected a list of at most 1000 labels')
     result = []
     for index, label in enumerate(labels):
         cid = label.get('class_id')
-        if type(cid) is not int or not 0 <= cid < len(CLASS_NAMES):
+        if type(cid) is not int or not 0 <= cid < len(class_names):
             raise ValueError('Invalid class ID')
         coords = [label.get(k) for k in ('xmin', 'ymin', 'xmax', 'ymax')]
         if any(type(v) not in (int, float) or not math.isfinite(v) for v in coords):
@@ -67,12 +67,12 @@ def _label_boxes(labels, width, height):
         name = label.get('name', f'manual_{index}')
         if not isinstance(name, str) or len(name)>120:
             raise ValueError('Invalid object name')
-        result.append({'name':name, 'class_id':cid, 'class_name':CLASS_NAMES[cid],
+        result.append({'name':name, 'class_id':cid, 'class_name':class_names[cid],
                        'xmin':x0, 'ymin':y0, 'xmax':x1, 'ymax':y1})
     return result
 
 
-def _predictions(root, split, stem, width, height):
+def _predictions(root, split, stem, width, height, class_names=CLASS_NAMES):
     path = root/'predictions'/split/(stem+'.txt')
     if not path.is_file():
         return []
@@ -85,7 +85,7 @@ def _predictions(root, split, stem, width, height):
         x,y,w,h = map(float, parts[1:5])
         box = _label_boxes([{'class_id':cid, 'name':f'prediction_{index}',
                              'xmin':max(0,(x-w/2)*width), 'ymin':max(0,(y-h/2)*height),
-                             'xmax':min(width,(x+w/2)*width), 'ymax':min(height,(y+h/2)*height)}], width, height)[0]
+                             'xmax':min(width,(x+w/2)*width), 'ymax':min(height,(y+h/2)*height)}], width, height, class_names)[0]
         confidence = float(parts[5]) if len(parts)==6 else None
         if confidence is not None and (not math.isfinite(confidence) or not 0<=confidence<=1):
             raise ValueError('Invalid prediction confidence')
@@ -113,9 +113,7 @@ def prediction_errors(labels, predictions):
 
 def review_index(root):
     root = Path(root).resolve()
-    names_path = root/'classes.txt'
-    if names_path.exists() and names_path.read_text().splitlines() != list(CLASS_NAMES):
-        raise ValueError('Review expects the current three-class dataset')
+    class_names = dataset_class_names(root)
     frames = []
     for path in sorted((root/'metadata').glob('*/*.json')):
         try:
@@ -128,15 +126,18 @@ def review_index(root):
             label_path = _inside(root, record['label'], {'labels'})
             if not image.is_file() or not label_path.is_file():
                 continue  # Capture may still be publishing this record.
-            original = _label_boxes(record['labels'], width, height)
+            original = _label_boxes(record['labels'], width, height, class_names)
             edit_path = root/'review'/'edits'/(stem+'.json')
             edit = json.loads(edit_path.read_text()) if edit_path.is_file() else {}
             base_revision = digest({'metadata':record, 'yolo':label_path.read_text(),
                                     'image_size':image.stat().st_size, 'image_mtime':image.stat().st_mtime_ns})
             stale_edit = bool(edit and edit.get('source_revision') != base_revision)
             current_edit = {} if stale_edit else edit
-            labels = _label_boxes(current_edit.get('labels', original), width, height)
+            labels = _label_boxes(current_edit.get('labels', original), width, height, class_names)
             flags = []
+            class_review = bool(record.get('four_class_relabel', {}).get('review_required'))
+            if class_review and not current_edit.get('reviewed', False):
+                flags.append('class_review_required')
             if stale_edit:
                 flags.append('stale_review_edits')
             checks = record.get('capture_checks', {})
@@ -157,7 +158,7 @@ def review_index(root):
                 flags.append('edge_labels')
             if any(min(l['xmax']-l['xmin'],l['ymax']-l['ymin'])*960/max(width,height)<8 for l in labels):
                 flags.append('small_labels')
-            predictions = _predictions(root, split, stem, width, height)
+            predictions = _predictions(root, split, stem, width, height, class_names)
             has_predictions = (root/'predictions'/split/(stem+'.txt')).is_file()
             pred_errors = prediction_errors(labels, predictions) if has_predictions else None
             if pred_errors and any(pred_errors.values()):
@@ -166,6 +167,8 @@ def review_index(root):
                            'image':record['image'], 'width':width, 'height':height, 'labels':labels,
                            'original_labels':original, 'predictions':predictions, 'prediction_errors':pred_errors,
                            'flags':flags, 'capture_checks':checks, 'target_name':record.get('target_name'),
+                           'scene_group':record.get('scene_group', record['scene_id']),
+                           'class_review_required':class_review,
                            'excluded':current_edit.get('excluded', False), 'reviewed':current_edit.get('reviewed', False),
                            'note':current_edit.get('note','Previous edits belong to a replaced capture; review or restore this frame.' if stale_edit else ''),
                            'source_revision':base_revision,
@@ -183,7 +186,7 @@ def review_index(root):
             frames.append({'id':'diagnostic_'+'_'.join(diagnostic_parts),
                            'accepted':False, 'split':'diagnostic', 'scene_id':record.get('scene_id',diagnostic_parts[0]),
                            'image':image.relative_to(root).as_posix(), 'width':width, 'height':height,
-                           'labels':_label_boxes(record.get('labels',[]), width, height), 'predictions':[],
+                           'labels':_label_boxes(record.get('labels',[]), width, height, class_names), 'predictions':[],
                            'flags':record.get('checks',{}).get('errors',['capture_rejected']),
                            'capture_checks':record.get('checks',{}), 'excluded':True, 'reviewed':False,
                            'target_name':record.get('view',{}).get('target_name'), 'note':'Rejected capture; diagnostic only',
@@ -192,8 +195,8 @@ def review_index(root):
             continue
     counts = Counter(f['split'] for f in frames if f['accepted'] and not f['excluded'])
     classes = Counter(l['class_id'] for f in frames if f['accepted'] and not f['excluded'] for l in f['labels'])
-    return {'class_names':list(CLASS_NAMES), 'frames':frames, 'split_counts':dict(counts),
-            'class_counts':{name:classes[i] for i,name in enumerate(CLASS_NAMES)},
+    return {'class_names':list(class_names), 'frames':frames, 'split_counts':dict(counts),
+            'class_counts':{name:classes[i] for i,name in enumerate(class_names)},
             'accepted_frames':sum(f['accepted'] for f in frames),
             'excluded_frames':sum(f['accepted'] and f['excluded'] for f in frames)}
 
@@ -223,7 +226,7 @@ class ReviewStore:
                 raise ValueError('Only accepted capture frames can be edited')
             if revision != frame['revision']:
                 raise ValueError('Frame changed since it was opened; reload before saving')
-            labels = _label_boxes(labels, frame['width'], frame['height'])
+            labels = _label_boxes(labels, frame['width'], frame['height'], dataset_class_names(self.root))
             if type(excluded) is not bool or type(reviewed) is not bool or not isinstance(note,str) or len(note)>2000:
                 raise ValueError('Invalid review state')
             edit_path = self.root/'review'/'edits'/(frame_id+'.json')
@@ -256,6 +259,9 @@ class ReviewStore:
             if any('stale_review_edits' in f['flags'] for f in index['frames']):
                 raise ValueError('Review or restore frames with stale edits before exporting')
             frames = [f for f in index['frames'] if f['accepted'] and not f['excluded']]
+            pending = [f['id'] for f in frames if f.get('class_review_required') and not f['reviewed']]
+            if pending:
+                raise ValueError(f'Review {len(pending)} frames with changed or uncertain classes before exporting; use the Unreviewed filter')
             if any(not any(f['split']==split for f in frames) for split in ('train','val','test')):
                 raise ValueError('Keep at least one image in every split')
             revision = digest([(f['id'],f['revision'],f['excluded']) for f in index['frames'] if f['accepted']])[:16]
@@ -271,12 +277,12 @@ class ReviewStore:
                             or hashlib.sha256(label.read_bytes()).hexdigest()!=item['label_sha256']):
                         raise ValueError('Existing reviewed export was modified; restore it or create a new review revision')
                 # The same dataset may move between /work and its Halo host path.
-                write_dataset_index(output)
+                write_dataset_index(output, index['class_names'])
                 report['data_yaml'] = str(output/'data.yaml')
                 _atomic_json(audit_path,report)
                 return report
             output.mkdir(parents=True,exist_ok=True)
-            write_dataset_index(output)
+            write_dataset_index(output, index['class_names'])
             audits = []
             for frame in frames:
                 source = _inside(self.root,frame['image'], {'images'})
@@ -284,13 +290,14 @@ class ReviewStore:
                 dest.parent.mkdir(parents=True,exist_ok=True)
                 shutil.copyfile(source,dest)
                 label = output/'labels'/frame['split']/(source.stem+'.txt')
-                write_label_file(label,frame['labels'],frame['width'],frame['height'])
+                write_label_file(label,frame['labels'],frame['width'],frame['height'], index['class_names'])
                 audits.append({'id':frame['id'], 'split':frame['split'], 'source_image':frame['image'],
                                'source_revision':frame['source_revision'], 'review_revision':frame['revision'],
                                'image_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
                                'label_sha256':hashlib.sha256(label.read_bytes()).hexdigest(),
                                'labels':frame['labels'], 'reviewed':frame['reviewed'], 'note':frame['note']})
             report = {'revision':revision,'frames':len(frames),'split_counts':index['split_counts'],
+                      'class_names':index['class_names'],
                       'class_counts':index['class_counts'], 'data_yaml':str(output/'data.yaml'),
                       'excluded':[f['id'] for f in index['frames'] if f['accepted'] and f['excluded']],
                       'audit':audits}

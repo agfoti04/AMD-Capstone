@@ -144,7 +144,9 @@ bash /home/ian/capstone-training/mars-pilot50-v2/scripts/halo_live_vision.sh \
 
 Leave it running. The scene option records provenance; the simulator launch
 selects the actual scene. The weights must contain rock, pale_soil_patch and
-yellow_crystal_rock. No depth or simulator labels are fed into inference.
+yellow_crystal_rock, with optional mudstone_slab at ID 3. The
+[four-class workflow](HALO_FOUR_CLASS.md) reuses reviewed captures to train
+that extension. No depth or simulator labels are fed into inference.
 
 On Windows, reuse the existing tunnel or open one PowerShell terminal with:
 

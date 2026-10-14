@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 
 from .live_core import (DEFAULT_CAMERA_TIMEOUT, LIVE_PIPELINE_VERSION, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED,
-                        DriveLease, camera_timeout, detection_rows)
+                        DriveLease, camera_timeout, detection_rows, rover_model_names)
 from .drive_mode import control_mode
 
 
@@ -42,6 +42,7 @@ class LiveSession:
             age = time.monotonic() - self.captured if self.captured else None
             limit = min(self.camera_timeout, self.bridge_camera_timeout)
             return dict(self.status, frame_age_seconds=age, camera_timeout_seconds=limit,
+                        class_names=getattr(self.model, 'names', {}),
                         pipeline_version=LIVE_PIPELINE_VERSION,
                         control_mode=self.control_mode, controls_enabled=self.control_mode == 'browser',
                         max_linear_speed=MAX_LINEAR_SPEED, max_angular_speed=MAX_ANGULAR_SPEED,
@@ -274,8 +275,10 @@ def main(argv=None):
     from .live_web import serve
     cv2.setNumThreads(1)
     model = YOLO(str(args.model.resolve()))
-    if model.names != {0: 'rock', 1: 'pale_soil_patch', 2: 'yellow_crystal_rock'}:
-        parser.error(f'Expected the trained three-class rover model; received {model.names}')
+    try:
+        rover_model_names(model.names)
+    except ValueError as error:
+        parser.error(str(error))
     if args.record_dir:
         args.record_dir.mkdir(parents=True, exist_ok=False)
         manifest = dict(weights=str(args.model.resolve()),

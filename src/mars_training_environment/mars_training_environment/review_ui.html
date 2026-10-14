@@ -55,7 +55,7 @@ let data=__REVIEW_DATA__;
 const online=location.protocol==='http:'||location.protocol==='https:';
 const $=id=>document.getElementById(id);
 let active=null,working=[],selected=-1,dirty=false,busy=false,tool='select',picture=null,loadNumber=0,drag=null;
-const colors=['#28dc3c','#50d2e6','#f0c828'];
+const colors=['#28dc3c','#50d2e6','#f0c828','#c084fc'];
 function message(text,error=false){$('message').textContent=text;$('message').className=error?'warn':'ok';}
 function imageURL(path){return online?'/file/'+path.split('/').map(encodeURIComponent).join('/'):'../'+path;}
 function editable(){return online&&Boolean(data.token)&&active&&active.accepted&&!busy;}

@@ -10,6 +10,15 @@ DEFAULT_CAMERA_TIMEOUT = 3.0
 LIVE_PIPELINE_VERSION = 2
 MAX_LINEAR_SPEED = 0.6
 MAX_ANGULAR_SPEED = 1.5
+ROVER_CLASS_NAMES = ('rock', 'pale_soil_patch', 'yellow_crystal_rock')
+
+
+def rover_model_names(names):
+    """Accept existing weights and the reviewed mudstone extension, with fixed IDs."""
+    values = tuple(names.get(index) for index in range(len(names))) if isinstance(names, dict) else tuple(names)
+    if values not in (ROVER_CLASS_NAMES, ROVER_CLASS_NAMES + ('mudstone_slab',)):
+        raise ValueError(f'Expected three rover classes or four classes including mudstone_slab; received {names}')
+    return dict(enumerate(values))
 
 
 def camera_timeout(value):

@@ -13,6 +13,7 @@ CLASS_NAMES = (
     "pale_soil_patch",
     "yellow_crystal_rock",
 )
+FOUR_CLASS_NAMES = CLASS_NAMES + ("mudstone_slab",)
 
 # Scene appearance names also select meshes/materials. Merge them only when
 # assigning detection labels, so the original visual variation is preserved.
