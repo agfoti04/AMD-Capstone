@@ -20,14 +20,14 @@ class provenance and human review are tracked separately.
 In Windows PowerShell:
 
 ```powershell
-scp C:\Projects\Capstone\halo-fourclass-20261014.tar.gz ian@halo-strix:~/
+scp C:\Projects\Capstone\halo-fourclass-approval-20261014.tar.gz ian@halo-strix:~/
 ```
 
 In a Halo terminal:
 
 ```bash
 cd /home/ian/capstone-training/mars-pilot50-v2
-tar --touch -xzf /home/ian/halo-fourclass-20261014.tar.gz -C /home/ian/capstone-training/mars-pilot50-v2
+tar --touch -xzf /home/ian/halo-fourclass-approval-20261014.tar.gz -C /home/ian/capstone-training/mars-pilot50-v2
 source /home/ian/miniforge3/etc/profile.d/conda.sh
 conda activate rover-yolo
 export PYTHONPATH="$PWD/src/mars_training_environment:$PWD/src/rover_training${PYTHONPATH:+:$PYTHONPATH}"
@@ -58,6 +58,9 @@ for a human decision. No deleted box is recreated.
 Run preparation once. Reuse this root for subsequent reviews. To start another
 version, choose a fresh output directory.
 
+If `dataset/coverage500_fourclass` is already prepared, install the update above
+and skip the `prepare` command. Your current labels and review state are retained.
+
 ## Review the new classes
 
 Stop an existing port-8765 review server with Ctrl+C in its terminal. In the
@@ -84,6 +87,27 @@ Click **Export reviewed training data** after completing those checks. Export
 is blocked while included changed/uncertain frames remain unreviewed. Curated
 exports are versioned under `coverage500_fourclass/review/exports`.
 
+### Record approval after reviewing the whole pending set
+
+If you have already inspected and approved all pending class changes, record
+that decision in one command. Stop the review server with Ctrl+C first so it
+cannot save competing edits during the batch. In the activated terminal, from
+the project root with the PYTHONPATH above:
+
+```bash
+python -m mars_training_environment.reclassify approve \
+  --dataset dataset/coverage500_fourclass \
+  --note "Reviewed and approved by Ian on 2026-10-14"
+```
+
+This marks included pending class reviews as reviewed, preserves their labels,
+box coordinates and notes, and records the approval in `review/history.jsonl`.
+Excluded frames and previously approved frames are untouched. It refuses stale
+edits or incomplete capture validation. Repeating it is safe; a completed batch
+reports `approved_frames: 0`. After approval, require `pending_class_reviews: []`.
+The training helper exports the approved labels, so a separate browser export
+click is optional.
+
 ## Audit coverage before training
 
 In another activated Halo terminal, cd to the project and set the same
@@ -108,6 +132,12 @@ If warnings remain, send the audit output before training so additional
 captures can target the underrepresented class/split. More captures are needed
 only if measured coverage is insufficient. Do not duplicate frames to reach
 these counts or move views of a scene between splits.
+
+The October 14 Halo audit has all 500 images (300 train / 100 val / 100 test)
+and no coverage warnings. Mudstone has 50 training instances across 45 images
+and 21 scene groups, 19 validation instances across 18 images and 8 groups, and
+21 test instances across 21 images and 7 groups. New captures are not required
+to start this four-class pilot; judge additional coverage from validation errors.
 
 ## Train a separate model
 
@@ -183,11 +213,12 @@ after training. Driving and GPU rendering remain compatible with pipeline 2.
 
 ## Validation and remaining Halo work
 
-Local checks cover source/pixel/box/split preservation, exclusions, both slab
+Local checks cover source/pixel/box/split preservation, exclusions, bulk approval
+history and stale edit rejection, both slab
 appearances, uncertain/conflicting edits, stale source detection, four-class
 review/export, coverage guidance and live predictions. The real Halo dataset
-is not in this workspace. Its counts, human review, GPU training and held-out
-metrics must be obtained by running the commands above.
+is not in this workspace. Its audit counts were reported from the Halo; recording
+approval, GPU training and held-out evaluation run there with the commands above.
 
 References: [Ultralytics detection datasets](https://docs.ultralytics.com/datasets/detect/),
 [training](https://docs.ultralytics.com/modes/train/),

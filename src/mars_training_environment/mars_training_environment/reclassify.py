@@ -188,6 +188,14 @@ def prepare_dataset(source, reviewed, output):
     return dict(report, dataset=str(output), review_page=str(output / 'review/index.html'))
 
 
+def approve_dataset(root, note):
+    """Record the user's completed class review in reversible review sidecars."""
+    root = Path(root).resolve()
+    if dataset_class_names(root) != FOUR_CLASS_NAMES:
+        raise ValueError('Expected the prepared four-class dataset')
+    return dict(ReviewStore(root).approve_class_reviews(note), dataset=str(root))
+
+
 def export_dataset(root, require_coverage=False):
     root = Path(root).resolve()
     if dataset_class_names(root) != FOUR_CLASS_NAMES:
@@ -212,6 +220,9 @@ def main(argv=None):
     prepare.add_argument('--output', type=Path, required=True)
     audit = commands.add_parser('audit', help='Count current examples, scene groups and outstanding reviews')
     audit.add_argument('--dataset', type=Path, required=True)
+    approve = commands.add_parser('approve', help='Record a completed human review of all pending class changes')
+    approve.add_argument('--dataset', type=Path, required=True)
+    approve.add_argument('--note', required=True, help='Who reviewed and approved these labels; stored in review history')
     export = commands.add_parser('export', help='Export current reviewed labels for training')
     export.add_argument('--dataset', type=Path, required=True)
     export.add_argument('--require-coverage', action='store_true')
@@ -223,6 +234,8 @@ def main(argv=None):
             result = prepare_dataset(args.source, args.review_export, args.output)
         elif args.command == 'audit':
             result = coverage_report(args.dataset)
+        elif args.command == 'approve':
+            result = approve_dataset(args.dataset, args.note)
         else:
             result = export_dataset(args.dataset, args.require_coverage)
             if args.run_manifest:

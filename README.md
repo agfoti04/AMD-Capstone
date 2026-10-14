@@ -26,7 +26,11 @@ appearances as class 3, `mudstone_slab`. Changed or uncertain classes require
 review before export. A coverage audit counts independent scenes as well as
 images and instances before the training helper starts a separate model run.
 The browser accepts existing three-class weights and the four-class model.
-Real counts, class review, training and test metrics are obtained on the Halo.
+The October 14 Halo audit retained all 500 images with no coverage warnings;
+mudstone has 50 training, 19 validation and 21 test instances. Once the pending
+class changes have been reviewed, the `reclassify approve` command records the
+user's approval in review history without changing labels, boxes or exclusions.
+Four-class training and test evaluation are the next Halo steps.
 
 ## Live driving with trained vision
 

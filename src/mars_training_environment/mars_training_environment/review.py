@@ -247,6 +247,56 @@ class ReviewStore:
             raise ValueError('Unknown accepted frame')
         return self.save(frame_id, revision, frame['original_labels'], False, False, 'Restored original capture')
 
+    def approve_class_reviews(self, note):
+        """Record completed human review without changing labels or exclusions.
+
+        Stop the separate review server before using this batch operation.
+        Already approved and excluded frames are left untouched.
+        """
+        if not isinstance(note, str) or not note.strip() or len(note) > 2000:
+            raise ValueError('Provide a nonempty approval note of at most 2000 characters')
+        with self.lock:
+            index = review_index(self.root)
+            validation = json.loads((self.root / 'validation.json').read_text())
+            if validation.get('errors') or validation.get('frames') != index['accepted_frames']:
+                raise ValueError('Complete and validate the capture before approving')
+            if any('stale_review_edits' in frame['flags'] for frame in index['frames']):
+                raise ValueError('Review or restore frames with stale edits before approving')
+            pending = [frame for frame in index['frames'] if frame['accepted'] and not frame['excluded']
+                       and frame.get('class_review_required') and not frame['reviewed']]
+            changes = []
+            # Preflight the whole batch before writing any approval.
+            for frame in pending:
+                path = self.root / 'review' / 'edits' / (frame['id'] + '.json')
+                previous = json.loads(path.read_text()) if path.is_file() else None
+                if digest([frame['source_revision'], previous or {}]) != frame['revision']:
+                    raise ValueError('Review changed during approval; stop the review server and retry')
+                edit = dict(previous or {'source_revision': frame['source_revision'], 'labels': frame['labels'],
+                                         'excluded': False, 'note': frame['note']})
+                edit.update(reviewed=True, updated_at=datetime.now(timezone.utc).isoformat())
+                changes.append((frame['id'], path, previous, edit))
+            history = self.root / 'review' / 'history.jsonl'
+            if changes:
+                history.parent.mkdir(parents=True, exist_ok=True)
+                with history.open('a', encoding='utf-8') as stream:
+                    for frame_id, path, previous, edit in changes:
+                        current = json.loads(path.read_text()) if path.is_file() else None
+                        if current != previous:
+                            raise ValueError('Review changed during approval; stop the review server and retry')
+                        stream.write(json.dumps({'frame': frame_id, 'action': 'approve_class_review',
+                                                 'approval_note': note.strip(), 'before': previous,
+                                                 'after': edit}) + '\n')
+                        stream.flush()
+                        _atomic_json(path, edit)
+                write_review_page(self.root)
+            current = review_index(self.root)
+            return {'approved_frames': len(changes), 'approved_ids': [change[0] for change in changes],
+                    'pending_class_reviews': [frame['id'] for frame in current['frames']
+                        if frame['accepted'] and not frame['excluded']
+                        and frame.get('class_review_required') and not frame['reviewed']],
+                    'split_counts': current['split_counts'], 'class_counts': current['class_counts'],
+                    'history_file': str(history)}
+
     def export(self):
         with self.lock:
             validation_path = self.root/'validation.json'
