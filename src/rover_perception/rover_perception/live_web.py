@@ -1,4 +1,4 @@
-"""Persistent browser controls and demand-driven latest-frame delivery."""
+"""Persistent controls and a bounded, pipelined latest-frame video stream."""
 import asyncio
 import contextlib
 import json
@@ -85,30 +85,53 @@ def create_app(session, page):
         await ws.prepare(request)
         sockets.add(ws)
         version = -1
-        try:
-            while not session.stop.is_set():
-                message = await ws.receive(timeout=5)
-                if message.type != WSMsgType.TEXT or message.data != 'next':
-                    break
-                deadline = asyncio.get_running_loop().time() + 1
+        outstanding = []
+        changed = asyncio.Event()
+
+        async def acknowledgments():
+            try:
                 while not session.stop.is_set():
-                    with session.condition:
-                        current, jpeg = session.version, session.jpeg
-                        metadata = session.snapshot()
-                    if jpeg is not None and current != version:
-                        version = current
-                        await ws.send_json(dict(metadata, type='frame'))
-                        await ws.send_bytes(jpeg)
+                    message = await ws.receive(timeout=5)
+                    if message.type != WSMsgType.TEXT:
                         break
-                    if asyncio.get_running_loop().time() >= deadline:
-                        await ws.send_json(dict(metadata, type='status'))
+                    ack = json.loads(message.data)['ack']
+                    if isinstance(ack, bool) or not isinstance(ack, int) or ack not in outstanding:
                         break
-                    await asyncio.sleep(0.005)
-                # Request the next frame only after displaying this one: a slow
-                # viewer cannot accumulate an old video queue.
+                    # Acknowledgments are cumulative; the browser displays frames
+                    # in order. At most three JPEGs can be awaiting display.
+                    del outstanding[:outstanding.index(ack) + 1]
+                    changed.set()
+            finally:
+                await ws.close()
+                changed.set()
+
+        receiver = asyncio.create_task(acknowledgments())
+        last_status = asyncio.get_running_loop().time()
+        try:
+            while not session.stop.is_set() and not ws.closed:
+                with session.condition:
+                    current, jpeg = session.version, session.jpeg
+                    metadata = session.snapshot()
+                if jpeg is not None and current != version and len(outstanding) < 3:
+                    version = current
+                    outstanding.append(version)
+                    await ws.send_json(dict(metadata, type='frame', video_id=version))
+                    await ws.send_bytes(jpeg)
+                    last_status = asyncio.get_running_loop().time()
+                elif asyncio.get_running_loop().time() - last_status >= 1:
+                    await ws.send_json(dict(metadata, type='status'))
+                    last_status = asyncio.get_running_loop().time()
+                # Pipeline across network round trips, but stop sending once the
+                # display window is full. Resume with the newest available slot.
+                changed.clear()
+                with contextlib.suppress(asyncio.TimeoutError):
+                    await asyncio.wait_for(changed.wait(), timeout=0.005)
         except (Exception, asyncio.CancelledError):
             pass
         finally:
+            receiver.cancel()
+            with contextlib.suppress(Exception, asyncio.CancelledError):
+                await receiver
             sockets.discard(ws)
             await ws.close()
         return ws

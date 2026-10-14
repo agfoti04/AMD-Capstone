@@ -5,6 +5,10 @@ without a Gazebo window by default. The live camera renders RGB at 960 x 540
 and 30 Hz, with the original field of view and mounting pose. Depth and simulator
 bounding-box sensors are disabled only for live driving. Saved scene JSON,
 training images, capture settings and trained weights are preserved.
+The launcher defaults to `ROVER_RENDERER=auto`: it exposes the GPU and its
+device groups when a DRM render node is present, otherwise it reports a
+software-rendering fallback. GPU use by YOLO alone does not accelerate Gazebo.
+Successful GPU rendering depends on the container's Mesa/EGL support.
 
 The dashboard targets up to 30 processed frames per wall second. Actual FPS
 depends on Gazebo rendering, simulation speed, GPU inference and the network.
@@ -15,9 +19,15 @@ and these prediction settings are distinct from the held-out dataset benchmark.
 
 Driving uses a persistent WebSocket with commands every 50 ms while the page
 is active. Key changes and release send immediately, without waiting for an
-earlier acknowledgment. A separate video connection sends a new frame only
-after the browser displays the previous one, skipping intermediate frames on
-slow links. One browser tab owns the driving connection at a time.
+earlier acknowledgment. A separate video connection pipelines up to three
+frames awaiting display, so every frame need not wait for a network round trip.
+It stops sending when that window is full and resumes with the latest frame,
+skipping intermediate frames on slow links. One browser tab owns driving.
+
+The local camera-to-detector link now sends lossless BGR pixels directly over
+localhost, avoiding PNG compression and decompression on every inference.
+Only the annotated browser image is JPEG-encoded. Recording still saves raw
+PNG images. Status includes camera-fetch and annotation/encoding times.
 
 ## Deploy the update
 
@@ -27,7 +37,7 @@ terminals. Keep the Windows SSH tunnel open if it is already running.
 In Windows PowerShell:
 
 ```powershell
-scp C:\Projects\Capstone\halo-browser-drive-20261013.tar.gz ian@halo-strix:~/
+scp C:\Projects\Capstone\halo-browser-fps-20261014.tar.gz ian@halo-strix:~/
 ```
 
 On the Halo:
@@ -37,8 +47,14 @@ cd /home/ian/capstone-training/mars-pilot50-v2
 ```
 
 ```bash
-tar -xzf /home/ian/halo-browser-drive-20261013.tar.gz -C /home/ian/capstone-training/mars-pilot50-v2
+tar --touch -xzf /home/ian/halo-browser-fps-20261014.tar.gz -C /home/ian/capstone-training/mars-pilot50-v2
 ```
+
+Use `--touch` even when deploying over existing files. The earlier archive had
+epoch timestamps, which allowed setuptools incremental builds to reuse older
+modules. This archive has current timestamps; `--touch` also uses the Halo's
+clock so source files are newer than its existing build products. The launcher
+now rejects an outdated installed live package rather than silently running it.
 
 Copy the complete build block, including its closing quote:
 
@@ -165,10 +181,9 @@ rover will also appear to move more slowly.
 
 ## Performance options
 
-The default keeps the working software-rendering setup while removing the GUI,
-depth sensor and bounding-box sensor and reducing the rendered pixel count.
-The strongest further improvement may be GPU rendering if the Docker image's
-Mesa driver supports the Halo GPU. Stop the simulator first, then try:
+Automatic rendering prefers the GPU; the terminal should report `renderer=gpu`
+on the Halo. This requests hardware rendering; confirm camera output and FPS
+because Mesa may still fall back to software. To require exposing the GPU:
 
 ```bash
 ROVER_RENDERER=gpu bash /home/ian/capstone-training/mars-pilot50-v2/scripts/halo_live_sim.sh \
@@ -176,8 +191,17 @@ ROVER_RENDERER=gpu bash /home/ian/capstone-training/mars-pilot50-v2/scripts/halo
 ```
 
 This exposes `/dev/dri` with the device groups needed by the container user.
-If EGL/Ogre fails or no images arrive, stop and use the ordinary launch command
-again. GPU rendering and live performance still require verification on the Halo.
+If EGL/Ogre fails or no images arrive, inspect the simulator logs. A temporary
+software fallback at a smaller camera resolution is:
+
+```bash
+ROVER_RENDERER=software ROVER_LIVE_WIDTH=640 bash /home/ian/capstone-training/mars-pilot50-v2/scripts/halo_live_sim.sh \
+  dataset/live_eval_scenes/scenes/scene_050001/scene.json browser
+```
+
+Software rendering can remain slow. A container whose Mesa driver cannot
+support this GPU needs a graphics-driver/image update before hardware rendering
+will help; switching inference libraries does not fix that rendering problem.
 
 For less rendering work, restart the simulator with a 640 x 360 camera:
 
@@ -217,8 +241,27 @@ curl --max-time 5 -sS http://127.0.0.1:8770/status
 curl --max-time 5 -sS http://127.0.0.1:8771/status
 ```
 
-The bridge should report `control_mode: browser`. The vision status should show
-`image_size: [960, 540]` with the default profile. If controls keep reconnecting,
+The bridge and vision status should both report `pipeline_version: 2`, and both
+should show `image_size: [960, 540]` with the default profile. A 1920 x 1080 feed
+or missing bridge version indicates an old simulator or installed package:
+stop it, extract with `--touch`, rebuild and restart. The October 14 report of
+approximately 10 ms inference, 1.38 s camera age and 950% container CPU points
+to simulation/rendering or camera delivery, rather than slow model inference.
+The reported 0.65 processed FPS and 0.32 simulation speed are also consistent
+with a low-rate capture camera instead of the intended 30-Hz live profile.
+
+To verify the installed bridge before starting simulation:
+
+```bash
+sudo docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD:/work" -w /work rover-jazzy bash -c '
+    source /opt/ros/jazzy/setup.bash
+    source /work/install_jazzy/setup.bash
+    python3 -c "from rover_perception.live_core import LIVE_PIPELINE_VERSION; import rover_perception.live_bridge as b; print(b.__file__); print(LIVE_PIPELINE_VERSION)"
+  '
+```
+
+It should print the installed bridge path and `2`. If controls keep reconnecting,
 close other driving tabs, inspect the displayed command latency, and check that
 the SSH tunnel and both Halo terminals remain connected. If no images arrive:
 
@@ -226,12 +269,15 @@ the SSH tunnel and both Halo terminals remain connected. If no images arrive:
 sudo docker logs --tail 100 rover-live-sim
 ```
 
-Local checks cover real WebSocket/HTTP command delivery, held/released input,
-speed limits, disconnection expiry, slow-viewer backpressure, browser keyboard
+Local checks cover real WebSocket/HTTP command delivery, lossless raw pixel
+transport, held/released input, speed limits, disconnection expiry, bounded
+pipelined video, browser keyboard
 and slider behavior, and real Xacro expansion for live/capture sensor profiles.
 They use controlled camera/model data. Actual Gazebo/ROCm FPS must be measured
-on the Halo after deployment.
+on the Halo after deployment. Archive verification now checks updates over
+stale build modules as well as comparing installed wheel contents with source.
 
 References: [Gazebo headless rendering](https://gazebosim.org/api/sim/8/headless_rendering.html),
 [Ultralytics prediction settings](https://docs.ultralytics.com/modes/predict/),
-[aiohttp WebSockets](https://docs.aiohttp.org/en/stable/web_quickstart.html#websockets).
+[aiohttp WebSockets](https://docs.aiohttp.org/en/stable/web_quickstart.html#websockets),
+[Mesa rendering environment variables](https://docs.mesa3d.org/envvars.html).

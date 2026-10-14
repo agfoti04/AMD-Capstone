@@ -109,20 +109,37 @@ class WebTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_slow_viewer_receives_newest_frame_and_does_not_block_controls(self):
         async with self.client.ws_connect(self.url + '/view') as view:
-            await view.send_str('next')
-            self.assertEqual((await view.receive_json(timeout=1))['type'], 'frame')
+            first = await view.receive_json(timeout=1)
+            self.assertEqual(first['type'], 'frame')
+            self.assertEqual(first['video_id'], 1)
             self.assertEqual(await view.receive_bytes(timeout=1), self.session.jpeg)
-            # No view request while several frames are produced. There is one
-            # latest slot, and the control socket remains independently usable.
-            for version in range(2, 12):
+            # Multiple frames cross the network before any acknowledgment,
+            # removing the single-round-trip frame-rate limit.
+            for version in (2, 3):
                 self.session.version = version
                 self.session.jpeg = b'jpeg' + str(version).encode()
+                self.assertEqual((await view.receive_json(timeout=1))['video_id'], version)
+                self.assertEqual(await view.receive_bytes(timeout=1), self.session.jpeg)
+            # The three-frame window is full. Further frames stay in the single
+            # latest slot rather than accumulating in the socket.
+            for version in range(4, 12):
+                self.session.version = version
+                self.session.jpeg = b'jpeg' + str(version).encode()
+            with self.assertRaises(asyncio.TimeoutError):
+                await view.receive(timeout=0.05)
             async with self.client.ws_connect(self.url + '/control') as control:
                 await self.drive(control, 1, 0.6)
                 self.assertEqual(self.node.lease.get(), (0.6, 0))
-                await view.send_str('next')
-                await view.receive_json(timeout=1)
+                await view.send_json({'ack': 3})
+                self.assertEqual((await view.receive_json(timeout=1))['video_id'], 11)
                 self.assertEqual(await view.receive_bytes(timeout=1), b'jpeg11')
+
+    async def test_invalid_video_acknowledgment_closes_stream(self):
+        async with self.client.ws_connect(self.url + '/view') as view:
+            await view.receive_json(timeout=1)
+            await view.receive_bytes(timeout=1)
+            await view.send_json({'ack': 999})
+            self.assertIn((await view.receive(timeout=1)).type, (WSMsgType.CLOSE, WSMsgType.CLOSED))
 
 
 if __name__ == '__main__':

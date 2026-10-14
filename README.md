@@ -26,14 +26,21 @@ interactive Gazebo session, three new evaluation scenes, and a browser camera
 view with predictions for all three classes. Browser driving uses held WASD,
 arrow keys or buttons, with speed sliders up to 0.60 m/s and 1.50 rad/s.
 Persistent control and video connections keep commands independent of video
-delivery; slow viewers receive the newest frame instead of accumulating a queue.
+delivery; a three-frame display window allows pipelining across network round
+trips while slow viewers skip intermediate frames. The local detector receives
+lossless pixels directly instead of compressing/decompressing PNGs every frame.
 The live launcher now defaults to headless, RGB-only 960 x 540 rendering and
-targets up to 30 processed FPS. The dashboard reports actual display FPS,
+targets up to 30 processed FPS. Rendering automatically requests the GPU when
+a DRM render node exists, with explicit software fallback when none exists.
+The dashboard reports actual display FPS,
 camera age, command latency and simulation speed. Capture retains its full
 RGB-D/bounding-box sensors and saved configuration. ROS stays in Docker while
 inference uses the host's ROCm environment, with aiohttp added for WebSockets.
 Command expiry, release/focus handling and camera freshness checks stop stale
-movement. Local tests do not replace measuring actual Gazebo/ROCm FPS on the Halo.
+movement. The update archive uses current timestamps, and deployment uses
+`tar --touch` so incremental builds replace older modules. Startup rejects stale
+installed live packages. Local tests do not replace measuring Gazebo/ROCm FPS
+on the Halo.
 
 ## Balanced class coverage for the next dataset
 

@@ -1,4 +1,4 @@
-"""Local PNG camera/drive bridge; GPU inference stays in the host Conda environment."""
+"""Local lossless camera/drive bridge; inference stays in the host Conda environment."""
 import json
 import socket
 import threading
@@ -13,7 +13,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Image
 
-from .live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr
+from .live_core import DEFAULT_CAMERA_TIMEOUT, LIVE_PIPELINE_VERSION, DriveLease, camera_timeout, image_to_bgr
 from .drive_mode import control_mode
 
 
@@ -46,7 +46,7 @@ class LiveBridge(Node):
         self.get_logger().info(f'Camera bridge: http://127.0.0.1:{self.http.server_port}')
 
     def on_image(self, msg):
-        # Encode lazily for each requested frame, rather than every 30-Hz sensor sample.
+        # Retain only the newest sample; conversion happens on consumer demand.
         with self.lock:
             self.frame = msg
             self.sequence += 1
@@ -102,12 +102,14 @@ def handler(node):
             age = time.monotonic() - received if received else None
             if self.path == '/status':
                 self.reply(200, json.dumps({'sequence': sequence, 'camera_age_seconds': age,
+                                           'pipeline_version': LIVE_PIPELINE_VERSION,
+                                           'image_size': [frame.width, frame.height] if frame else None,
                                            'camera_timeout_seconds': node.camera_timeout,
                                            'camera_ready': frame is not None and age < node.camera_timeout,
                                            'control_mode': node.control_mode,
                                            'controls_enabled': node.control_mode == 'browser',
                                            'command': node.lease.get() if node.control_mode == 'browser' else None}).encode())
-            elif self.path == '/frame.png':
+            elif self.path in ('/frame.png', '/frame.bgr'):
                 if frame is None or age >= node.camera_timeout:
                     message = ('Waiting for the simulator camera.' if frame is None else
                                'Camera stopped updating. Check Gazebo is playing.' +
@@ -122,12 +124,18 @@ def handler(node):
                     self.reply(304, b'', headers={'ETag': etag})
                     return
                 try:
-                    ok, encoded = cv2.imencode('.png', image_to_bgr(frame), [cv2.IMWRITE_PNG_COMPRESSION, 1])
-                    if not ok:
-                        raise ValueError('PNG encoding failed')
+                    image = image_to_bgr(frame)
+                    if self.path == '/frame.bgr':
+                        body, kind = image.tobytes(), 'application/octet-stream'
+                    else:
+                        ok, encoded = cv2.imencode('.png', image, [cv2.IMWRITE_PNG_COMPRESSION, 1])
+                        if not ok:
+                            raise ValueError('PNG encoding failed')
+                        body, kind = encoded.tobytes(), 'image/png'
                     stamp = frame.header.stamp
-                    self.reply(200, encoded.tobytes(), 'image/png',
+                    self.reply(200, body, kind,
                                {'X-Frame-Sequence': sequence,
+                                'X-Image-Width': frame.width, 'X-Image-Height': frame.height,
                                 'X-Frame-Age': time.monotonic() - received,
                                 'ETag': etag,
                                 'X-Camera-Timeout': node.camera_timeout,
@@ -159,6 +167,7 @@ def handler(node):
 
 
 def main():
+    cv2.setNumThreads(1)
     rclpy.init()
     node = LiveBridge()
     try:

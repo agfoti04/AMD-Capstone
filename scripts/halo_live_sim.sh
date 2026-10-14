@@ -7,8 +7,14 @@ control_mode="${2:-browser}"
 [[ "$control_mode" == browser || "$control_mode" == gazebo ]] || { echo 'Control mode must be browser or gazebo.' >&2; exit 1; }
 gui="${ROVER_GUI:-false}"
 [[ "$gui" == true || "$gui" == false ]] || { echo 'ROVER_GUI must be true or false.' >&2; exit 1; }
-renderer="${ROVER_RENDERER:-software}"
-[[ "$renderer" == software || "$renderer" == gpu ]] || { echo 'ROVER_RENDERER must be software or gpu.' >&2; exit 1; }
+renderer="${ROVER_RENDERER:-auto}"
+[[ "$renderer" == auto || "$renderer" == software || "$renderer" == gpu ]] || { echo 'ROVER_RENDERER must be auto, software or gpu.' >&2; exit 1; }
+if [[ "$renderer" == auto ]]; then
+  renderer=software
+  for device in /dev/dri/renderD*; do
+    if [[ -e "$device" ]]; then renderer=gpu; break; fi
+  done
+fi
 scene_abs="$(realpath -- "$project_dir/$scene_rel")"
 if [[ "$scene_abs" != "$project_dir/dataset/live_eval_scenes/"*/scene.json ]]; then
   echo 'Choose a scene.json inside dataset/live_eval_scenes.' >&2
@@ -29,6 +35,7 @@ if [[ "$renderer" == gpu ]]; then
   done
 else
   docker_args+=(-e LIBGL_ALWAYS_SOFTWARE=1)
+  echo 'Software rendering selected: CPU camera rendering can severely limit FPS.' >&2
 fi
 if [[ "$gui" == true ]]; then
   [[ -n "${DISPLAY:-}" ]] || { echo 'ROVER_GUI=true requires a terminal on the Ubuntu desktop.' >&2; exit 1; }
@@ -45,6 +52,10 @@ sudo docker run "${docker_args[@]}" rover-jazzy bash -c '
   set -e
   source /opt/ros/jazzy/setup.bash
   source /work/install_jazzy/setup.bash
+  python3 -c "from rover_perception.live_core import LIVE_PIPELINE_VERSION; from mars_training_environment.robot import live_camera_config; assert LIVE_PIPELINE_VERSION == 2" || {
+    echo "Installed live packages are outdated. Extract with tar --touch, rebuild both packages and restart." >&2
+    exit 1
+  }
   exec ros2 launch mars_training_environment mars_live.launch.py \
     scene:="$LIVE_SCENE" camera_timeout:="$LIVE_CAMERA_TIMEOUT" control_mode:="$LIVE_CONTROL_MODE" \
     gui:="$LIVE_GUI" live_width:="$LIVE_WIDTH"

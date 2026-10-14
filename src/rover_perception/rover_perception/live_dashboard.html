@@ -28,7 +28,7 @@
 <script>
 const $=selector=>document.querySelector(selector), held=new Set(), pending=new Map();
 const canvas=$('#camera'), ctx=canvas.getContext('2d');
-let control=null, view=null, seq=0, state={}, displayedAt=0, displayFPS=0, lastDraw=0, controlRTT=null, frameRequestAt=0, frameMeta=null;
+let control=null, view=null, seq=0, state={}, displayedAt=0, displayFPS=0, lastDraw=0, controlRTT=null, frameMeta=null, frameReceivedAt=0;
 const mapping={ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
 const now=()=>performance.now();
 const socketURL=path=>`${location.protocol==='https:'?'wss':'ws'}://${location.host}${path}`;
@@ -55,30 +55,36 @@ function connectControls(){
   ws.onerror=()=>ws.close();
   ws.onclose=()=>{if(control!==ws)return;held.clear();paint();pending.clear();controlRTT=null;setTimeout(connectControls,1000);};
 }
-function nextFrame(ws){if(ws.readyState===WebSocket.OPEN){frameRequestAt=now();ws.send('next');}}
 function acceptStatus(s){state=s;$('#detections').textContent=(s.detections||[]).map(d=>`${d.class_name}: ${(d.confidence*100).toFixed(0)}%`).join('\n')||'No objects detected in this view.';if(!canDrive()&&held.size)stop();}
 function connectView(){
   if(document.hidden||(view&&view.readyState<WebSocket.CLOSING))return;
   const ws=new WebSocket(socketURL('/view'));view=ws;frameMeta=null;
-  ws.onopen=()=>nextFrame(ws);
-  ws.onmessage=async e=>{
+  let drawing=Promise.resolve();
+  ws.onmessage=e=>{
     if(view!==ws)return;
     if(typeof e.data==='string'){
       const s=JSON.parse(e.data);
-      if(s.type==='frame'){frameMeta=s;}else{acceptStatus(s);nextFrame(ws);}
+      if(s.type==='frame'){frameMeta=s;frameReceivedAt=now();}else{acceptStatus(s);}
       return;
     }
-    try{
+    const meta=frameMeta, receivedAt=frameReceivedAt;frameMeta=null;
+    if(!meta){ws.close();return;}
+    drawing=drawing.then(async()=>{try{
+      if(view!==ws||ws.readyState!==WebSocket.OPEN)return;
       const bitmap=await createImageBitmap(e.data);
-      if(view!==ws){bitmap.close();return;}
-      canvas.width=bitmap.width;canvas.height=bitmap.height;ctx.drawImage(bitmap,0,0);bitmap.close();
-      const drawn=now(), meta=frameMeta||{};
-      // Include transfer/decode time conservatively; server and browser clocks
-      // need not agree. Only a frame actually displayed enables movement.
-      displayedAt=drawn-(Number(meta.frame_age_seconds||0)*1000+drawn-frameRequestAt);
+      if(view!==ws||ws.readyState!==WebSocket.OPEN){bitmap.close();return;}
+      if(canvas.width!==bitmap.width)canvas.width=bitmap.width;
+      if(canvas.height!==bitmap.height)canvas.height=bitmap.height;
+      ctx.drawImage(bitmap,0,0);bitmap.close();
+      const drawn=now();
+      // Estimate network delay conservatively from the independent command RTT,
+      // then include local transfer/decode time without assuming synced clocks.
+      displayedAt=receivedAt-Number(meta.frame_age_seconds||0)*1000-(controlRTT??250);
       if(lastDraw)displayFPS=1000/Math.max(1,drawn-lastDraw);lastDraw=drawn;
-      acceptStatus(meta);nextFrame(ws);
-    }catch(e){ws.close();}
+      acceptStatus(meta);
+      if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({ack:meta.video_id}));
+    }catch(e){ws.close();}});
+    return drawing;
   };
   ws.onerror=()=>ws.close();
   ws.onclose=()=>{if(view!==ws)return;stop();state={...state,ready:false,error:'Camera connection interrupted. Reconnecting…'};setTimeout(connectView,1000);};

@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 import cv2
 import numpy as np
 
-from .live_core import (DEFAULT_CAMERA_TIMEOUT, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED,
+from .live_core import (DEFAULT_CAMERA_TIMEOUT, LIVE_PIPELINE_VERSION, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED,
                         DriveLease, camera_timeout, detection_rows)
 from .drive_mode import control_mode
 
@@ -42,6 +42,7 @@ class LiveSession:
             age = time.monotonic() - self.captured if self.captured else None
             limit = min(self.camera_timeout, self.bridge_camera_timeout)
             return dict(self.status, frame_age_seconds=age, camera_timeout_seconds=limit,
+                        pipeline_version=LIVE_PIPELINE_VERSION,
                         control_mode=self.control_mode, controls_enabled=self.control_mode == 'browser',
                         max_linear_speed=MAX_LINEAR_SPEED, max_angular_speed=MAX_ANGULAR_SPEED,
                         camera_delayed=age is not None and 1.0 < age < limit,
@@ -72,13 +73,14 @@ class LiveSession:
         while not self.stop.is_set():
             started = time.monotonic()
             try:
-                request = urllib.request.Request(self.bridge + '/frame.png',
+                request = urllib.request.Request(self.bridge + '/frame.bgr',
                                                  headers={'If-None-Match': etag} if etag else {})
                 with urllib.request.urlopen(request, timeout=2) as response:
                     with self.condition:
                         self.control_mode = control_mode(response.headers.get('X-Control-Mode', 'browser'))
                     headers_received = time.monotonic()
                     sequence = int(response.headers['X-Frame-Sequence'])
+                    width, height = int(response.headers['X-Image-Width']), int(response.headers['X-Image-Height'])
                     sim_time = float(response.headers['X-Sim-Time'])
                     age = float(response.headers['X-Frame-Age'])
                     bridge_limit = camera_timeout(response.headers.get('X-Camera-Timeout', self.camera_timeout))
@@ -92,9 +94,9 @@ class LiveSession:
                 if (received_etag, sequence, sim_time) == previous:
                     self.stop.wait(0.05)
                     continue
-                image = cv2.imdecode(np.frombuffer(raw, dtype=np.uint8), cv2.IMREAD_COLOR)
-                if image is None:
-                    raise ValueError('Cannot decode simulator PNG')
+                if width <= 0 or height <= 0 or len(raw) != width * height * 3:
+                    raise ValueError('Invalid raw camera frame dimensions')
+                image = np.frombuffer(raw, dtype=np.uint8).reshape(height, width, 3).copy()
                 infer_start = time.monotonic()
                 result = self.model.predict(image, imgsz=self.imgsz, conf=self.conf,
                                             device=self.device, rect=self.rect, verbose=False)[0]
@@ -111,12 +113,15 @@ class LiveSession:
                           'sim_speed': None if last_processed is None else
                               max(0, sim_time - last_sim_time) / max(completed - last_processed, 1e-6),
                           'image_size': [image.shape[1], image.shape[0]],
+                          'camera_fetch_ms': (infer_start - started) * 1000,
+                          'annotation_encode_ms': (completed - infer_start) * 1000 - inference_ms,
                           'detections': rows}
                 last_processed = completed
                 last_sim_time = sim_time
                 if self.record:
                     stem = f'{sequence:09d}_{sim_time:.6f}'
-                    (self.record / (stem + '.png')).write_bytes(raw)
+                    if not cv2.imwrite(str(self.record / (stem + '.png')), image):
+                        raise ValueError('Cannot record raw camera PNG')
                     (self.record / (stem + '_boxes.jpg')).write_bytes(encoded.tobytes())
                     with (self.record / 'predictions.jsonl').open('a', encoding='utf-8') as output:
                         output.write(json.dumps(dict(status, image=stem + '.png', wall_time=time.time())) + '\n')
@@ -148,6 +153,8 @@ class LiveSession:
                     finally:
                         error.close()
                     with self.condition:
+                        if error.code == 404:
+                            message = 'Installed camera bridge is outdated. Extract the update with tar --touch, rebuild and restart the simulator.'
                         self.status = dict(self.status, error=message or f'Camera bridge returned HTTP {error.code}')
                     self.stop.wait(0.25)
             except Exception as error:

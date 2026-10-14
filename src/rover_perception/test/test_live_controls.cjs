@@ -23,12 +23,12 @@ vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],context);
 const control=sockets.find(s=>s.url.endsWith('/control')), view=sockets.find(s=>s.url.endsWith('/view'));
 const key=(name,type='keydown',repeat=false,editable=false)=>events[type]({key:name,repeat,target:{matches:()=>editable},preventDefault(){}});
 const latest=()=>{const c=JSON.parse(control.sent.at(-1));return {linear:c.linear,angular:c.angular};};
-const snapshot={type:'frame',controls_enabled:true,ready:true,error:null,camera_timeout_seconds:3,frame_age_seconds:0.01,inference_ms:20,sim_speed:1,detections:[]};
+const snapshot={type:'frame',video_id:1,controls_enabled:true,ready:true,error:null,camera_timeout_seconds:3,frame_age_seconds:0.01,inference_ms:20,sim_speed:1,detections:[]};
 async function frame(s={}){await view.onmessage({data:JSON.stringify({...snapshot,...s})});time+=10;await view.onmessage({data:{}});}
 (async()=>{
  control.open();view.open();
  key('w');assert.deepEqual(latest(),{linear:0,angular:0}); // wait for an actually displayed frame
- await frame();assert.equal(draws,1);assert.equal(view.sent.length,2); // demand only after draw
+ await frame();assert.equal(draws,1);assert.deepEqual(JSON.parse(view.sent.at(-1)),{ack:1}); // acknowledge only after draw
  key('w');assert.deepEqual(latest(),{linear:0.3,angular:0});
  time+=50;intervals.get(50)();assert.deepEqual(latest(),{linear:0.3,angular:0});
  elements['#speed'].value='0.60';elements['#speed'].events.input();assert.deepEqual(latest(),{linear:0.6,angular:0});
@@ -53,6 +53,18 @@ async function frame(s={}){await view.onmessage({data:JSON.stringify({...snapsho
  document.hidden=false;events.visibilitychange();
  const resumed=sockets.filter(s=>s.url.endsWith('/control')).at(-1);resumed.open();assert.equal(vm.runInContext('held.size',context),0);
  ack=false;intervals.get(50)();time+=501;intervals.get(50)();assert.equal(resumed.readyState,3); // expired acknowledgements disconnect
+ const pipelined=sockets.filter(s=>s.url.endsWith('/view')).at(-1);pipelined.open();
+ const decoders=[];context.createImageBitmap=()=>new Promise(resolve=>decoders.push(resolve));
+ const packet=(id)=>{pipelined.onmessage({data:JSON.stringify({...snapshot,video_id:id})});return pipelined.onmessage({data:{}});};
+ const first=packet(2), second=packet(3);
+ await Promise.resolve();assert.equal(decoders.length,1); // never decode/display out of order
+ decoders.shift()({width:960,height:540,close(){}});await first;
+ assert.deepEqual(JSON.parse(pipelined.sent.at(-1)),{ack:2});
+ await Promise.resolve();decoders.shift()({width:960,height:540,close(){}});await second;
+ assert.deepEqual(JSON.parse(pipelined.sent.at(-1)),{ack:3});
+ const stale=packet(4);await Promise.resolve();const beforeClose=draws;
+ pipelined.close();decoders.shift()({width:960,height:540,close(){}});await stale;
+ assert.equal(draws,beforeClose);assert.equal(vm.runInContext('state.ready',context),false); // a late decode cannot revive a lost camera
  console.log('PASS: held WASD/arrows, live speed sliders, release before ACK, Space/blur/hidden stops, pointer cancellation, stale views, reconnect and bounded frame delivery');
 })().catch(e=>{console.error(e);process.exitCode=1;});
 function pendingReset(){vm.runInContext('pending.clear()',context);}

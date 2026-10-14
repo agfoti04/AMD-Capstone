@@ -7,10 +7,12 @@ import argparse
 import ast
 import configparser
 import io
+import os
 import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
@@ -87,12 +89,16 @@ def make_patch(root, output):
             data = normalized_bytes(root / name)
             info = tarfile.TarInfo(name)
             info.size = len(data)
+            # Epoch timestamps make setuptools skip updates when an older
+            # build/install directory already contains newer-dated modules.
+            info.mtime = int(time.time())
             info.mode = 0o755 if name.endswith('.sh') else 0o644
             archive.addfile(info, io.BytesIO(data))
     with tarfile.open(output, 'r:gz') as archive:
         assert archive.getnames() == files
         for name in files:
             assert archive.extractfile(name).read() == normalized_bytes(root / name), name
+            assert archive.getmember(name).mtime > 0, name
     return files
 
 
@@ -100,10 +106,20 @@ def verify_extracted_build(archive_path):
     with tempfile.TemporaryDirectory(prefix='halo-live-package-') as folder:
         extracted = Path(folder)
         with tarfile.open(archive_path, 'r:gz') as archive:
+            if any(member.mtime <= 0 for member in archive.getmembers()):
+                raise ValueError('Deployment sources must have current timestamps for incremental builds')
             archive.extractall(extracted, filter='data')
         validate_package(extracted)
         package = extracted / 'src/rover_perception'
         dist = extracted / 'verified-wheel'
+        # Exercise an update over existing build products as well as packaging.
+        # A clean build alone would miss the stale-module deployment failure.
+        for source in (package / 'rover_perception').glob('*.py'):
+            stale = package / 'build/lib/rover_perception' / source.name
+            stale.parent.mkdir(parents=True, exist_ok=True)
+            stale.write_text('# stale installed implementation\n', encoding='utf-8')
+            previous_time = source.stat().st_mtime - 60
+            os.utime(stale, (previous_time, previous_time))
         command = [sys.executable, 'setup.py', 'bdist_wheel', '--dist-dir', str(dist)]
         result = subprocess.run(command, cwd=package, capture_output=True, text=True)
         if result.returncode:
@@ -115,6 +131,7 @@ def verify_extracted_build(archive_path):
             for name in ('__init__.py', 'detector_node.py', 'live_core.py', 'live_bridge.py',
                          'live_dashboard.py', 'live_dashboard.html', 'drive_mode.py', 'gazebo_drive.py', 'live_web.py'):
                 assert 'rover_perception/' + name in names, name
+                assert wheel.read('rover_perception/' + name) == (package / 'rover_perception' / name).read_bytes(), name
             assert any(name.endswith('/share/ament_index/resource_index/packages/rover_perception')
                        for name in names), 'ROS package resource marker was not installed'
             entry_file = next(name for name in names if name.endswith('.dist-info/entry_points.txt'))
@@ -127,7 +144,7 @@ def verify_extracted_build(archive_path):
 def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=root.parent / 'halo-browser-drive-20261013.tar.gz')
+    parser.add_argument('--output', type=Path, default=root.parent / 'halo-browser-fps-20261014.tar.gz')
     parser.add_argument('--verify-build', action='store_true')
     args = parser.parse_args(argv)
     files = make_patch(root, args.output)

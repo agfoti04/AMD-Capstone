@@ -193,6 +193,33 @@ class LiveHTTPTests(unittest.TestCase):
         self.assertEqual(status['sim_time'], 42.0000005)
         self.assertEqual(len(self.model.calls), 1)
 
+    def test_raw_camera_transport_preserves_pixels_without_png_compression(self):
+        with patch('rover_perception.live_bridge.cv2.imencode') as encode:
+            with urllib.request.urlopen(self.url + '/frame.bgr') as response:
+                self.assertEqual(response.headers['X-Image-Width'], '2')
+                self.assertEqual(response.headers['X-Image-Height'], '2')
+                pixels = np.frombuffer(response.read(), dtype=np.uint8).reshape(2, 2, 3)
+            np.testing.assert_array_equal(pixels, image_to_bgr(self.node.frame))
+            encode.assert_not_called()
+        with urllib.request.urlopen(self.url + '/status') as response:
+            status = json.load(response)
+        self.assertEqual(status['pipeline_version'], 2)
+        self.assertEqual(status['image_size'], [2, 2])
+
+    def test_outdated_installed_bridge_is_reported_instead_of_using_old_camera_path(self):
+        class OldBridge(bridge_handler(self.node)):
+            def do_GET(handler):
+                if handler.path == '/frame.bgr':
+                    handler.reply(404, b'{}')
+                else:
+                    super().do_GET()
+        self.bridge.RequestHandlerClass = OldBridge
+        self.session.thread.start()
+        await_condition(lambda: 'outdated' in self.session.snapshot().get('error', ''))
+        self.assertFalse(self.session.snapshot()['ready'])
+        self.assertIn('tar --touch', self.session.snapshot()['error'])
+        self.assertEqual(len(self.model.calls), 0)
+
     def test_driving_without_ready_camera_is_zero_then_commands_and_release_work(self):
         post(self.web + '/command', dict(linear=0.3, angular=0))
         self.assertEqual(self.node.lease.get(), (0, 0))
