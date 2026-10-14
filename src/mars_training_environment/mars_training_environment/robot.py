@@ -5,6 +5,17 @@ import xml.etree.ElementTree as ET
 BOXES_GZ_TOPIC = 'oak_boxes'
 
 
+def live_camera_config(config, width=960):
+    """Reduce live rendering cost without changing the saved capture profile."""
+    if width not in (640, 960, 1280, 1920):
+        raise ValueError('live_width must be 640, 960, 1280 or 1920')
+    result = copy.deepcopy(config)
+    camera = result['camera']
+    camera['height'] = max(2, round(camera['height'] * width / camera['width'] / 2) * 2)
+    camera['width'], camera['rate_hz'] = width, 30
+    return result
+
+
 def sync_mast(root, mount_xyz):
     """Keep the visual mast between the chassis top and the camera origin.
 
@@ -27,7 +38,7 @@ def sync_mast(root, mount_xyz):
     mast.find('geometry/box').set('size', f'0.02 0.02 {length:.12g}')
 
 
-def robot_description(config):
+def robot_description(config, live=False):
     import xacro
     from rover_training.randomize import default_xacro
     root = ET.fromstring(xacro.process_file(str(default_xacro()), mappings={'sim': 'harmonic'}).toxml())
@@ -47,6 +58,13 @@ def robot_description(config):
                'camera/depth_camera/clip/near':camera['near_m'],'camera/depth_camera/clip/far':camera['far_m']}
     for path,value in changes.items():
         sensor.find(path).text = str(value)
+    if live:
+        # Live detection needs only RGB. Plain cameras publish on their exact
+        # topic, whereas the RGB-D sensor appends /image to its base topic.
+        sensor.set('type', 'camera')
+        sensor.find('topic').text = '/oak/image'
+        sensor.find('camera').remove(sensor.find('camera/depth_camera'))
+        return ET.tostring(root, encoding='unicode')
     # Same mount, lens and rate as the RGB-D camera. Gazebo reports a visible 2D box
     # for every model tagged by the Label system; capture compares them with our labels.
     boxes = copy.deepcopy(sensor)

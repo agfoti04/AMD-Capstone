@@ -12,7 +12,7 @@ class GazeboDrive(Node):
         super().__init__('rover_gazebo_drive')
         # Native Teleop publishes key events, including keyboard auto-repeat.
         # Allow the initial repeat delay, then expire if events stop arriving.
-        self.lease = DriveLease(timeout=GAZEBO_COMMAND_TIMEOUT)
+        self.lease = DriveLease(timeout=GAZEBO_COMMAND_TIMEOUT, max_linear=0.3, max_angular=0.8)
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.create_subscription(Twist, GAZEBO_DRIVE_TOPIC, self.on_command, 10)
         # Default wall clock: expiry still works if Gazebo is paused.

@@ -23,17 +23,17 @@ Branch: `perception/mars-pilot50-v2-review`.
 
 The [Halo live-vision guide](scripts/HALO_LIVE_VISION.md) prepares a separate
 interactive Gazebo session, three new evaluation scenes, and a browser camera
-view with predictions for all three classes. Choose browser driving or native
-Gazebo Teleop keyboard driving. In Gazebo mode, the browser only displays
-predictions and sends no driving or idle stop commands. ROS stays in Docker while inference uses the host's existing ROCm
-Conda environment. Optional recordings preserve frames, predictions and weights
-provenance. Live controls tolerate camera gaps up to three seconds, with a
-separate 0.35-second command expiry. Conditional camera requests avoid encoding
-unchanged images; longer stalls pause browser driving and display a useful status message.
-Gazebo keyboard driving uses its own one-second command expiry, independent
-of the camera/inference HTTP connection; desktop keyboard repeat must be enabled.
-Deploy after capture completes and run after training. Local checks
-do not replace a full Gazebo/ROCm verification on the Halo.
+view with predictions for all three classes. Browser driving uses held WASD,
+arrow keys or buttons, with speed sliders up to 0.60 m/s and 1.50 rad/s.
+Persistent control and video connections keep commands independent of video
+delivery; slow viewers receive the newest frame instead of accumulating a queue.
+The live launcher now defaults to headless, RGB-only 960 x 540 rendering and
+targets up to 30 processed FPS. The dashboard reports actual display FPS,
+camera age, command latency and simulation speed. Capture retains its full
+RGB-D/bounding-box sensors and saved configuration. ROS stays in Docker while
+inference uses the host's ROCm environment, with aiohttp added for WebSockets.
+Command expiry, release/focus handling and camera freshness checks stop stale
+movement. Local tests do not replace measuring actual Gazebo/ROCm FPS on the Halo.
 
 ## Balanced class coverage for the next dataset
 

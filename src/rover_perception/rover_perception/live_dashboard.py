@@ -14,16 +14,18 @@ from urllib.parse import urlparse
 import cv2
 import numpy as np
 
-from .live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, detection_rows
+from .live_core import (DEFAULT_CAMERA_TIMEOUT, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED,
+                        DriveLease, camera_timeout, detection_rows)
 from .drive_mode import control_mode
 
 
 class LiveSession:
-    def __init__(self, model, bridge, imgsz=960, conf=0.25, device='0', fps=8, record=None,
-                 camera_timeout_sec=DEFAULT_CAMERA_TIMEOUT):
+    def __init__(self, model, bridge, imgsz=960, conf=0.25, device='0', fps=30, record=None,
+                 camera_timeout_sec=DEFAULT_CAMERA_TIMEOUT, rect=True):
         self.model, self.bridge = model, bridge.rstrip('/')
         self.imgsz, self.conf, self.device, self.fps = imgsz, conf, device, fps
         self.record = record
+        self.rect = rect
         self.camera_timeout = camera_timeout(camera_timeout_sec)
         self.bridge_camera_timeout = self.camera_timeout
         self.condition = threading.Condition()
@@ -41,10 +43,11 @@ class LiveSession:
             limit = min(self.camera_timeout, self.bridge_camera_timeout)
             return dict(self.status, frame_age_seconds=age, camera_timeout_seconds=limit,
                         control_mode=self.control_mode, controls_enabled=self.control_mode == 'browser',
+                        max_linear_speed=MAX_LINEAR_SPEED, max_angular_speed=MAX_ANGULAR_SPEED,
                         camera_delayed=age is not None and 1.0 < age < limit,
                         ready=age is not None and age < limit and not self.status.get('error'))
 
-    def command(self, linear, angular):
+    def drive_values(self, linear, angular):
         if self.control_mode == 'gazebo':
             raise PermissionError('Driving is controlled in Gazebo; this dashboard is a camera viewer.')
         validator = DriveLease()
@@ -52,7 +55,10 @@ class LiveSession:
         linear, angular = validator.get()
         if (linear or angular) and not self.snapshot()['ready']:
             linear, angular = 0.0, 0.0
-        payload = json.dumps({'linear': linear, 'angular': angular}).encode()
+        return {'linear': linear, 'angular': angular}
+
+    def command(self, linear, angular):
+        payload = json.dumps(self.drive_values(linear, angular)).encode()
         req = urllib.request.Request(self.bridge + '/command', payload,
                                      {'Content-Type': 'application/json'}, method='POST')
         with urllib.request.urlopen(req, timeout=0.4) as response:
@@ -62,6 +68,7 @@ class LiveSession:
         previous = None
         etag = None
         last_processed = None
+        last_sim_time = None
         while not self.stop.is_set():
             started = time.monotonic()
             try:
@@ -90,10 +97,10 @@ class LiveSession:
                     raise ValueError('Cannot decode simulator PNG')
                 infer_start = time.monotonic()
                 result = self.model.predict(image, imgsz=self.imgsz, conf=self.conf,
-                                            device=self.device, rect=False, verbose=False)[0]
+                                            device=self.device, rect=self.rect, verbose=False)[0]
                 inference_ms = (time.monotonic() - infer_start) * 1000
                 annotated = result.plot()
-                ok, encoded = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 90])
+                ok, encoded = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 if not ok:
                     raise ValueError('Cannot encode annotated image')
                 rows = detection_rows(result)
@@ -101,8 +108,12 @@ class LiveSession:
                 status = {'error': None, 'sequence': sequence, 'sim_time': sim_time,
                           'inference_ms': inference_ms,
                           'loop_fps': 0.0 if last_processed is None else 1 / max(completed - last_processed, 1e-6),
+                          'sim_speed': None if last_processed is None else
+                              max(0, sim_time - last_sim_time) / max(completed - last_processed, 1e-6),
+                          'image_size': [image.shape[1], image.shape[0]],
                           'detections': rows}
                 last_processed = completed
+                last_sim_time = sim_time
                 if self.record:
                     stem = f'{sequence:09d}_{sim_time:.6f}'
                     (self.record / (stem + '.png')).write_bytes(raw)
@@ -234,7 +245,8 @@ def main(argv=None):
     parser.add_argument('--device', default='0')
     parser.add_argument('--imgsz', type=int, default=960)
     parser.add_argument('--conf', type=float, default=0.25)
-    parser.add_argument('--fps', type=float, default=8)
+    parser.add_argument('--fps', type=float, default=30)
+    parser.add_argument('--square', action='store_true', help='Use full square padding instead of faster rectangular inference')
     parser.add_argument('--camera-timeout', type=float, default=DEFAULT_CAMERA_TIMEOUT,
                         help='Stop driving when camera data is older than this many wall seconds (0.1–10)')
     parser.add_argument('--record-dir', type=Path)
@@ -252,6 +264,8 @@ def main(argv=None):
     if bridge.scheme != 'http' or bridge.hostname not in ('127.0.0.1', 'localhost'):
         parser.error('The simulator bridge must be on localhost')
     from ultralytics import YOLO
+    from .live_web import serve
+    cv2.setNumThreads(1)
     model = YOLO(str(args.model.resolve()))
     if model.names != {0: 'rock', 1: 'pale_soil_patch', 2: 'yellow_crystal_rock'}:
         parser.error(f'Expected the trained three-class rover model; received {model.names}')
@@ -260,23 +274,21 @@ def main(argv=None):
         manifest = dict(weights=str(args.model.resolve()),
                         weights_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
                         scene=args.scene, imgsz=args.imgsz, conf=args.conf, device=args.device,
+                        rect=not args.square, target_fps=args.fps,
                         camera_timeout_seconds=args.camera_timeout,
                         class_names=model.names, started_wall_time=time.time())
         (args.record_dir / 'session.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     page = Path(__file__).with_name('live_dashboard.html').read_bytes()
     session = LiveSession(model, args.bridge, args.imgsz, args.conf, args.device, args.fps, args.record_dir,
-                          args.camera_timeout)
-    server = ThreadingHTTPServer(('127.0.0.1', args.port), dashboard_handler(session, page))
-    server.daemon_threads = True
+                          args.camera_timeout, rect=not args.square)
     session.thread.start()
     print(f'Live rover view: http://127.0.0.1:{args.port} | weights: {args.model.resolve()}', flush=True)
     try:
-        server.serve_forever()
+        serve(session, page, args.port)
     except KeyboardInterrupt:
         pass
     finally:
         session.close()
-        server.server_close()
 
 
 if __name__ == '__main__':

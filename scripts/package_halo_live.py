@@ -20,9 +20,12 @@ EXISTING_PACKAGE_FILES = (
     'README.md', 'scripts/HALO_LIVE_VISION.md',
     'scripts/halo_live_sim.sh', 'scripts/halo_live_vision.sh',
     'scripts/package_halo_live.py',
+    'scripts/requirements-live.txt',
     'src/mars_training_environment/package.xml',
     'src/mars_training_environment/config/live_eval.json',
     'src/mars_training_environment/launch/mars_live.launch.py',
+    'src/mars_training_environment/launch/mars_world.launch.py',
+    'src/mars_training_environment/mars_training_environment/robot.py',
 )
 PERCEPTION_REQUIRED = (
     'setup.py', 'setup.cfg', 'package.xml', 'resource/rover_perception',
@@ -30,6 +33,7 @@ PERCEPTION_REQUIRED = (
     'rover_perception/live_core.py', 'rover_perception/live_bridge.py',
     'rover_perception/live_dashboard.py', 'rover_perception/live_dashboard.html',
     'rover_perception/drive_mode.py', 'rover_perception/gazebo_drive.py',
+    'rover_perception/live_web.py',
     'launch/detector.launch.py', 'config/sim.yaml', 'config/oak.yaml',
 )
 
@@ -109,7 +113,7 @@ def verify_extracted_build(archive_path):
         with zipfile.ZipFile(wheels[0]) as wheel:
             names = set(wheel.namelist())
             for name in ('__init__.py', 'detector_node.py', 'live_core.py', 'live_bridge.py',
-                         'live_dashboard.py', 'live_dashboard.html', 'drive_mode.py', 'gazebo_drive.py'):
+                         'live_dashboard.py', 'live_dashboard.html', 'drive_mode.py', 'gazebo_drive.py', 'live_web.py'):
                 assert 'rover_perception/' + name in names, name
             assert any(name.endswith('/share/ament_index/resource_index/packages/rover_perception')
                        for name in names), 'ROS package resource marker was not installed'
@@ -123,7 +127,7 @@ def verify_extracted_build(archive_path):
 def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=root.parent / 'halo-gazebo-controls-20261013.tar.gz')
+    parser.add_argument('--output', type=Path, default=root.parent / 'halo-browser-drive-20261013.tar.gz')
     parser.add_argument('--verify-build', action='store_true')
     args = parser.parse_args(argv)
     files = make_patch(root, args.output)

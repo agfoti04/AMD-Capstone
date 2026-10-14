@@ -49,6 +49,7 @@ class LaunchOwnershipTests(unittest.TestCase):
                     self.assertEqual(camera['parameters'][0]['control_mode'], mode)
                     self.assertFalse(camera['parameters'][0]['use_sim_time'])
                     self.assertEqual(dict(actions[0]['launch_arguments'])['capture'], 'false')
+                    self.assertEqual(dict(actions[0]['launch_arguments'])['live_camera'], 'true')
                     native = [a for a in actions if a.get('executable') == 'gazebo_drive']
                     bridge = [a for a in actions if a.get('executable') == 'parameter_bridge']
                     self.assertEqual(len(native), int(mode == 'gazebo'))

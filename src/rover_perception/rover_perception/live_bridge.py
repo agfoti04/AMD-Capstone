@@ -1,5 +1,6 @@
 """Local PNG camera/drive bridge; GPU inference stays in the host Conda environment."""
 import json
+import socket
 import threading
 import time
 import uuid
@@ -9,7 +10,7 @@ import cv2
 import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Image
 
 from .live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr
@@ -33,11 +34,11 @@ class LiveBridge(Node):
         self.received = 0.0
         self.pub = None
         if self.control_mode == 'browser':
-            self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
+            self.pub = self.create_publisher(Twist, '/cmd_vel', 1)
             # This node deliberately uses its default wall clock, not use_sim_time.
-            self.create_timer(0.05, self.drive)
+            self.create_timer(0.02, self.drive)
         self.create_subscription(Image, self.get_parameter('image_topic').value,
-                                 self.on_image, qos_profile_sensor_data)
+                                 self.on_image, QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT))
         self.http = ThreadingHTTPServer(('127.0.0.1', self.get_parameter('port').value), handler(self))
         self.http.daemon_threads = True
         self.thread = threading.Thread(target=self.http.serve_forever, daemon=True)
@@ -75,6 +76,13 @@ class LiveBridge(Node):
 
 def handler(node):
     class Handler(BaseHTTPRequestHandler):
+        protocol_version = 'HTTP/1.1'
+
+        def setup(self):
+            super().setup()
+            self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            self.connection.settimeout(3)
+
         def log_message(self, *args):
             pass
 
@@ -131,6 +139,7 @@ def handler(node):
 
         def do_POST(self):
             if node.control_mode != 'browser':
+                self.close_connection = True
                 self.reply(403, b'{"error":"Driving is controlled in Gazebo; this bridge is a camera viewer."}')
                 return
             try:
@@ -143,6 +152,7 @@ def handler(node):
                 node.lease.set(command['linear'], command['angular'])
                 self.reply(200, b'{"ok":true}')
             except (ValueError, TypeError, KeyError) as error:
+                self.close_connection = True
                 node.lease.set(0, 0)
                 self.reply(400, json.dumps({'error': str(error)}).encode())
     return Handler

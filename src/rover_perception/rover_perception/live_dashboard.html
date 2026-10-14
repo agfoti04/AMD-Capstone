@@ -3,58 +3,119 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Rover live vision</title>
 <style>
-body{margin:0;background:#101923;color:#e4edf4;font:16px system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:22px}h1{font-size:24px;margin:0 0 8px}p{color:#c1cfda}#status{padding:12px;background:#263644;border-left:4px solid #e9b75b;margin:18px 0}#status.ready{border-color:#63dba6}.camera{background:#080e15;min-height:240px;display:grid;place-items:center;border:1px solid #3c4f60;border-radius:8px;overflow:hidden}.camera img{width:100%;display:block}.controls{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:20px}.pad{display:grid;grid-template-columns:repeat(3,85px);gap:8px}button{border:1px solid #526a7e;border-radius:7px;background:#23384b;color:white;padding:14px;font:inherit;cursor:pointer;touch-action:none;user-select:none}button.active{background:#356d91}button:focus-visible{outline:3px solid #8cc9f1}#stop{background:#843d39}#detections{white-space:pre-line;line-height:1.6}.note{font-size:14px;color:#a8bdcc}
+*{box-sizing:border-box}body{margin:0;background:#101923;color:#e4edf4;font:16px system-ui,sans-serif}main{max-width:1400px;margin:auto;padding:22px}h1{font-size:25px;margin:0}p{color:#c1cfda;line-height:1.5}header{display:flex;justify-content:space-between;align-items:center;gap:20px}#status{padding:12px;background:#263644;border-left:4px solid #e9b75b;margin:18px 0}#status.ready{border-color:#63dba6}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px}.camera{background:#080e15;aspect-ratio:16/9;display:grid;place-items:center;border:1px solid #3c4f60;border-radius:10px;overflow:hidden}.camera canvas{width:100%;display:block}aside{background:#172532;border:1px solid #3c4f60;border-radius:10px;padding:18px}.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}button{border:1px solid #526a7e;border-radius:7px;background:#23384b;color:white;padding:14px;font:inherit;cursor:pointer;touch-action:none;user-select:none}button.active{background:#356d91;outline:2px solid #8cc9f1}button:focus-visible,input:focus-visible{outline:3px solid #8cc9f1}#stop{background:#843d39}label{display:flex;justify-content:space-between;gap:10px;margin-top:18px}output{font-variant-numeric:tabular-nums;color:#96e1c3}input[type=range]{width:100%;margin:12px 0;accent-color:#63dba6}.metrics{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:14px;color:#afc4d5}.metrics span{background:#172532;border-radius:6px;padding:8px 12px;font-variant-numeric:tabular-nums}.note{font-size:13px;color:#a8bdcc}#detections{white-space:pre-line;font-size:14px;line-height:1.7}#driveMode{font-size:14px;color:#96e1c3}@media(max-width:850px){.layout{grid-template-columns:1fr}aside{max-width:100%}.pad{max-width:280px}main{padding:14px}}
 </style>
-<main><h1>Rover live vision</h1><p>Drive in Gazebo and watch the trained model's camera predictions.</p>
+<main>
+<header><h1>Rover live vision</h1><span id="driveMode">Connecting controls…</span></header>
 <div id="status" role="status">Waiting for the simulator camera…</div>
-<div class="camera"><img src="/stream.mjpg" alt="Live rover camera with predicted boxes, classes and confidence"></div>
-<p id="driveMode" class="note">Waiting for the simulator control mode.</p>
-<div class="controls" id="browserControls" style="display:none"><div class="pad">
-<span></span><button data-key="w" aria-label="Drive forward">W ↑</button><span></span>
+<div class="layout"><section>
+<div class="camera"><canvas id="camera" width="960" height="540" aria-label="Live rover camera with predicted objects"></canvas></div>
+<div class="metrics"><span id="fps">Display — FPS</span><span id="inference">Detection — ms</span><span id="latency">Controls — ms</span><span id="age">Camera age —</span><span id="simSpeed">Simulation —</span></div>
+<p id="detections">No predictions received yet.</p>
+</section><aside id="browserControls">
+<strong>Drive the rover</strong>
+<div class="pad"><span></span><button data-key="w" aria-label="Drive forward">W ↑</button><span></span>
 <button data-key="a" aria-label="Turn left">A ←</button><button id="stop">Stop</button><button data-key="d" aria-label="Turn right">D →</button>
-<span></span><button data-key="s" aria-label="Drive backward">S ↓</button><span></span>
-</div><div><p>Hold W/A/S/D or a direction button to move.<br>Release to stop. Space stops all movement.</p>
-<p class="note">Speed: 0.30 m/s · Turn rate: 0.80 rad/s<br>Controls expire without heartbeats; prolonged camera gaps pause driving.</p></div></div>
-<p id="detections">No predictions received yet.</p></main>
+<span></span><button data-key="s" aria-label="Drive backward">S ↓</button><span></span></div>
+<label for="speed">Drive speed <output id="speedValue">0.30 m/s</output></label>
+<input id="speed" type="range" min="0.10" max="0.60" step="0.05" value="0.30">
+<label for="turn">Turn speed <output id="turnValue">0.80 rad/s</output></label>
+<input id="turn" type="range" min="0.20" max="1.50" step="0.10" value="0.80">
+<p>Hold W/A/S/D, arrow keys, or the buttons. Release to stop. Space stops all movement.</p>
+<p class="note">Start slowly near objects. Controls stop when the page loses focus or the connection stops responding.</p>
+</aside></div>
+</main>
 <script>
-const held=new Set(), statusBox=document.querySelector('#status');
-let ready=false, controlsEnabled=false, busy=false, pending=false;
+const $=selector=>document.querySelector(selector), held=new Set(), pending=new Map();
+const canvas=$('#camera'), ctx=canvas.getContext('2d');
+let control=null, view=null, seq=0, state={}, displayedAt=0, displayFPS=0, lastDraw=0, controlRTT=null, frameRequestAt=0, frameMeta=null;
 const mapping={ArrowUp:'w',ArrowDown:'s',ArrowLeft:'a',ArrowRight:'d'};
+const now=()=>performance.now();
+const socketURL=path=>`${location.protocol==='https:'?'wss':'ws'}://${location.host}${path}`;
 function paint(){document.querySelectorAll('[data-key]').forEach(b=>b.classList.toggle('active',held.has(b.dataset.key)));}
-function stop(){held.clear();paint();send(true);}
-async function send(force=false){
-  if(!controlsEnabled)return;
-  if(busy){if(force)pending=true;return;}
-  const linear=ready?((held.has('w')?1:0)-(held.has('s')?1:0))*0.3:0;
-  const angular=ready?((held.has('a')?1:0)-(held.has('d')?1:0))*0.8:0;
-  busy=true;
-  try{const r=await fetch('/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({linear,angular}),signal:AbortSignal.timeout(700)});if(!r.ok)throw Error('Simulator controls unavailable');}
-  catch(e){held.clear();paint();ready=false;statusBox.className='';statusBox.textContent='Controls disconnected. Release keys and wait for the camera.';}
-  finally{busy=false;if(pending){pending=false;send();}}
+function cameraAge(){return displayedAt?(now()-displayedAt)/1000:Infinity;}
+function canDrive(){return !document.hidden&&state.controls_enabled===true&&state.ready&&!state.error&&cameraAge()<(state.camera_timeout_seconds||3);}
+function send(){
+  if(!control||control.readyState!==WebSocket.OPEN)return;
+  if(control.bufferedAmount>1024){disconnectControls();return;}
+  const enabled=canDrive();
+  const linear=enabled?((held.has('w')?1:0)-(held.has('s')?1:0))*Number($('#speed').value):0;
+  const angular=enabled?((held.has('a')?1:0)-(held.has('d')?1:0))*Number($('#turn').value):0;
+  const id=++seq;
+  pending.set(id,now());
+  control.send(JSON.stringify({seq:id,linear,angular}));
 }
-window.addEventListener('keydown',e=>{if(!controlsEnabled)return;const key=mapping[e.key]||e.key.toLowerCase();if(key===' '){e.preventDefault();stop();return;}if('wasd'.includes(key)&&key.length===1){e.preventDefault();if(ready&&!e.repeat){held.add(key);paint();send();}}});
-window.addEventListener('keyup',e=>{const key=mapping[e.key]||e.key.toLowerCase();if(held.delete(key)){e.preventDefault();paint();send(true);}});
-window.addEventListener('blur',stop);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
-window.addEventListener('pagehide',()=>{held.clear();if(controlsEnabled)fetch('/command',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"linear":0,"angular":0}',keepalive:true}).catch(()=>{});});
-document.querySelector('#stop').addEventListener('click',stop);
-document.querySelectorAll('[data-key]').forEach(b=>{
- b.addEventListener('pointerdown',e=>{e.preventDefault();if(!controlsEnabled||!ready)return;b.setPointerCapture(e.pointerId);held.add(b.dataset.key);paint();send();});
- for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>{held.delete(b.dataset.key);paint();send(true);});
+function stop(){held.clear();paint();send();}
+function disconnectControls(){held.clear();paint();pending.clear();if(control)control.close();}
+function connectControls(){
+  if(document.hidden||(control&&control.readyState<WebSocket.CLOSING))return;
+  const ws=new WebSocket(socketURL('/control'));control=ws;
+  ws.onopen=()=>{if(control!==ws)return;held.clear();paint();pending.clear();send();};
+  ws.onmessage=e=>{if(control!==ws)return;const ack=JSON.parse(e.data), sent=pending.get(ack.seq);if(sent!==undefined){controlRTT=now()-sent;pending.delete(ack.seq);if(controlRTT>500)disconnectControls();}};
+  ws.onerror=()=>ws.close();
+  ws.onclose=()=>{if(control!==ws)return;held.clear();paint();pending.clear();controlRTT=null;setTimeout(connectControls,1000);};
+}
+function nextFrame(ws){if(ws.readyState===WebSocket.OPEN){frameRequestAt=now();ws.send('next');}}
+function acceptStatus(s){state=s;$('#detections').textContent=(s.detections||[]).map(d=>`${d.class_name}: ${(d.confidence*100).toFixed(0)}%`).join('\n')||'No objects detected in this view.';if(!canDrive()&&held.size)stop();}
+function connectView(){
+  if(document.hidden||(view&&view.readyState<WebSocket.CLOSING))return;
+  const ws=new WebSocket(socketURL('/view'));view=ws;frameMeta=null;
+  ws.onopen=()=>nextFrame(ws);
+  ws.onmessage=async e=>{
+    if(view!==ws)return;
+    if(typeof e.data==='string'){
+      const s=JSON.parse(e.data);
+      if(s.type==='frame'){frameMeta=s;}else{acceptStatus(s);nextFrame(ws);}
+      return;
+    }
+    try{
+      const bitmap=await createImageBitmap(e.data);
+      if(view!==ws){bitmap.close();return;}
+      canvas.width=bitmap.width;canvas.height=bitmap.height;ctx.drawImage(bitmap,0,0);bitmap.close();
+      const drawn=now(), meta=frameMeta||{};
+      // Include transfer/decode time conservatively; server and browser clocks
+      // need not agree. Only a frame actually displayed enables movement.
+      displayedAt=drawn-(Number(meta.frame_age_seconds||0)*1000+drawn-frameRequestAt);
+      if(lastDraw)displayFPS=1000/Math.max(1,drawn-lastDraw);lastDraw=drawn;
+      acceptStatus(meta);nextFrame(ws);
+    }catch(e){ws.close();}
+  };
+  ws.onerror=()=>ws.close();
+  ws.onclose=()=>{if(view!==ws)return;stop();state={...state,ready:false,error:'Camera connection interrupted. Reconnecting…'};setTimeout(connectView,1000);};
+}
+window.addEventListener('keydown',e=>{
+  const key=mapping[e.key]||e.key.toLowerCase();
+  if(key===' '){e.preventDefault();stop();return;}
+  if(e.target&&e.target.matches('input,select,textarea,[contenteditable=true]'))return;
+  if(key.length===1&&'wasd'.includes(key)){e.preventDefault();if(canDrive()&&control?.readyState===WebSocket.OPEN&&!e.repeat){held.add(key);paint();send();}}
 });
-setInterval(()=>{if(held.size)send();},100);
-async function refresh(){
- try{const r=await fetch('/status',{signal:AbortSignal.timeout(1000)});if(!r.ok)throw Error('Dashboard unavailable');const s=await r.json();ready=s.ready&&!s.error;
- controlsEnabled=s.controls_enabled===true;
- if(!controlsEnabled){held.clear();paint();}
- document.querySelector('#browserControls').style.display=controlsEnabled?'flex':'none';
- document.querySelector('#driveMode').textContent=s.control_mode==='gazebo'?'Driving: Gazebo Teleop keyboard. This browser shows predictions only.':controlsEnabled?'Driving: browser controls.':'Waiting for the simulator control mode.';
- statusBox.className=ready&&!s.camera_delayed?'ready':'';
- statusBox.textContent=ready?`${s.camera_delayed?'Camera delayed':'Live'} · ${s.loop_fps.toFixed(1)} processed FPS · ${s.inference_ms.toFixed(1)} ms inference · camera age ${s.frame_age_seconds.toFixed(2)} s${s.camera_delayed&&controlsEnabled?` (driving pauses at ${s.camera_timeout_seconds.toFixed(1)} s)`:''}`:s.error||(controlsEnabled?'Camera stopped updating. Driving is paused; release controls and wait for the camera.':'Camera stopped updating. Check Gazebo is playing.');
- document.querySelector('#detections').textContent=s.detections.length?s.detections.map(d=>`${d.class_name}: ${(d.confidence*100).toFixed(0)}%`).join('\n'):'No objects detected in this view.';
- if(!ready&&held.size)stop();
- }catch(e){ready=false;stop();statusBox.className='';statusBox.textContent=controlsEnabled?'Dashboard disconnected. Driving is paused.':'Prediction dashboard disconnected. Check the vision terminal.';}
+window.addEventListener('keyup',e=>{const key=mapping[e.key]||e.key.toLowerCase();if(held.delete(key)){e.preventDefault();paint();send();}});
+window.addEventListener('blur',stop);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();disconnectControls();if(view)view.close();}else{connectControls();connectView();}});
+window.addEventListener('pagehide',()=>{stop();disconnectControls();if(view)view.close();});
+$('#stop').addEventListener('click',stop);
+document.querySelectorAll('[data-key]').forEach(b=>{
+ b.addEventListener('pointerdown',e=>{e.preventDefault();if(!canDrive())return;b.setPointerCapture(e.pointerId);held.add(b.dataset.key);paint();send();});
+ for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>{held.delete(b.dataset.key);paint();send();});
+});
+for(const [id,unit] of [['speed','m/s'],['turn','rad/s']])$( '#'+id).addEventListener('input',()=>{$('#'+id+'Value').textContent=Number($('#'+id).value).toFixed(2)+' '+unit;send();});
+setInterval(()=>{
+  const oldest=pending.values().next().value;
+  if(oldest!==undefined&&now()-oldest>500){disconnectControls();return;}
+  if(!canDrive()&&held.size){held.clear();paint();}
+  send();
+},50);
+function refresh(){
+  const connected=control?.readyState===WebSocket.OPEN, fresh=canDrive();
+  $('#driveMode').textContent=connected?'Browser controls connected':'Connecting controls — close other driving tabs';
+  $('#status').className=fresh&&connected?'ready':'';
+  $('#status').textContent=state.error||(fresh?(connected?'Live — hold a direction to drive.':'Camera ready. Waiting for controls.'):'Waiting for a fresh camera frame. Movement is stopped.');
+  $('#fps').textContent=`Display ${cameraAge()<1?displayFPS.toFixed(1):'0.0'} FPS`;
+  $('#inference').textContent=`Detection ${state.inference_ms?.toFixed(1)||'—'} ms`;
+  $('#latency').textContent=`Controls ${controlRTT===null?'—':controlRTT.toFixed(0)} ms`;
+  $('#age').textContent=`Camera age ${Number.isFinite(cameraAge())?cameraAge().toFixed(2)+' s':'—'}`;
+  $('#simSpeed').textContent=`Simulation ${state.sim_speed===undefined||state.sim_speed===null?'—':state.sim_speed.toFixed(2)+'×'}`;
 }
-setInterval(refresh,500);refresh();
+setInterval(refresh,250);connectControls();connectView();refresh();
 </script>
 </html>

@@ -1,0 +1,2 @@
+# Host rover-yolo environment only. Keep its existing Torch/ROCm/Ultralytics.
+aiohttp>=3.10,<4

@@ -7,6 +7,8 @@ import numpy as np
 
 
 DEFAULT_CAMERA_TIMEOUT = 3.0
+MAX_LINEAR_SPEED = 0.6
+MAX_ANGULAR_SPEED = 1.5
 
 
 def camera_timeout(value):
@@ -36,7 +38,7 @@ def image_to_bgr(msg):
 
 class DriveLease:
     """A command expires on wall time, including when simulation time is paused."""
-    def __init__(self, timeout=0.35, max_linear=0.3, max_angular=0.8, clock=time.monotonic):
+    def __init__(self, timeout=0.35, max_linear=MAX_LINEAR_SPEED, max_angular=MAX_ANGULAR_SPEED, clock=time.monotonic):
         self.timeout, self.max_linear, self.max_angular = timeout, max_linear, max_angular
         self.clock = clock
         self.lock = threading.Lock()

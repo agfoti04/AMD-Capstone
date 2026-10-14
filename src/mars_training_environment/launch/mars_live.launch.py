@@ -19,7 +19,8 @@ def setup(context):
     share = get_package_share_directory('mars_training_environment')
     world = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(share, 'launch', 'mars_world.launch.py')),
-        launch_arguments={'scene': scene, 'gui': LaunchConfiguration('gui'), 'capture': 'false'}.items())
+        launch_arguments={'scene': scene, 'gui': LaunchConfiguration('gui'), 'capture': 'false',
+                          'live_camera': 'true', 'live_width': LaunchConfiguration('live_width')}.items())
     bridge = Node(package='rover_perception', executable='live_bridge', output='screen',
                   parameters=[{'image_topic': camera['image_topic'],
                                'port': int(LaunchConfiguration('bridge_port').perform(context)),
@@ -39,7 +40,8 @@ def setup(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('scene', description='scene.json from a separate live-evaluation bundle'),
-        DeclareLaunchArgument('gui', default_value='true'),
+        DeclareLaunchArgument('gui', default_value='false'),
+        DeclareLaunchArgument('live_width', default_value='960'),
         DeclareLaunchArgument('bridge_port', default_value='8770'),
         DeclareLaunchArgument('camera_timeout', default_value='3.0'),
         DeclareLaunchArgument('control_mode', default_value='browser', choices=['browser', 'gazebo']),

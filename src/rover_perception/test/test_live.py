@@ -56,7 +56,8 @@ class FakeRosNode:
 ros = {name: types.ModuleType(name) for name in ('rclpy', 'rclpy.node', 'rclpy.qos',
                                                'geometry_msgs', 'geometry_msgs.msg', 'sensor_msgs', 'sensor_msgs.msg')}
 ros['rclpy.node'].Node = FakeRosNode
-ros['rclpy.qos'].qos_profile_sensor_data = object()
+ros['rclpy.qos'].QoSProfile = lambda **kwargs: types.SimpleNamespace(**kwargs)
+ros['rclpy.qos'].ReliabilityPolicy = types.SimpleNamespace(BEST_EFFORT='best_effort')
 ros['geometry_msgs.msg'].Twist = twist
 ros['sensor_msgs.msg'].Image = object
 with patch.dict(sys.modules, ros):
@@ -131,7 +132,7 @@ class CoreTests(unittest.TestCase):
         now = [10.0]
         lease = DriveLease(clock=lambda: now[0])
         lease.set(12, -5)
-        self.assertEqual(lease.get(), (0.3, -0.8))
+        self.assertEqual(lease.get(), (0.6, -1.5))
         now[0] += 0.36
         self.assertEqual(lease.get(), (0, 0))
         lease.set(0, 0)
@@ -185,7 +186,7 @@ class LiveHTTPTests(unittest.TestCase):
         self.process_frame()
         image, settings = self.model.calls[0]
         np.testing.assert_array_equal(image, image_to_bgr(self.node.frame))
-        self.assertEqual(settings, dict(imgsz=960, conf=0.25, device='0', rect=False, verbose=False))
+        self.assertEqual(settings, dict(imgsz=960, conf=0.25, device='0', rect=True, verbose=False))
         with urllib.request.urlopen(self.web + '/status') as response:
             status = json.load(response)
         self.assertEqual([row['class_name'] for row in status['detections']], list(self.model.names.values()))
@@ -198,7 +199,7 @@ class LiveHTTPTests(unittest.TestCase):
         self.process_frame()
         post(self.web + '/command', dict(linear=10, angular=-10))
         self.node.drive()
-        self.assertEqual((self.published[-1].linear.x, self.published[-1].angular.z), (0.3, -0.8))
+        self.assertEqual((self.published[-1].linear.x, self.published[-1].angular.z), (0.6, -1.5))
         post(self.web + '/command', dict(linear=0, angular=0))
         self.node.drive()
         self.assertEqual(self.published[-1].linear.x, 0)
@@ -366,7 +367,8 @@ class GazeboDriveTests(unittest.TestCase):
     def setUp(self):
         self.now = [10.0]
         self.node = GazeboDrive.__new__(GazeboDrive)
-        self.node.lease = DriveLease(timeout=GAZEBO_COMMAND_TIMEOUT, clock=lambda: self.now[0])
+        self.node.lease = DriveLease(timeout=GAZEBO_COMMAND_TIMEOUT, max_linear=0.3, max_angular=0.8,
+                                     clock=lambda: self.now[0])
         self.published = []
         self.node.pub = types.SimpleNamespace(publish=self.published.append)
 

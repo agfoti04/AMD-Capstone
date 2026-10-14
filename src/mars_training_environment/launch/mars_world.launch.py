@@ -13,14 +13,14 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 from mars_training_environment.generate import write_world
-from mars_training_environment.robot import BOXES_GZ_TOPIC, robot_description
+from mars_training_environment.robot import BOXES_GZ_TOPIC, live_camera_config, robot_description
 
 
-def bridge_config(camera):
+def bridge_config(camera, live=False):
     def gz_to_ros(ros, gz, ros_type, gz_type):
         return {'ros_topic_name': ros, 'gz_topic_name': gz, 'ros_type_name': ros_type,
                 'gz_type_name': gz_type, 'direction': 'GZ_TO_ROS'}
-    return [gz_to_ros('/clock', '/clock', 'rosgraph_msgs/msg/Clock', 'gz.msgs.Clock'),
+    result = [gz_to_ros('/clock', '/clock', 'rosgraph_msgs/msg/Clock', 'gz.msgs.Clock'),
             gz_to_ros('/odom_gt', '/odom_gt', 'nav_msgs/msg/Odometry', 'gz.msgs.Odometry'),
             gz_to_ros(camera['image_topic'], '/oak/image', 'sensor_msgs/msg/Image', 'gz.msgs.Image'),
             gz_to_ros(camera['depth_topic'], '/oak/depth_image', 'sensor_msgs/msg/Image', 'gz.msgs.Image'),
@@ -28,19 +28,28 @@ def bridge_config(camera):
                       'gz.msgs.CameraInfo'),
             gz_to_ros(camera['boxes_topic'], '/'+BOXES_GZ_TOPIC, 'vision_msgs/msg/Detection2DArray',
                       'gz.msgs.AnnotatedAxisAligned2DBox_V')]
+    if live:
+        result = result[:3]  # clock, odometry and RGB only
+    return result
 
 
 def setup(context):
     path = Path(LaunchConfiguration('scene').perform(context)).resolve()
     scene = json.loads(path.read_text())
+    live = LaunchConfiguration('live_camera').perform(context).lower() == 'true'
+    capture_enabled = LaunchConfiguration('capture').perform(context).lower() == 'true'
+    if live and capture_enabled:
+        raise ValueError('Live camera overrides cannot be used for dataset capture')
+    if live:
+        scene['config'] = live_camera_config(scene['config'], int(LaunchConfiguration('live_width').perform(context)))
     bundle = path.parents[2]
     assets = json.loads((bundle/'assets/catalog.json').read_text())
     # Re-resolve absolute file paths when a generated bundle moves between hosts.
     write_world(bundle,scene,assets)
-    robot = robot_description(scene['config'])
+    robot = robot_description(scene['config'], live=live)
     (path.parent/'robot_capture.urdf').write_text(robot)
     bridge_file = path.parent/'bridge.yaml'
-    bridge_file.write_text(yaml.safe_dump(bridge_config(scene['config']['camera'])))
+    bridge_file.write_text(yaml.safe_dump(bridge_config(scene['config']['camera'], live=live)))
     world = path.parent/'world.sdf'
     gui = LaunchConfiguration('gui').perform(context).lower() in ('1','true','yes')
     gazebo = IncludeLaunchDescription(
@@ -59,7 +68,7 @@ def setup(context):
     odom = Node(package='four_wheel_sim',executable='odom_gt',parameters=[{'use_sim_time':True}])
     actions = [gazebo,bridge,rsp,spawn,RegisterEventHandler(OnProcessExit(target_action=spawn,on_exit=[jsb])),
                RegisterEventHandler(OnProcessExit(target_action=jsb,on_exit=[ddc])),stamper,odom]
-    if LaunchConfiguration('capture').perform(context).lower() == 'true':
+    if capture_enabled:
         capture = Node(package='mars_training_environment',executable='mars_capture',output='screen',
                        parameters=[{'use_sim_time':True,'scene':str(path),
                                     'output':LaunchConfiguration('output').perform(context)}])
@@ -72,4 +81,6 @@ def generate_launch_description():
                               DeclareLaunchArgument('gui',default_value='true'),
                               DeclareLaunchArgument('capture',default_value='false'),
                               DeclareLaunchArgument('output',default_value='dataset/mars_sample'),
+                              DeclareLaunchArgument('live_camera',default_value='false'),
+                              DeclareLaunchArgument('live_width',default_value='960'),
                               OpaqueFunction(function=setup)])
