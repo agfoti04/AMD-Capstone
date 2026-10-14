@@ -8,9 +8,11 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Opaq
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from rover_perception.drive_mode import control_mode, gazebo_bridge_argument
 
 
 def setup(context):
+    mode = control_mode(LaunchConfiguration('control_mode').perform(context))
     scene = LaunchConfiguration('scene').perform(context)
     with open(scene, encoding='utf-8') as source:
         camera = json.load(source)['config']['camera']
@@ -22,8 +24,16 @@ def setup(context):
                   parameters=[{'image_topic': camera['image_topic'],
                                'port': int(LaunchConfiguration('bridge_port').perform(context)),
                                'camera_timeout_sec': float(LaunchConfiguration('camera_timeout').perform(context)),
+                               'control_mode': mode,
                                'use_sim_time': False}])
-    return [world, bridge]
+    actions = [world, bridge]
+    if mode == 'gazebo':
+        actions += [
+            Node(package='ros_gz_bridge', executable='parameter_bridge', name='gazebo_drive_bridge',
+                 arguments=[gazebo_bridge_argument()], output='screen'),
+            Node(package='rover_perception', executable='gazebo_drive', output='screen',
+                 parameters=[{'use_sim_time': False}])]
+    return actions
 
 
 def generate_launch_description():
@@ -32,4 +42,5 @@ def generate_launch_description():
         DeclareLaunchArgument('gui', default_value='true'),
         DeclareLaunchArgument('bridge_port', default_value='8770'),
         DeclareLaunchArgument('camera_timeout', default_value='3.0'),
+        DeclareLaunchArgument('control_mode', default_value='browser', choices=['browser', 'gazebo']),
         OpaqueFunction(function=setup)])

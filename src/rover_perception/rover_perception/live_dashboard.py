@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 
 from .live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, detection_rows
+from .drive_mode import control_mode
 
 
 class LiveSession:
@@ -30,6 +31,7 @@ class LiveSession:
         self.jpeg = None
         self.version = 0
         self.captured = 0.0
+        self.control_mode = 'unknown'
         self.status = {'error': 'Waiting for the simulator camera', 'detections': []}
         self.thread = threading.Thread(target=self.run, daemon=True)
 
@@ -38,10 +40,13 @@ class LiveSession:
             age = time.monotonic() - self.captured if self.captured else None
             limit = min(self.camera_timeout, self.bridge_camera_timeout)
             return dict(self.status, frame_age_seconds=age, camera_timeout_seconds=limit,
+                        control_mode=self.control_mode, controls_enabled=self.control_mode == 'browser',
                         camera_delayed=age is not None and 1.0 < age < limit,
                         ready=age is not None and age < limit and not self.status.get('error'))
 
     def command(self, linear, angular):
+        if self.control_mode == 'gazebo':
+            raise PermissionError('Driving is controlled in Gazebo; this dashboard is a camera viewer.')
         validator = DriveLease()
         validator.set(linear, angular)
         linear, angular = validator.get()
@@ -63,6 +68,8 @@ class LiveSession:
                 request = urllib.request.Request(self.bridge + '/frame.png',
                                                  headers={'If-None-Match': etag} if etag else {})
                 with urllib.request.urlopen(request, timeout=2) as response:
+                    with self.condition:
+                        self.control_mode = control_mode(response.headers.get('X-Control-Mode', 'browser'))
                     headers_received = time.monotonic()
                     sequence = int(response.headers['X-Frame-Sequence'])
                     sim_time = float(response.headers['X-Sim-Time'])
@@ -114,6 +121,10 @@ class LiveSession:
                 previous = (received_etag, sequence, sim_time)
                 etag = received_etag
             except urllib.error.HTTPError as error:
+                mode = error.headers.get('X-Control-Mode')
+                if mode in ('browser', 'gazebo'):
+                    with self.condition:
+                        self.control_mode = mode
                 if error.code == 304:
                     # A normal wait for the next camera sample; preserve the
                     # last processed frame's age and the current held controls.
@@ -137,7 +148,8 @@ class LiveSession:
     def close(self):
         self.stop.set()
         try:
-            self.command(0, 0)
+            if self.control_mode == 'browser':
+                self.command(0, 0)
         except (OSError, ValueError):
             pass
         with self.condition:
@@ -188,6 +200,8 @@ def dashboard_handler(session, page):
 
         def do_POST(self):
             try:
+                if session.snapshot()['control_mode'] == 'gazebo':
+                    raise PermissionError('Driving is controlled in Gazebo; this dashboard is a camera viewer.')
                 origin = self.headers.get('Origin')
                 if origin and urlparse(origin).netloc != self.headers.get('Host'):
                     raise ValueError('Use this dashboard to send controls')
@@ -199,6 +213,8 @@ def dashboard_handler(session, page):
                 command = json.loads(self.rfile.read(size))
                 session.command(command['linear'], command['angular'])
                 self.reply(200, {'ok': True})
+            except PermissionError as error:
+                self.reply(403, {'error': str(error)})
             except (ValueError, KeyError, TypeError) as error:
                 try:
                     session.command(0, 0)

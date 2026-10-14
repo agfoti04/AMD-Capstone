@@ -13,6 +13,7 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 
 from .live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr
+from .drive_mode import control_mode
 
 
 class LiveBridge(Node):
@@ -21,6 +22,8 @@ class LiveBridge(Node):
         self.declare_parameter('image_topic', '/oak/image_raw')
         self.declare_parameter('port', 8770)
         self.declare_parameter('camera_timeout_sec', DEFAULT_CAMERA_TIMEOUT)
+        self.declare_parameter('control_mode', 'browser')
+        self.control_mode = control_mode(self.get_parameter('control_mode').value)
         self.camera_timeout = camera_timeout(self.get_parameter('camera_timeout_sec').value)
         self.stream_id = uuid.uuid4().hex
         self.lease = DriveLease()
@@ -28,11 +31,13 @@ class LiveBridge(Node):
         self.frame = None
         self.sequence = 0
         self.received = 0.0
-        self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.pub = None
+        if self.control_mode == 'browser':
+            self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
+            # This node deliberately uses its default wall clock, not use_sim_time.
+            self.create_timer(0.05, self.drive)
         self.create_subscription(Image, self.get_parameter('image_topic').value,
                                  self.on_image, qos_profile_sensor_data)
-        # This node deliberately uses its default wall clock, not use_sim_time.
-        self.create_timer(0.05, self.drive)
         self.http = ThreadingHTTPServer(('127.0.0.1', self.get_parameter('port').value), handler(self))
         self.http.daemon_threads = True
         self.thread = threading.Thread(target=self.http.serve_forever, daemon=True)
@@ -51,6 +56,8 @@ class LiveBridge(Node):
             return self.frame, self.sequence, self.received
 
     def drive(self):
+        if self.control_mode != 'browser':
+            return
         _, _, received = self.snapshot()
         linear, angular = self.lease.get()
         if not received or time.monotonic() - received >= self.camera_timeout:
@@ -76,6 +83,7 @@ def handler(node):
             self.send_header('Content-Type', kind)
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-Control-Mode', node.control_mode)
             for key, value in (headers or {}).items():
                 self.send_header(key, str(value))
             self.end_headers()
@@ -88,11 +96,14 @@ def handler(node):
                 self.reply(200, json.dumps({'sequence': sequence, 'camera_age_seconds': age,
                                            'camera_timeout_seconds': node.camera_timeout,
                                            'camera_ready': frame is not None and age < node.camera_timeout,
-                                           'command': node.lease.get()}).encode())
+                                           'control_mode': node.control_mode,
+                                           'controls_enabled': node.control_mode == 'browser',
+                                           'command': node.lease.get() if node.control_mode == 'browser' else None}).encode())
             elif self.path == '/frame.png':
                 if frame is None or age >= node.camera_timeout:
                     message = ('Waiting for the simulator camera.' if frame is None else
-                               'Camera stopped updating. Check Gazebo is playing; driving is paused.')
+                               'Camera stopped updating. Check Gazebo is playing.' +
+                               (' Browser driving is paused.' if node.control_mode == 'browser' else ''))
                     self.reply(503, json.dumps({'error': message, 'camera_age_seconds': age,
                                                 'camera_timeout_seconds': node.camera_timeout}).encode())
                     return
@@ -119,6 +130,9 @@ def handler(node):
                 self.reply(404, b'{}')
 
         def do_POST(self):
+            if node.control_mode != 'browser':
+                self.reply(403, b'{"error":"Driving is controlled in Gazebo; this bridge is a camera viewer."}')
+                return
             try:
                 if self.path != '/command' or self.headers.get('Content-Type') != 'application/json':
                     raise ValueError('Expected JSON /command')

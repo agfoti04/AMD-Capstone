@@ -26,6 +26,7 @@ setup(
         "console_scripts": [
             "rock_detector = rover_perception.detector_node:main",
             "live_bridge = rover_perception.live_bridge:main",
+            "gazebo_drive = rover_perception.gazebo_drive:main",
         ],
     },
 )

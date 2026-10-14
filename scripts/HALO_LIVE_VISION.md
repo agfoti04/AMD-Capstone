@@ -4,7 +4,9 @@ Use the Halo's existing remote Ubuntu desktop. Gazebo shows the world and rover;
 a browser at `http://127.0.0.1:8771` shows the camera with predicted boxes,
 three class names, confidence, camera age and inference timing. Hold W/A/S/D,
 arrow keys or direction buttons to drive; release or press Space/Stop to stop.
-The browser must have focus for keyboard controls.
+The browser must have focus for browser keyboard controls. For native Gazebo
+keyboard driving, select `gazebo` mode as described below; the browser then
+shows predictions only and never sends driving or stop commands.
 
 This is manual driving with live inference, not autonomous navigation. The live
 view uses only RGB as model input. Depth and simulator bounding boxes are not
@@ -30,13 +32,13 @@ fresh extraction rather than from the developer checkout.
 In Windows PowerShell:
 
 ```powershell
-& 'C:\Windows\System32\OpenSSH\scp.exe' C:\Projects\Capstone\halo-live-controls-fix-20261013.tar.gz ian@halo-strix:~/
+& 'C:\Windows\System32\OpenSSH\scp.exe' C:\Projects\Capstone\halo-gazebo-controls-20261013.tar.gz ian@halo-strix:~/
 ```
 
 On the Halo, after capture completes:
 
 ```bash
-tar -xzf ~/halo-live-controls-fix-20261013.tar.gz -C ~/capstone-training/mars-pilot50-v2
+tar -xzf ~/halo-gazebo-controls-20261013.tar.gz -C ~/capstone-training/mars-pilot50-v2
 ```
 
 ```bash
@@ -64,7 +66,7 @@ sudo docker run --rm --init \
 ```
 
 Require all four packages to finish and the executable listing to include
-`rover_perception live_bridge`. The Docker bridge uses ROS/OpenCV packages
+`rover_perception live_bridge` and `rover_perception gazebo_drive`. The Docker bridge uses ROS/OpenCV packages
 already needed for capture. Inference uses the existing host `rover-yolo`
 environment, so there is no need to reinstall PyTorch or ROCm inside Docker.
 
@@ -123,6 +125,63 @@ To choose another scene, stop this terminal with Ctrl+C and run:
 bash scripts/halo_live_sim.sh dataset/live_eval_scenes/scenes/scene_050001/scene.json
 ```
 
+## Drive using Gazebo's keyboard controls
+
+Stop the old vision and simulator terminals with Ctrl+C before deploying or
+switching modes. The existing three evaluation scenes can be reused; there is
+no need to regenerate them. Open the simulator terminal inside Ian's remote
+Ubuntu desktop, then run:
+
+```bash
+bash "$HOME/capstone-training/mars-pilot50-v2/scripts/halo_live_sim.sh" \
+  dataset/live_eval_scenes/scenes/scene_050001/scene.json gazebo
+```
+
+The second argument selects the sole driving source. Omitting it preserves
+browser driving. In Gazebo mode, the launch creates a Gazebo-to-ROS Twist
+bridge on `/rover/live/gazebo_cmd_vel` and a local command adapter feeding the
+existing `/cmd_vel` controller chain. The camera bridge creates no driving
+publisher or timer and rejects browser commands, including zero/stop commands.
+The browser discovers the mode automatically and hides its driving controls.
+
+In the Gazebo window, open the plugin menu at the upper right and select
+**Teleop**. Configure the panel before switching to its **Keyboard** tab:
+
+| Field | Value |
+| --- | --- |
+| Topic | `/rover/live/gazebo_cmd_vel` |
+| Forward (m/s) | `0.30` |
+| Vertical (m/s) | `0.00` |
+| Yaw (rad/s) | `0.80` |
+
+Press Enter or leave each field to apply it. Select **Keyboard**, then give the
+Gazebo window focus, outside the text fields. Hold **W** forward, **S** backward,
+**A** left or **D** right; release the keys to stop. Ensure Gazebo is playing.
+Release all keys before changing windows. Space is the browser stop shortcut;
+Gazebo Teleop uses key release to stop.
+
+Gazebo Teleop publishes key events rather than a periodic command heartbeat.
+Ubuntu/remote-desktop key repeat must reach Gazebo while a key is held. The
+adapter allows the initial repeat delay and sends zero commands after one wall
+second without input, even when simulation time is paused. It clamps speeds
+to 0.30 m/s and 0.80 rad/s and ignores vertical movement. Use the Keyboard tab:
+native Buttons and Sliders issue individual commands and therefore produce
+brief movements with this timeout.
+
+If holding moves only briefly, enable **Repeat Keys** in Ubuntu's keyboard or
+Accessibility/Typing settings and use a repeat delay shorter than one second.
+Remote desktop software must forward repeated key events. HTTP camera stalls
+can still delay predictions, but they no longer cancel Gazebo driving.
+
+Start vision in another Halo terminal using the commands below, with
+`--scene scene_050001` to match this example. The scene option records the
+scene ID; it does not switch the simulator. The browser should display
+**Driving: Gazebo Teleop keyboard. This browser shows predictions only.**
+
+For another scene, release keys, stop the simulator with Ctrl+C, and relaunch
+with `scene_050000` or `scene_050002` in the scene path. Restart vision with the
+matching scene ID if recording evidence.
+
 ## Start vision with your trained weights
 
 In a second Halo terminal:
@@ -167,7 +226,7 @@ If necessary, override settings without editing any source:
 bash scripts/halo_live_vision.sh "$ROVER_LIVE_MODEL" --scene scene_050000 --conf 0.35 --fps 5
 ```
 
-The bridge clamps movement to 0.30 m/s and 0.80 rad/s. Browser release, blur and
+In browser mode, the bridge clamps movement to 0.30 m/s and 0.80 rad/s. Browser release, blur and
 hidden-page events request a stop. Commands expire after 0.35 seconds without
 a heartbeat. The live camera has a separate three-second freshness limit:
 short rendering gaps can show "Camera delayed" while held controls continue;
@@ -219,7 +278,7 @@ the held-out dataset and reviewed ground truth.
 
 ## Stop and troubleshoot
 
-Release controls, press Stop, then Ctrl+C in the vision terminal and the Gazebo
+Release controls (and press Stop when using browser mode), then Ctrl+C in the vision terminal and the Gazebo
 terminal. If the GUI terminal was lost, stop only the live simulator:
 
 ```bash
@@ -228,7 +287,7 @@ sudo docker stop rover-live-sim
 
 - Waiting for camera: make sure Gazebo is playing, controllers have loaded and
   `http://127.0.0.1:8770/status` reports a changing sequence and recent camera age.
-- Intermittent HTTP 503 while driving: deploy the controls-fix archive, rebuild
+- Intermittent HTTP 503 while browser driving: deploy the current live archive, rebuild
   both packages and restart Gazebo/vision; refresh the browser. The bridge status
   should report `camera_timeout_seconds: 3.0`. If camera gaps exceed three seconds,
   inspect simulator performance or pause state before increasing the limit.
@@ -242,21 +301,26 @@ sudo docker stop rover-live-sim
   corrected archive, then check all three bootstrap files above and rebuild.
   Creating the marker alone does not supply the missing namespace/install config.
 
-The 20 live camera/control tests passed on Windows and Linux. They cover
+The complete suite passed 31 tests on Linux; 30 camera/control/deployment tests
+also passed on Windows. The live camera/control tests cover
 color/stride handling, all-class output, HTTP inference and controls, stale
 frames, command expiry and recording, using controlled ROS/model doubles.
 They reproduce the measured 1.41-second camera gap, verify conditional frame
 requests and recovery, and confirm that longer stalls still stop driving.
-The shipped browser script also passed a DOM/event harness for keyboard,
+The shipped browser script has a DOM/event harness for keyboard,
 pointer, heartbeat, camera grace/expiry, release, blur, hidden-page and reconnection behavior.
 Bash syntax checks and a package build passed. All three evaluation seeds
 were planned locally with the production generator; the 30-view quota audit
 returned `errors: []`. The local Browser connection and Docker were unavailable.
-The base live workflow has since run on the Halo; verify this controls update
-there after deployment.
+The base browser-driving workflow has since run on the Halo. Native Gazebo
+mode has local checks for command ownership, rejected HTTP commands, camera-only
+viewing, keyboard repeat/expiry, release and shutdown. Verify the native GUI,
+ROS/Gazebo transport and remote-desktop key repeat on the Halo after deployment.
 
 Three deployment regression tests passed on Windows and Linux. The corrected
 archive also passed a package build from a fresh extraction, confirming that
 its Python package, ROS marker, console entry point and browser page are included.
 
 The inference options follow [Ultralytics' prediction documentation](https://docs.ultralytics.com/modes/predict/).
+Native controls use [Gazebo GUI's Teleop plugin](https://gazebosim.org/api/gui/8/classplugins_1_1Teleop.html)
+and the [Jazzy ROS/Gazebo bridge](https://github.com/gazebosim/ros_gz/blob/jazzy/ros_gz_bridge/README.md).

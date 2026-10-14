@@ -8,9 +8,14 @@ and visibility checks, resumable capture, a browser review editor, and a
 
 **October 12, 2026 milestone:** the Halo/Strix completed the v2 pilot with
 **50 images, no validation errors, and 30 train / 10 validation / 10 test images**.
-The reviewed export has completed its first 30-epoch training run. The separate
-test evaluation and a larger balanced capture come next. The completed capture came from the existing v2 scene bundle through
+The reviewed export has completed its first 30-epoch training run. The completed capture came from the existing v2 scene bundle through
 resumes; newer plans also use full-resolution framing checks.
+
+**October 13, 2026 milestone:** the balanced 500-image capture, browser review,
+30-epoch training and held-out synthetic test evaluation are complete. The
+500-image model reached test mAP50 **0.937** and mAP50-95 **0.735** across 100 images.
+Per-class test mAP50 was 0.933 rock, 0.901 pale soil and 0.977 yellow crystal.
+The Halo has also run live predictions while manually driving in new scenes.
 
 Branch: `perception/mars-pilot50-v2-review`.
 
@@ -18,13 +23,15 @@ Branch: `perception/mars-pilot50-v2-review`.
 
 The [Halo live-vision guide](scripts/HALO_LIVE_VISION.md) prepares a separate
 interactive Gazebo session, three new evaluation scenes, and a browser camera
-view with predictions for all three classes. Hold keyboard keys or direction
-buttons to drive; command expiry and camera freshness checks stop movement on
-disconnect. ROS stays in Docker while inference uses the host's existing ROCm
+view with predictions for all three classes. Choose browser driving or native
+Gazebo Teleop keyboard driving. In Gazebo mode, the browser only displays
+predictions and sends no driving or idle stop commands. ROS stays in Docker while inference uses the host's existing ROCm
 Conda environment. Optional recordings preserve frames, predictions and weights
 provenance. Live controls tolerate camera gaps up to three seconds, with a
 separate 0.35-second command expiry. Conditional camera requests avoid encoding
-unchanged images; longer stalls pause driving and display a useful status message.
+unchanged images; longer stalls pause browser driving and display a useful status message.
+Gazebo keyboard driving uses its own one-second command expiry, independent
+of the camera/inference HTTP connection; desktop keyboard repeat must be enabled.
 Deploy after capture completes and run after training. Local checks
 do not replace a full Gazebo/ROCm verification on the Halo.
 

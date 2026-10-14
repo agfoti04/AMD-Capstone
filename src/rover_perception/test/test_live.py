@@ -17,21 +17,51 @@ import numpy as np
 
 from rover_perception.live_core import DEFAULT_CAMERA_TIMEOUT, DriveLease, camera_timeout, image_to_bgr
 from rover_perception.live_dashboard import LiveSession, dashboard_handler
+from rover_perception.drive_mode import GAZEBO_COMMAND_TIMEOUT, GAZEBO_DRIVE_TOPIC, control_mode
 
 
 def twist():
     return types.SimpleNamespace(linear=types.SimpleNamespace(x=0.0), angular=types.SimpleNamespace(z=0.0))
 
 
+class FakeRosNode:
+    overrides = {}
+
+    def __init__(self, name):
+        self.parameters = dict(self.overrides)
+        self.publishers, self.timers, self.subscriptions = [], [], []
+
+    def declare_parameter(self, name, value):
+        self.parameters.setdefault(name, value)
+
+    def get_parameter(self, name):
+        return types.SimpleNamespace(value=self.parameters[name])
+
+    def create_publisher(self, kind, topic, queue):
+        publisher = types.SimpleNamespace(publish=lambda msg: None)
+        self.publishers.append(topic)
+        return publisher
+
+    def create_timer(self, interval, callback):
+        self.timers.append((interval, callback))
+
+    def create_subscription(self, kind, topic, callback, qos):
+        self.subscriptions.append(topic)
+
+    def get_logger(self):
+        return types.SimpleNamespace(info=lambda message: None)
+
+
 # Load the ROS adapter without requiring ROS on a developer's Windows machine.
 ros = {name: types.ModuleType(name) for name in ('rclpy', 'rclpy.node', 'rclpy.qos',
                                                'geometry_msgs', 'geometry_msgs.msg', 'sensor_msgs', 'sensor_msgs.msg')}
-ros['rclpy.node'].Node = object
+ros['rclpy.node'].Node = FakeRosNode
 ros['rclpy.qos'].qos_profile_sensor_data = object()
 ros['geometry_msgs.msg'].Twist = twist
 ros['sensor_msgs.msg'].Image = object
 with patch.dict(sys.modules, ros):
     from rover_perception.live_bridge import LiveBridge, handler as bridge_handler
+    from rover_perception.gazebo_drive import GazeboDrive
 
 
 def image_message(rgb=None, encoding='rgb8', padding=2):
@@ -131,6 +161,7 @@ class LiveHTTPTests(unittest.TestCase):
         self.node.frame, self.node.sequence, self.node.received = image_message(), 1, time.monotonic()
         self.node.lease = DriveLease()
         self.node.camera_timeout = DEFAULT_CAMERA_TIMEOUT
+        self.node.control_mode = 'browser'
         self.node.stream_id = 'test-stream'
         self.published = []
         self.node.pub = types.SimpleNamespace(publish=self.published.append)
@@ -299,6 +330,103 @@ class LiveHTTPTests(unittest.TestCase):
         self.assertEqual(len(self.model.calls), 1)
         self.node.on_image(image_message())
         await_condition(lambda: len(self.model.calls) == 2)
+
+    def test_gazebo_mode_rejects_http_commands_without_publishing_idle_stops(self):
+        self.node.control_mode = 'gazebo'
+        self.process_frame()
+        self.assertEqual(self.session.snapshot()['control_mode'], 'gazebo')
+        self.assertFalse(self.session.snapshot()['controls_enabled'])
+        self.assertEqual(len(self.model.calls), 1)  # predictions remain active
+        with urllib.request.urlopen(self.url + '/status') as response:
+            self.assertIsNone(json.load(response)['command'])  # camera bridge does not report native driving state
+        for url in (self.url, self.web):
+            for linear in (0.0, 0.3):
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    post(url + '/command', dict(linear=linear, angular=0))
+                self.assertEqual(error.exception.code, 403)
+                error.exception.close()
+        self.node.lease.set(0.3, 0)
+        self.node.drive()
+        self.assertEqual(self.published, [])
+        with patch.object(self.session, 'command') as command:
+            self.session.close()
+            command.assert_not_called()
+
+    def test_gazebo_mode_is_discovered_even_before_camera_is_ready(self):
+        self.node.control_mode = 'gazebo'
+        self.node.frame = None
+        self.node.received = 0
+        self.session.thread.start()
+        await_condition(lambda: self.session.snapshot()['control_mode'] == 'gazebo')
+        self.assertFalse(self.session.snapshot()['ready'])
+        self.assertFalse(self.session.snapshot()['controls_enabled'])
+
+
+class GazeboDriveTests(unittest.TestCase):
+    def setUp(self):
+        self.now = [10.0]
+        self.node = GazeboDrive.__new__(GazeboDrive)
+        self.node.lease = DriveLease(timeout=GAZEBO_COMMAND_TIMEOUT, clock=lambda: self.now[0])
+        self.published = []
+        self.node.pub = types.SimpleNamespace(publish=self.published.append)
+
+    def output(self):
+        self.node.drive()
+        return self.published[-1].linear.x, self.published[-1].angular.z
+
+    def command(self, linear, angular=0):
+        msg = twist()
+        msg.linear.x, msg.angular.z = linear, angular
+        self.node.on_command(msg)
+
+    def test_key_repeat_delay_renewal_release_and_connection_expiry(self):
+        self.command(2, -2)
+        self.assertEqual(self.output(), (0.3, -0.8))
+        self.now[0] += 0.6  # initial desktop auto-repeat delay
+        self.assertEqual(self.output(), (0.3, -0.8))
+        self.command(0.3, -0.8)  # repeated key event renews the lease
+        self.now[0] += 0.7
+        self.assertEqual(self.output(), (0.3, -0.8))
+        self.command(0, 0)  # release is immediate, not one second later
+        self.assertEqual(self.output(), (0, 0))
+        self.command(0.3)
+        self.now[0] += 1.01  # input disappears, even if sim time is paused
+        self.assertEqual(self.output(), (0, 0))
+
+    def test_invalid_native_command_and_shutdown_stop(self):
+        self.command(0.3)
+        self.command(float('nan'))
+        self.assertEqual(self.output(), (0, 0))
+        self.command(0.3)
+        self.node.close()
+        self.assertEqual((self.published[-1].linear.x, self.published[-1].angular.z), (0, 0))
+
+    def test_native_drive_has_no_dependency_on_prediction_or_http_camera(self):
+        self.command(0.3)
+        self.assertEqual(self.output(), (0.3, 0))
+        self.assertFalse(hasattr(self.node, 'frame'))
+        self.assertFalse(hasattr(self.node, 'http'))
+
+    def test_gazebo_mode_constructs_camera_bridge_without_drive_publisher_or_timer(self):
+        with patch.object(FakeRosNode, 'overrides', {'control_mode': 'gazebo', 'port': 0}):
+            node = LiveBridge()
+        try:
+            self.assertIsNone(node.pub)
+            self.assertEqual(node.publishers, [])
+            self.assertEqual(node.timers, [])
+            self.assertEqual(node.subscriptions, ['/oak/image_raw'])
+        finally:
+            node.close()
+
+    def test_native_adapter_subscribes_to_the_dedicated_topic_and_owns_cmd_vel(self):
+        node = GazeboDrive()
+        self.assertEqual(node.subscriptions, [GAZEBO_DRIVE_TOPIC])
+        self.assertEqual(node.publishers, ['/cmd_vel'])
+        self.assertEqual(node.timers[0][0], 0.05)
+        for mode in ('browser', 'gazebo'):
+            self.assertEqual(control_mode(mode), mode)
+        with self.assertRaises(ValueError):
+            control_mode('both')
 
 
 if __name__ == '__main__':

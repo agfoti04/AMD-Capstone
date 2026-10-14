@@ -29,6 +29,7 @@ PERCEPTION_REQUIRED = (
     'rover_perception/__init__.py', 'rover_perception/detector_node.py',
     'rover_perception/live_core.py', 'rover_perception/live_bridge.py',
     'rover_perception/live_dashboard.py', 'rover_perception/live_dashboard.html',
+    'rover_perception/drive_mode.py', 'rover_perception/gazebo_drive.py',
     'launch/detector.launch.py', 'config/sim.yaml', 'config/oak.yaml',
 )
 
@@ -108,7 +109,7 @@ def verify_extracted_build(archive_path):
         with zipfile.ZipFile(wheels[0]) as wheel:
             names = set(wheel.namelist())
             for name in ('__init__.py', 'detector_node.py', 'live_core.py', 'live_bridge.py',
-                         'live_dashboard.py', 'live_dashboard.html'):
+                         'live_dashboard.py', 'live_dashboard.html', 'drive_mode.py', 'gazebo_drive.py'):
                 assert 'rover_perception/' + name in names, name
             assert any(name.endswith('/share/ament_index/resource_index/packages/rover_perception')
                        for name in names), 'ROS package resource marker was not installed'
@@ -116,12 +117,13 @@ def verify_extracted_build(archive_path):
             entries = wheel.read(entry_file).decode()
             assert 'live_bridge = rover_perception.live_bridge:main' in entries
             assert 'rock_detector = rover_perception.detector_node:main' in entries
+            assert 'gazebo_drive = rover_perception.gazebo_drive:main' in entries
 
 
 def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=root.parent / 'halo-live-controls-fix-20261013.tar.gz')
+    parser.add_argument('--output', type=Path, default=root.parent / 'halo-gazebo-controls-20261013.tar.gz')
     parser.add_argument('--verify-build', action='store_true')
     args = parser.parse_args(argv)
     files = make_patch(root, args.output)

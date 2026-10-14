@@ -6,19 +6,21 @@ const vm = require('node:vm');
 
 function element(key) {
   return {dataset: {key}, events: {}, className: '', textContent: '',
-    classList: {toggle() {}}, addEventListener(name, fn) {this.events[name] = fn;},
+    style: {}, classList: {toggle() {}}, addEventListener(name, fn) {this.events[name] = fn;},
     setPointerCapture() {}};
 }
 const buttons = ['w', 'a', 's', 'd'].map(element);
 const status = element(), stop = element(), detections = element();
+const driveMode = element(), browserControls = element();
 const events = {}, intervals = new Map(), requests = [];
-let camera = {ready: true, error: null, loop_fps: 8, inference_ms: 20,
+let camera = {ready: true, controls_enabled: true, control_mode: 'browser', error: null, loop_fps: 8, inference_ms: 20,
               frame_age_seconds: 0.1, camera_timeout_seconds: 3,
               camera_delayed: false, detections: []};
 let commandFailed = false;
 let delayCommand = false, finishCommand;
 const document = {hidden: false, events: {},
-  querySelector: selector => ({'#status': status, '#stop': stop, '#detections': detections})[selector],
+  querySelector: selector => ({'#status': status, '#stop': stop, '#detections': detections,
+    '#driveMode': driveMode, '#browserControls': browserControls})[selector],
   querySelectorAll: () => buttons,
   addEventListener(name, fn) {this.events[name] = fn;}};
 const context = vm.createContext({document,
@@ -103,5 +105,20 @@ const latest = () => requests.at(-1);
   assert.match(status.textContent, /disconnected/);
   events.pagehide(); await tick();
   assert.deepEqual(latest(), {linear: 0, angular: 0});
-  console.log('PASS: keyboard, arrows, heartbeats, 1.41-second camera grace, three-second camera stop, release, Stop/Space, pointer cancellation, blur, hidden page, reconnect and command failure');
+  commandFailed = false;
+  camera = {...camera, controls_enabled: false, control_mode: 'gazebo'};
+  await intervals.get(500)(); await tick();
+  assert.equal(browserControls.style.display, 'none');
+  assert.match(driveMode.textContent, /Gazebo Teleop keyboard/);
+  const viewerCount = requests.length;
+  key('w'); key(' '); events.blur(); events.pagehide();
+  forward.events.pointerdown({preventDefault() {}, pointerId: 2});
+  forward.events.pointercancel(); stop.events.click();
+  document.events.visibilitychange(); intervals.get(100)(); await tick();
+  assert.equal(requests.length, viewerCount); // viewer NEVER sends idle/release/close stops
+  camera = {...camera, ready: false, error: 'Camera stopped updating.'};
+  await intervals.get(500)(); await tick();
+  assert.equal(requests.length, viewerCount); // inference/camera stalls cannot stop native driving
+  assert.equal(vm.runInContext('held.size', context), 0);
+  console.log('PASS: browser keyboard/pointer controls, heartbeats, camera grace/stop, reconnect, serialized requests and Gazebo viewer sends no commands');
 })().catch(error => {console.error(error); process.exitCode = 1;});
