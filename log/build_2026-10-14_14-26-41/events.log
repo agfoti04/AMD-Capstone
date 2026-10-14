@@ -1,0 +1,220 @@
+[0.000000] (-) TimerEvent: {}
+[0.000369] (arm_description) JobQueued: {'identifier': 'arm_description', 'dependencies': OrderedDict()}
+[0.001181] (arm_description) JobStarted: {'identifier': 'arm_description'}
+[0.028997] (arm_description) JobProgress: {'identifier': 'arm_description', 'progress': 'cmake'}
+[0.030567] (arm_description) JobProgress: {'identifier': 'arm_description', 'progress': 'build'}
+[0.031576] (arm_description) Command: {'cmd': ['/usr/bin/cmake', '--build', '/root/Capstone/AMD-Capstone/build/arm_description', '--', '-j20', '-l20'], 'cwd': '/root/Capstone/AMD-Capstone/build/arm_description', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'root'), ('GIT_ASKPASS', '/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('MOTD_SHOWN', 'update-motd'), ('HOME', '/root'), ('OLDPWD', '/root/Capstone'), ('TERM_PROGRAM_VERSION', '1.141.1'), ('VSCODE_IPC_HOOK_CLI', '/run/user/0/vscode-ipc-eaf03546-99aa-4e40-95ea-1b4c727b5024.sock'), ('GAZEBO_MASTER_URI', 'http://localhost:11345'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/node'), ('PYDEVD_DISABLE_FILE_VALIDATION', '1'), ('BUNDLED_DEBUGPY_PATH', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/libs/debugpy'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/0/bus'), ('COLORTERM', 'truecolor'), ('WSL_DISTRO_NAME', 'Ubuntu'), ('DEBUGINFOD_URLS', ''), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'root'), ('NAME', 'AFoti'), ('WSL_INTEROP', '/run/WSL/548_interop'), ('IGN_GAZEBO_MODEL_PATH', '/opt/ros/humble/share'), ('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm-256color'), ('GAZEBO_MODEL_PATH', '/usr/share/gazebo/../../share/gazebo-11/models:/opt/ros/humble/share'), ('ROS_LOCALHOST_ONLY', '0'), ('OGRE_RESOURCE_PATH', '/usr/lib/x86_64-linux-gnu/OGRE-1.9.0'), ('PATH', '/opt/ros/humble/bin:/root/.pixi/bin:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/bin/remote-cli:/root/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/bin:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/PostgreSQL/18/bin:/mnt/c/Program Files/usbipd-win/:/mnt/c/Program Files/Tailscale/:/mnt/c/Program Files/WSL/:/mnt/c/Users/thega/.pixi/bin:/mnt/c/Users/thega/.cargo/bin:/mnt/c/Users/thega/AppData/Local/Programs/Python/Launcher/:/mnt/c/Users/thega/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/thega/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/thega/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/Users/thega/.bun/bin:/mnt/c/Users/thega/AppData/Local/Programs/cursor/resources/app/bin:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/scripts/noConfigScripts'), ('XDG_RUNTIME_DIR', '/run/user/0'), ('DISPLAY', ':0'), ('VSCODE_DEBUGPY_ADAPTER_ENDPOINTS', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-d9ed0425e5fa238f.txt'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/root/.vscode-server/data/User/workspaceStorage/215f2ec6ffde49f347059f544a851b0a/ms-python.python/pythonrc.py'), ('PERF_EXEC_PATH', '/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/libexec/perf-core'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/0/vscode-git-bd5cdd9e80.sock'), ('TERM_PROGRAM', 'vscode'), ('AMENT_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('IGN_GAZEBO_RESOURCE_PATH', '/opt/ros/humble/share'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo/../../share/gazebo-11:/opt/ros/humble/share'), ('GAZEBO_MODEL_DATABASE_URI', 'http://models.gazebosim.org'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/root/Capstone/AMD-Capstone/build/arm_description'), ('COPILOT_DEBUG_NONCE', '83ae896a950073d19a666d1b07f5d56b'), ('GAZEBO_PLUGIN_PATH', '/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('XDG_DATA_DIRS', '/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('WSL2_GUI_APPS_ENABLED', '1'), ('HOSTTYPE', 'x86_64'), ('CMAKE_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('WSLENV', 'VSCODE_WSL_EXT_LOCATION/up:VSCODE_SERVER_TAR/up')]), 'shell': False}
+[0.099746] (-) TimerEvent: {}
+[0.104538] (arm_description) StdoutLine: {'line': b'-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)\n'}
+[0.199869] (-) TimerEvent: {}
+[0.247814] (arm_description) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.275883] (arm_description) StdoutLine: {'line': b'-- Found xacro: 2.1.1 (/opt/ros/humble/share/xacro/cmake)\n'}
+[0.277062] (arm_description) StdoutLine: {'line': b'-- Found robot_state_publisher: 3.0.3 (/opt/ros/humble/share/robot_state_publisher/cmake)\n'}
+[0.299991] (-) TimerEvent: {}
+[0.400330] (-) TimerEvent: {}
+[0.493962] (arm_description) StdoutLine: {'line': b'-- Found rosidl_generator_c: 3.1.9 (/opt/ros/humble/share/rosidl_generator_c/cmake)\n'}
+[0.497599] (arm_description) StdoutLine: {'line': b'-- Found rosidl_adapter: 3.1.9 (/opt/ros/humble/share/rosidl_adapter/cmake)\n'}
+[0.500388] (-) TimerEvent: {}
+[0.508331] (arm_description) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 3.1.9 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)\n'}
+[0.525789] (arm_description) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.546113] (arm_description) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.600524] (-) TimerEvent: {}
+[0.603209] (arm_description) StdoutLine: {'line': b'-- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)\n'}
+[0.604984] (arm_description) StdoutLine: {'line': b'-- Ensuring Eigen3 include directory is part of orocos-kdl CMake target\n'}
+[0.653452] (arm_description) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 6.1.4 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)\n'}
+[0.656230] (arm_description) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)\n'}
+[0.700639] (-) TimerEvent: {}
+[0.800969] (-) TimerEvent: {}
+[0.901343] (-) TimerEvent: {}
+[1.001632] (-) TimerEvent: {}
+[1.110478] (-) TimerEvent: {}
+[1.210928] (-) TimerEvent: {}
+[1.311340] (-) TimerEvent: {}
+[1.411704] (-) TimerEvent: {}
+[1.512060] (-) TimerEvent: {}
+[1.612415] (-) TimerEvent: {}
+[1.712799] (-) TimerEvent: {}
+[1.813123] (-) TimerEvent: {}
+[1.913422] (-) TimerEvent: {}
+[2.013750] (-) TimerEvent: {}
+[2.114058] (-) TimerEvent: {}
+[2.214374] (-) TimerEvent: {}
+[2.314831] (-) TimerEvent: {}
+[2.415201] (-) TimerEvent: {}
+[2.515583] (-) TimerEvent: {}
+[2.617558] (-) TimerEvent: {}
+[2.717908] (-) TimerEvent: {}
+[2.818175] (-) TimerEvent: {}
+[2.918494] (-) TimerEvent: {}
+[3.018920] (-) TimerEvent: {}
+[3.119645] (-) TimerEvent: {}
+[3.220033] (-) TimerEvent: {}
+[3.320524] (-) TimerEvent: {}
+[3.420904] (-) TimerEvent: {}
+[3.521255] (-) TimerEvent: {}
+[3.621625] (-) TimerEvent: {}
+[3.722093] (-) TimerEvent: {}
+[3.822584] (-) TimerEvent: {}
+[3.923001] (-) TimerEvent: {}
+[4.023635] (-) TimerEvent: {}
+[4.124296] (-) TimerEvent: {}
+[4.224940] (-) TimerEvent: {}
+[4.325430] (-) TimerEvent: {}
+[4.426982] (-) TimerEvent: {}
+[4.529583] (-) TimerEvent: {}
+[4.629999] (-) TimerEvent: {}
+[4.730511] (-) TimerEvent: {}
+[4.832574] (-) TimerEvent: {}
+[4.935199] (-) TimerEvent: {}
+[5.037788] (-) TimerEvent: {}
+[5.139823] (-) TimerEvent: {}
+[5.240996] (-) TimerEvent: {}
+[5.341556] (-) TimerEvent: {}
+[5.443316] (-) TimerEvent: {}
+[5.545420] (-) TimerEvent: {}
+[5.647594] (-) TimerEvent: {}
+[5.748130] (-) TimerEvent: {}
+[5.849950] (-) TimerEvent: {}
+[5.952030] (-) TimerEvent: {}
+[6.054022] (-) TimerEvent: {}
+[6.156140] (-) TimerEvent: {}
+[6.257770] (-) TimerEvent: {}
+[6.359781] (-) TimerEvent: {}
+[6.460189] (-) TimerEvent: {}
+[6.562160] (-) TimerEvent: {}
+[6.662773] (-) TimerEvent: {}
+[6.763485] (-) TimerEvent: {}
+[6.866289] (-) TimerEvent: {}
+[6.966917] (-) TimerEvent: {}
+[7.067763] (-) TimerEvent: {}
+[7.168728] (-) TimerEvent: {}
+[7.270386] (-) TimerEvent: {}
+[7.373053] (-) TimerEvent: {}
+[7.473786] (-) TimerEvent: {}
+[7.576418] (-) TimerEvent: {}
+[7.678962] (-) TimerEvent: {}
+[7.780227] (-) TimerEvent: {}
+[7.881257] (-) TimerEvent: {}
+[7.982005] (-) TimerEvent: {}
+[8.084630] (-) TimerEvent: {}
+[8.185130] (-) TimerEvent: {}
+[8.286734] (-) TimerEvent: {}
+[8.387224] (-) TimerEvent: {}
+[8.487788] (-) TimerEvent: {}
+[8.588900] (-) TimerEvent: {}
+[8.689789] (-) TimerEvent: {}
+[8.790206] (-) TimerEvent: {}
+[8.892917] (-) TimerEvent: {}
+[8.995514] (-) TimerEvent: {}
+[9.098105] (-) TimerEvent: {}
+[9.200752] (-) TimerEvent: {}
+[9.303355] (-) TimerEvent: {}
+[9.404617] (-) TimerEvent: {}
+[9.505204] (-) TimerEvent: {}
+[9.606193] (-) TimerEvent: {}
+[9.707435] (-) TimerEvent: {}
+[9.807925] (-) TimerEvent: {}
+[9.908727] (-) TimerEvent: {}
+[10.009161] (-) TimerEvent: {}
+[10.109508] (-) TimerEvent: {}
+[10.209890] (-) TimerEvent: {}
+[10.310335] (-) TimerEvent: {}
+[10.410806] (-) TimerEvent: {}
+[10.511226] (-) TimerEvent: {}
+[10.611695] (-) TimerEvent: {}
+[10.712182] (-) TimerEvent: {}
+[10.812615] (-) TimerEvent: {}
+[10.913085] (-) TimerEvent: {}
+[11.013463] (-) TimerEvent: {}
+[11.113852] (-) TimerEvent: {}
+[11.214214] (-) TimerEvent: {}
+[11.314615] (-) TimerEvent: {}
+[11.415210] (-) TimerEvent: {}
+[11.515580] (-) TimerEvent: {}
+[11.600233] (arm_description) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[11.615690] (-) TimerEvent: {}
+[11.716019] (-) TimerEvent: {}
+[11.816404] (-) TimerEvent: {}
+[11.916863] (-) TimerEvent: {}
+[12.017242] (-) TimerEvent: {}
+[12.117609] (-) TimerEvent: {}
+[12.218039] (-) TimerEvent: {}
+[12.318480] (-) TimerEvent: {}
+[12.418973] (-) TimerEvent: {}
+[12.519354] (-) TimerEvent: {}
+[12.619862] (-) TimerEvent: {}
+[12.720241] (-) TimerEvent: {}
+[12.820719] (-) TimerEvent: {}
+[12.921077] (-) TimerEvent: {}
+[13.021468] (-) TimerEvent: {}
+[13.121841] (-) TimerEvent: {}
+[13.222165] (-) TimerEvent: {}
+[13.322591] (-) TimerEvent: {}
+[13.423014] (-) TimerEvent: {}
+[13.523361] (-) TimerEvent: {}
+[13.623787] (-) TimerEvent: {}
+[13.724189] (-) TimerEvent: {}
+[13.824568] (-) TimerEvent: {}
+[13.924948] (-) TimerEvent: {}
+[14.025425] (-) TimerEvent: {}
+[14.125738] (-) TimerEvent: {}
+[14.226034] (-) TimerEvent: {}
+[14.261030] (arm_description) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.12.15 (/opt/ros/humble/share/ament_lint_auto/cmake)\n'}
+[14.326110] (-) TimerEvent: {}
+[14.347628] (arm_description) StdoutLine: {'line': b"-- Added test 'flake8' to check Python code syntax and style conventions\n"}
+[14.348683] (arm_description) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[14.349613] (arm_description) StdoutLine: {'line': b"-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257\n"}
+[14.352316] (arm_description) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[14.354952] (arm_description) StdoutLine: {'line': b'-- Configuring done\n'}
+[14.365179] (arm_description) StdoutLine: {'line': b'-- Generating done\n'}
+[14.370942] (arm_description) StdoutLine: {'line': b'-- Build files have been written to: /root/Capstone/AMD-Capstone/build/arm_description\n'}
+[14.391553] (arm_description) CommandEnded: {'returncode': 0}
+[14.393862] (arm_description) JobProgress: {'identifier': 'arm_description', 'progress': 'install'}
+[14.405660] (arm_description) Command: {'cmd': ['/usr/bin/cmake', '--install', '/root/Capstone/AMD-Capstone/build/arm_description'], 'cwd': '/root/Capstone/AMD-Capstone/build/arm_description', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'root'), ('GIT_ASKPASS', '/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('MOTD_SHOWN', 'update-motd'), ('HOME', '/root'), ('OLDPWD', '/root/Capstone'), ('TERM_PROGRAM_VERSION', '1.141.1'), ('VSCODE_IPC_HOOK_CLI', '/run/user/0/vscode-ipc-eaf03546-99aa-4e40-95ea-1b4c727b5024.sock'), ('GAZEBO_MASTER_URI', 'http://localhost:11345'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/node'), ('PYDEVD_DISABLE_FILE_VALIDATION', '1'), ('BUNDLED_DEBUGPY_PATH', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/libs/debugpy'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/0/bus'), ('COLORTERM', 'truecolor'), ('WSL_DISTRO_NAME', 'Ubuntu'), ('DEBUGINFOD_URLS', ''), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'root'), ('NAME', 'AFoti'), ('WSL_INTEROP', '/run/WSL/548_interop'), ('IGN_GAZEBO_MODEL_PATH', '/opt/ros/humble/share'), ('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm-256color'), ('GAZEBO_MODEL_PATH', '/usr/share/gazebo/../../share/gazebo-11/models:/opt/ros/humble/share'), ('ROS_LOCALHOST_ONLY', '0'), ('OGRE_RESOURCE_PATH', '/usr/lib/x86_64-linux-gnu/OGRE-1.9.0'), ('PATH', '/opt/ros/humble/bin:/root/.pixi/bin:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/root/.vscode-server/bin/7baac39ec3ca969dab74ac12c097f6a486e46593/bin/remote-cli:/root/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/bin:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/PostgreSQL/18/bin:/mnt/c/Program Files/usbipd-win/:/mnt/c/Program Files/Tailscale/:/mnt/c/Program Files/WSL/:/mnt/c/Users/thega/.pixi/bin:/mnt/c/Users/thega/.cargo/bin:/mnt/c/Users/thega/AppData/Local/Programs/Python/Launcher/:/mnt/c/Users/thega/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/thega/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/thega/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/Users/thega/.bun/bin:/mnt/c/Users/thega/AppData/Local/Programs/cursor/resources/app/bin:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/scripts/noConfigScripts'), ('XDG_RUNTIME_DIR', '/run/user/0'), ('DISPLAY', ':0'), ('VSCODE_DEBUGPY_ADAPTER_ENDPOINTS', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-d9ed0425e5fa238f.txt'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/root/.vscode-server/data/User/workspaceStorage/215f2ec6ffde49f347059f544a851b0a/ms-python.python/pythonrc.py'), ('PERF_EXEC_PATH', '/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/libexec/perf-core'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/0/vscode-git-bd5cdd9e80.sock'), ('TERM_PROGRAM', 'vscode'), ('AMENT_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('IGN_GAZEBO_RESOURCE_PATH', '/opt/ros/humble/share'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo/../../share/gazebo-11:/opt/ros/humble/share'), ('GAZEBO_MODEL_DATABASE_URI', 'http://models.gazebosim.org'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/root/Capstone/AMD-Capstone/build/arm_description'), ('COPILOT_DEBUG_NONCE', '83ae896a950073d19a666d1b07f5d56b'), ('GAZEBO_PLUGIN_PATH', '/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('XDG_DATA_DIRS', '/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('WSL2_GUI_APPS_ENABLED', '1'), ('HOSTTYPE', 'x86_64'), ('CMAKE_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('WSLENV', 'VSCODE_WSL_EXT_LOCATION/up:VSCODE_SERVER_TAR/up')]), 'shell': False}
+[14.413231] (arm_description) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[14.414130] (arm_description) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[14.414794] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/package_run_dependencies/arm_description\n'}
+[14.414962] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/parent_prefix_path/arm_description\n'}
+[14.415871] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.sh\n'}
+[14.415982] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.dsv\n'}
+[14.416055] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.sh\n'}
+[14.416394] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.dsv\n'}
+[14.416513] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.bash\n'}
+[14.416765] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.sh\n'}
+[14.416851] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.zsh\n'}
+[14.416914] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.dsv\n'}
+[14.416971] (arm_description) StdoutLine: {'line': b'-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.dsv\n'}
+[14.424171] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/packages/arm_description\n'}
+[14.424338] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig.cmake\n'}
+[14.424721] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig-version.cmake\n'}
+[14.424826] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.xml\n'}
+[14.425247] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro\n'}
+[14.425354] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro\n'}
+[14.425764] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py\n'}
+[14.425883] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml\n'}
+[14.426218] (-) TimerEvent: {}
+[14.426430] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL\n'}
+[14.426589] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL\n'}
+[14.426700] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL\n'}
+[14.427334] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL\n'}
+[14.427456] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL\n'}
+[14.427528] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL\n'}
+[14.427592] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL\n'}
+[14.427656] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL\n'}
+[14.427898] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro\n'}
+[14.427995] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py\n'}
+[14.428062] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml\n'}
+[14.428836] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL\n'}
+[14.428996] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL\n'}
+[14.429075] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL\n'}
+[14.429142] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL\n'}
+[14.429207] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL\n'}
+[14.429266] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL\n'}
+[14.429331] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL\n'}
+[14.429414] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL\n'}
+[14.429615] (arm_description) StdoutLine: {'line': b'-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/grey_box.sdf\n'}
+[14.439103] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_teleop\n'}
+[14.440086] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_control\n'}
+[14.441603] (arm_description) CommandEnded: {'returncode': 0}
+[14.471315] (arm_description) JobEnded: {'identifier': 'arm_description', 'rc': 0}
+[14.472406] (-) EventReactorShutdown: {}

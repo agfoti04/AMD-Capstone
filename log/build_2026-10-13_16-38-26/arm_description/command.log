@@ -1,0 +1,2 @@
+Invoking command in '/root/Capstone/AMD-Capstone/build/arm_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/root/Capstone/AMD-Capstone/install/four_wheel_sim:/opt/ros/humble /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20
+Invoked command in '/root/Capstone/AMD-Capstone/build/arm_description' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/root/Capstone/AMD-Capstone/install/four_wheel_sim:/opt/ros/humble /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20

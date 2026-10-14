@@ -93,6 +93,42 @@
 				"file" : 6,
 				"line" : 39,
 				"parent" : 12
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 40,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 14
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 15
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 47,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 17
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 18
 			}
 		]
 	},
@@ -113,6 +149,32 @@
 				{
 					"from" : "src/arm_teleop.py",
 					"to" : "arm_teleop"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/arm_control.py",
+					"to" : "arm_control"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/pick_place.py",
+					"to" : "pick_place"
 				}
 			],
 			"type" : "file"

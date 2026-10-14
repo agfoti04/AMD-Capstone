@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+import math
+import time
+
+import numpy as np
+import rclpy
+from control_msgs.action import FollowJointTrajectory
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from std_msgs.msg import Float64MultiArray
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+
+ARM_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
+GRIPPER = 'Joint_Gripper'
+LO, HI = -1.57, 1.57            # limits of Joint_2..Joint_4
+
+# ---- Geometry in the arm's x-z plane (meters), from the repo URDF. ----
+# Joint_5 was removed, so TOOL assumes its 0.0345 m offset was merged into
+# Link_4 -> Link_6 (0.0345 + 0.0577) plus 0.05 to EE_Gripper_Link.
+# VERIFY with tf2_echo (see notes) and edit these if it disagrees.
+SHOULDER_Z = 0.052099975 + 0.054100025   # Joint_2 height above base_link
+J3_OFF = (0.0318, 0.1125)                # Joint_2 -> Joint_3, in Link_2 frame
+J4_OFF = (0.1378, 0.00016506)            # Joint_3 -> Joint_4, in Link_3 frame
+TOOL = (0.0922 + 0.05, -0.00755)         # Joint_4 -> gripper tip, in Link_4 frame
+
+# ---- Task tuning ----
+GRIP_OPEN = -0.5        # CHECK which end of [-0.5, 0.18] is open on your gripper
+GRIP_CLOSED = 0.17
+GRIP_TIME = 1.5         # s to let the gripper move
+PRE_HEIGHT = 0.06       # m above the grasp point for approach and lift
+APPROACH_DEG = (90, 75, 60, 45, 30)   # tool pitch to try; 90 = straight down
+ROLL = 0.0              # Joint_6 angle; rotates the jaws about the tool axis
+SPEED = 0.4             # rad/s used to time moves
+HOME = [0.0, 0.0, 0.0, 0.0, 0.0]
+
+
+def rot(th, x, z):
+    """Rotate a point in the x-z plane about +y (the pitch axis)."""
+    return x * np.cos(th) + z * np.sin(th), -x * np.sin(th) + z * np.cos(th)
+
+
+def fk(q2, q3, q4):
+    """Planar tip position (reach, height) from the three pitch joints."""
+    ax, az = rot(q2, *J3_OFF)
+    bx, bz = rot(q2 + q3, *J4_OFF)
+    cx, cz = rot(q2 + q3 + q4, *TOOL)
+    return ax + bx + cx, SHOULDER_Z + az + bz + cz
+
+
+class PickPlace(Node):
+    def __init__(self):
+        super().__init__('pick_place')
+        self.pos = {}
+        self.request = None
+        self.create_subscription(JointState, '/joint_states', self._on_state, 10)
+        self.create_subscription(
+            Float64MultiArray, '/pick_place', self._on_request, 10)
+        self.client = ActionClient(
+            self, FollowJointTrajectory, '/arm_controller/follow_joint_trajectory')
+        self.grip_pub = self.create_publisher(
+            Float64MultiArray, '/gripper_controller/commands', 10)
+
+    def _on_state(self, msg):
+        for n, p in zip(msg.name, msg.position):
+            self.pos[n] = p
+
+    def _on_request(self, msg):
+        if len(msg.data) != 6:
+            self.get_logger().error('Need [pick_x, pick_y, pick_z, place_x, place_y, place_z]')
+            return
+        self.request = list(msg.data)
+
+    # ---------- kinematics ----------
+    def ik(self, x, y, z, phi, prev):
+        """Return [q1, q2, q3, q4, q6] or None. phi is tool pitch (down = +)."""
+        r = math.hypot(x, y)
+        q = np.arange(LO, HI + 1e-6, 0.01)
+        Q2, Q3 = np.meshgrid(q, q)
+        Q4 = phi - Q2 - Q3
+        tx, tz = fk(Q2, Q3, Q4)
+        err = np.hypot(tx - r, tz - z)
+        cost = err * 50 + 0.1 * (np.abs(Q2 - prev[1]) + np.abs(Q3 - prev[2])
+                                 + np.abs(Q4 - prev[3]))
+        cost[(Q4 < LO) | (Q4 > HI)] = np.inf
+        i = np.unravel_index(np.argmin(cost), cost.shape)
+        if not np.isfinite(cost[i]) or err[i] > 0.006:
+            return None
+        return [math.atan2(y, x), float(Q2[i]), float(Q3[i]), float(Q4[i]), ROLL]
+
+    def plan_vertical(self, x, y, z_low, z_high, prev):
+        """Waypoints from z_high down to z_low at one approach angle."""
+        for deg in APPROACH_DEG:
+            phi = math.radians(deg)
+            wps, p, ok = [], prev, True
+            for z in np.linspace(z_high, z_low, 4):
+                sol = self.ik(x, y, float(z), phi, p)
+                if sol is None:
+                    ok = False
+                    break
+                wps.append(sol)
+                p = sol
+            if ok:
+                self.get_logger().info(
+                    f'({x:.2f},{y:.2f}) reachable with tool pitch {deg} deg')
+                return wps
+        return None
+
+    # ---------- motion ----------
+    def arm_now(self):
+        return [self.pos[j] for j in ARM_JOINTS]
+
+    def send(self, waypoints):
+        pts, t, prev = [], 0.0, self.arm_now()
+        for wp in waypoints:
+            t += max(0.5, max(abs(a - b) for a, b in zip(wp, prev)) / SPEED)
+            pt = JointTrajectoryPoint(positions=[float(v) for v in wp])
+            pt.time_from_start.sec = int(t)
+            pt.time_from_start.nanosec = int((t % 1) * 1e9)
+            pts.append(pt)
+            prev = wp
+        goal = FollowJointTrajectory.Goal()
+        goal.trajectory = JointTrajectory(joint_names=list(ARM_JOINTS), points=pts)
+        fut = self.client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self, fut, timeout_sec=5.0)
+        handle = fut.result()
+        if handle is None or not handle.accepted:
+            self.get_logger().error('Trajectory rejected')
+            return False
+        res = handle.get_result_async()
+        rclpy.spin_until_future_complete(self, res, timeout_sec=t + 10.0)
+        if res.result() is None or res.result().result.error_code != 0:
+            self.get_logger().error('Trajectory failed')
+            return False
+        self.spin_for(0.3)
+        return True
+
+    def spin_for(self, sec):
+        end = time.monotonic() + sec
+        while rclpy.ok() and time.monotonic() < end:
+            rclpy.spin_once(self, timeout_sec=0.05)
+
+    def grip(self, value):
+        self.grip_pub.publish(Float64MultiArray(data=[value]))
+        self.spin_for(GRIP_TIME)
+
+    # ---------- task ----------
+    def execute(self, d):
+        px, py, pz, qx, qy, qz = d
+        cur = self.arm_now()
+        pick = self.plan_vertical(px, py, pz, pz + PRE_HEIGHT, cur)
+        if pick is None:
+            self.get_logger().error('Pick point unreachable. Move it closer to the base.')
+            return
+        place = self.plan_vertical(qx, qy, qz, qz + PRE_HEIGHT, pick[0])
+        if place is None:
+            self.get_logger().error('Place point unreachable. Move it closer to the base.')
+            return
+        pick_down = pick                  # pre-grasp -> grasp
+        pick_up = pick[::-1]
+        place_down = place
+        place_up = place[::-1]
+
+        self.get_logger().info('Opening gripper')
+        self.grip(GRIP_OPEN)
+        self.get_logger().info('Approach and descend')
+        if not self.send(pick_down):
+            return
+        self.get_logger().info('Closing gripper')
+        self.grip(GRIP_CLOSED)
+        self.get_logger().info('Lift')
+        if not self.send(pick_up):
+            return
+        self.get_logger().info('Carry to place point and lower')
+        if not self.send(place_down):
+            return
+        self.get_logger().info('Releasing')
+        self.grip(GRIP_OPEN)
+        self.get_logger().info('Retreat and home')
+        if not self.send(place_up):
+            return
+        self.send([HOME])
+        self.get_logger().info('Done')
+
+    def run(self):
+        self.get_logger().info('Waiting for joint states and controller...')
+        while rclpy.ok() and not set(ARM_JOINTS + (GRIPPER,)).issubset(self.pos):
+            rclpy.spin_once(self, timeout_sec=0.1)
+        self.client.wait_for_server()
+        self.get_logger().info('Ready. Publish to /pick_place')
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            if self.request:
+                req, self.request = self.request, None
+                self.execute(req)
+
+
+def main():
+    rclpy.init()
+    node = PickPlace()
+    try:
+        node.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

@@ -362,3 +362,6 @@ ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/arm_descripti
 
 # install(DIRECTORY "urdf" "launch" "config" "meshes" "DESTINATION" "share/arm_description")
 ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/arm_description" DIRECTORY "urdf" "launch" "config" "meshes" "DESTINATION" "share/arm_description")
+
+# install(DIRECTORY "urdf" "launch" "config" "meshes" "models" "DESTINATION" "share/arm_description")
+ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/arm_description" DIRECTORY "urdf" "launch" "config" "meshes" "models" "DESTINATION" "share/arm_description")

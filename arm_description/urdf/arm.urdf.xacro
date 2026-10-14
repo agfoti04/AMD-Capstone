@@ -513,4 +513,15 @@
       <parameters>$(find arm_description)/config/controllers.yaml</parameters>
     </plugin>
   </gazebo>
+  <gazebo reference="Gripper">
+    <mu1>1.0</mu1><mu2>1.0</mu2>
+    <kp>1e5</kp><kd>10</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+  <gazebo reference="Link_6">
+    <mu1>1.0</mu1><mu2>1.0</mu2>
+    <kp>1e5</kp><kd>10</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+
 </robot>

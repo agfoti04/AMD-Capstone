@@ -32,7 +32,18 @@ install(
 install(DIRECTORY urdf launch config meshes DESTINATION share/${PROJECT_NAME})
 
 install(
-  PROGRAMS src/arm_teleop.py
+  PROGRAMS src/arm_teleop.py 
   DESTINATION lib/${PROJECT_NAME}
   RENAME arm_teleop
 )
+
+install(PROGRAMS src/arm_control.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME arm_control)
+
+install(DIRECTORY urdf launch config meshes models
+  DESTINATION share/${PROJECT_NAME})
+
+install(PROGRAMS src/pick_place.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME pick_place)

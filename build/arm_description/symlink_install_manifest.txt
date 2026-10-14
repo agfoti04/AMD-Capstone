@@ -25,3 +25,15 @@
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/grey_box.sdf
