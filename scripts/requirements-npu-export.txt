@@ -1,0 +1,6 @@
+# Install ONLY in a clone named rover-export. Do not install in rover-yolo or rover-npu.
+# Current Quark needs NumPy 2; Ryzen AI 1.8's flexml requires NumPy <=1.26.4.
+amd-quark==0.13
+onnx==1.22.0
+onnxruntime==1.27.0
+onnxscript==0.7.2

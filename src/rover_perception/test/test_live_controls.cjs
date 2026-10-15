@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'), fs=require('node:fs'), path=require('node:path'), vm=require('node:vm');
 function element(key){return {dataset:{key},events:{},value:'',textContent:'',className:'',style:{},classList:{toggle(){}},addEventListener(k,fn){this.events[k]=fn;},setPointerCapture(){}};}
 const buttons=['w','a','s','d'].map(element), elements={};
-for(const id of ['camera','speed','turn','speedValue','turnValue','status','stop','detections','driveMode','fps','inference','latency','age','simSpeed'])elements['#'+id]=element();
+for(const id of ['camera','speed','turn','speedValue','turnValue','status','stop','detections','driveMode','backend','fps','inference','latency','age','simSpeed'])elements['#'+id]=element();
 elements['#speed'].value='0.30';elements['#turn'].value='0.80';
 let draws=0, time=10000, ack=true;
 elements['#camera'].getContext=()=>({drawImage(){draws++;}});

@@ -24,6 +24,9 @@ EXISTING_PACKAGE_FILES = (
     'scripts/package_halo_live.py',
     'scripts/requirements-live.txt',
     'scripts/halo_train_fourclass.sh', 'scripts/HALO_FOUR_CLASS.md',
+    'scripts/halo_train_npu_fallback.sh', 'scripts/halo_npu_env.sh',
+    'scripts/halo_update_npu_firmware.sh', 'scripts/requirements-npu-export.txt',
+    'scripts/HALO_NPU_TESTING.md', 'docs/NPU_TEST_REPORT.md',
     'src/rover_training/rover_training/geometry.py',
     'src/rover_training/rover_training/yolo_export.py',
     'src/mars_training_environment/package.xml',
@@ -43,6 +46,8 @@ PERCEPTION_REQUIRED = (
     'rover_perception/live_dashboard.py', 'rover_perception/live_dashboard.html',
     'rover_perception/drive_mode.py', 'rover_perception/gazebo_drive.py',
     'rover_perception/live_web.py',
+    'rover_perception/detectors.py', 'rover_perception/npu_prepare.py',
+    'rover_perception/npu_tools.py',
     'launch/detector.launch.py', 'config/sim.yaml', 'config/oak.yaml',
 )
 
@@ -136,7 +141,8 @@ def verify_extracted_build(archive_path):
         with zipfile.ZipFile(wheels[0]) as wheel:
             names = set(wheel.namelist())
             for name in ('__init__.py', 'detector_node.py', 'live_core.py', 'live_bridge.py',
-                         'live_dashboard.py', 'live_dashboard.html', 'drive_mode.py', 'gazebo_drive.py', 'live_web.py'):
+                         'live_dashboard.py', 'live_dashboard.html', 'drive_mode.py', 'gazebo_drive.py', 'live_web.py',
+                         'detectors.py', 'npu_prepare.py', 'npu_tools.py'):
                 assert 'rover_perception/' + name in names, name
                 assert wheel.read('rover_perception/' + name) == (package / 'rover_perception' / name).read_bytes(), name
             assert any(name.endswith('/share/ament_index/resource_index/packages/rover_perception')

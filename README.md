@@ -1,5 +1,25 @@
 # Rover perception and Mars training environment
 
+**NPU testing branch:** `npu-testing` adds AMD Ryzen AI 1.8 deployment tools,
+static ONNX export with FP32 parity checks, train-only Quark calibration,
+CPU/NPU assignment evidence, paired replay benchmarks, a shared accuracy
+evaluator, and an explicit NPU backend for the existing browser dashboard.
+Use the [Halo NPU guide](scripts/HALO_NPU_TESTING.md) and the
+[measured status report](docs/NPU_TEST_REPORT.md). Actual NPU execution,
+accuracy and throughput are separate acceptance gates; provider availability
+and successful compilation alone do not establish a working detector.
+The AMD reference CNN and four-class detector now execute on the Halo NPU.
+YOLO26n XINT8 sustained about 28 replay FPS but failed accuracy. The trained
+YOLOv8m XINT8 fallback reached validation mAP50-95 0.797 and 12.5 replay FPS,
+missing the speed and soil-recall limits; its BF16 alternative hit a compiler
+tiling error. GPU detection remains the default. No NPU candidate has passed
+adoption, and the five-minute NPU drive and held-out test remain unclaimed.
+
+The existing four-class YOLO26n completed training and synthetic testing on
+October 14: test mAP50 **0.924**, mAP50-95 **0.726** across 100 test images.
+GPU terrain segmentation and depth estimation remain future work after NPU
+object detection passes its gates.
+
 This branch contains the synthetic dataset capture and review workflow for the
 Mars rover simulation in ROS 2 Jazzy and Gazebo Harmonic. It extends
 `perception/mars-sampling-sites` with three training classes, stronger framing
@@ -17,7 +37,7 @@ resumes; newer plans also use full-resolution framing checks.
 Per-class test mAP50 was 0.933 rock, 0.901 pale soil and 0.977 yellow crystal.
 The Halo has also run live predictions while manually driving in new scenes.
 
-Branch: `perception/mars-pilot50-v2-review`.
+Base workflow branch: `perception/mars-pilot50-v2-review`.
 
 The [four-class Halo workflow](scripts/HALO_FOUR_CLASS.md) creates a separate
 reviewable dataset from the approved 500-image export. It reuses exact images,
@@ -30,7 +50,8 @@ The October 14 Halo audit retained all 500 images with no coverage warnings;
 mudstone has 50 training, 19 validation and 21 test instances. Once the pending
 class changes have been reviewed, the `reclassify approve` command records the
 user's approval in review history without changing labels, boxes or exclusions.
-Four-class training and test evaluation are the next Halo steps.
+Four-class training and test evaluation are complete; the NPU branch reuses
+their exact reviewed dataset revision and preserves the current checkpoint.
 
 ## Live driving with trained vision
 

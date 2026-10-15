@@ -15,14 +15,17 @@ import cv2
 import numpy as np
 
 from .live_core import (DEFAULT_CAMERA_TIMEOUT, LIVE_PIPELINE_VERSION, MAX_LINEAR_SPEED, MAX_ANGULAR_SPEED,
-                        DriveLease, camera_timeout, detection_rows, rover_model_names)
+                        DriveLease, camera_timeout, rover_model_names)
 from .drive_mode import control_mode
+from .detectors import TorchDetector, create_detector, draw_detections
 
 
 class LiveSession:
     def __init__(self, model, bridge, imgsz=960, conf=0.25, device='0', fps=30, record=None,
                  camera_timeout_sec=DEFAULT_CAMERA_TIMEOUT, rect=True):
-        self.model, self.bridge = model, bridge.rstrip('/')
+        self.model = model if callable(getattr(model, 'detect', None)) else TorchDetector(
+            model=model, device=device, imgsz=imgsz, rect=rect)
+        self.bridge = bridge.rstrip('/')
         self.imgsz, self.conf, self.device, self.fps = imgsz, conf, device, fps
         self.record = record
         self.rect = rect
@@ -43,6 +46,7 @@ class LiveSession:
             limit = min(self.camera_timeout, self.bridge_camera_timeout)
             return dict(self.status, frame_age_seconds=age, camera_timeout_seconds=limit,
                         class_names=getattr(self.model, 'names', {}),
+                        detector=dict(getattr(self.model, 'metadata', {})),
                         pipeline_version=LIVE_PIPELINE_VERSION,
                         control_mode=self.control_mode, controls_enabled=self.control_mode == 'browser',
                         max_linear_speed=MAX_LINEAR_SPEED, max_angular_speed=MAX_ANGULAR_SPEED,
@@ -99,22 +103,26 @@ class LiveSession:
                     raise ValueError('Invalid raw camera frame dimensions')
                 image = np.frombuffer(raw, dtype=np.uint8).reshape(height, width, 3).copy()
                 infer_start = time.monotonic()
-                result = self.model.predict(image, imgsz=self.imgsz, conf=self.conf,
-                                            device=self.device, rect=self.rect, verbose=False)[0]
+                result = self.model.detect(image, conf=self.conf)
                 inference_ms = (time.monotonic() - infer_start) * 1000
-                annotated = result.plot()
+                rows = result.detections
+                annotated = draw_detections(image, rows)
+                encode_started = time.monotonic()
                 ok, encoded = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 if not ok:
                     raise ValueError('Cannot encode annotated image')
-                rows = detection_rows(result)
                 completed = time.monotonic()
                 status = {'error': None, 'sequence': sequence, 'sim_time': sim_time,
                           'inference_ms': inference_ms,
+                          'detector_timings': result.timings,
+                          'detector_capacity_fps': 1000 / max(inference_ms, 1e-6),
                           'loop_fps': 0.0 if last_processed is None else 1 / max(completed - last_processed, 1e-6),
                           'sim_speed': None if last_processed is None else
                               max(0, sim_time - last_sim_time) / max(completed - last_processed, 1e-6),
                           'image_size': [image.shape[1], image.shape[0]],
                           'camera_fetch_ms': (infer_start - started) * 1000,
+                          'annotation_ms': (encode_started - infer_start) * 1000 - inference_ms,
+                          'encoding_ms': (completed - encode_started) * 1000,
                           'annotation_encode_ms': (completed - infer_start) * 1000 - inference_ms,
                           'detections': rows}
                 last_processed = completed
@@ -247,7 +255,9 @@ def dashboard_handler(session, page):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--model', type=Path, required=True)
+    parser.add_argument('--model', type=Path, help='PyTorch checkpoint for the torch backend')
+    parser.add_argument('--backend', choices=('torch', 'npu'), default='torch')
+    parser.add_argument('--model-manifest', type=Path, help='Prepared ONNX manifest for the npu backend')
     parser.add_argument('--bridge', default='http://127.0.0.1:8770')
     parser.add_argument('--port', type=int, default=8771)
     parser.add_argument('--device', default='0')
@@ -260,8 +270,12 @@ def main(argv=None):
     parser.add_argument('--record-dir', type=Path)
     parser.add_argument('--scene', default='', help='Scene ID for recording provenance')
     args = parser.parse_args(argv)
-    if not args.model.is_file():
+    if args.backend == 'torch' and (args.model is None or not args.model.is_file()):
         parser.error(f'Checkpoint does not exist: {args.model}')
+    if args.backend == 'npu' and (args.model_manifest is None or not args.model_manifest.is_file()):
+        parser.error('The npu backend requires --model-manifest pointing to a prepared model manifest')
+    if args.backend == 'npu' and args.model is not None:
+        parser.error('Use --model-manifest for npu, or --model for torch')
     if args.imgsz <= 0 or not 0 < args.conf <= 1 or not 0 < args.fps <= 30:
         parser.error('Require imgsz > 0, 0 < conf <= 1 and 0 < fps <= 30')
     try:
@@ -271,28 +285,41 @@ def main(argv=None):
     bridge = urlparse(args.bridge)
     if bridge.scheme != 'http' or bridge.hostname not in ('127.0.0.1', 'localhost'):
         parser.error('The simulator bridge must be on localhost')
-    from ultralytics import YOLO
     from .live_web import serve
     cv2.setNumThreads(1)
-    model = YOLO(str(args.model.resolve()))
     try:
+        model = create_detector(args.backend, model=args.model, manifest=args.model_manifest,
+                                device=args.device, imgsz=args.imgsz, rect=not args.square)
         rover_model_names(model.names)
-    except ValueError as error:
+        print(f'Initializing {args.backend} detector; driving stays disabled until a fresh prediction.', flush=True)
+        model.warmup()
+        if args.backend == 'npu':
+            from .npu_tools import detector_metadata
+            evidence = detector_metadata(model)
+            if model.metadata.get('proof_state') != 'npu_executed' or not evidence.get('compile_evidence', {}).get('verified'):
+                raise RuntimeError('NPU deployment is not verified for this model/runtime. Run npu_prepare compile and inspect compile_report.json first.')
+            model.metadata.update(evidence)
+    except (ValueError, RuntimeError, ImportError, OSError) as error:
         parser.error(str(error))
+    effective_imgsz = model.metadata['input_size'][0] if args.backend == 'npu' else args.imgsz
+    effective_rect = args.backend == 'torch' and not args.square
     if args.record_dir:
         args.record_dir.mkdir(parents=True, exist_ok=False)
-        manifest = dict(weights=str(args.model.resolve()),
-                        weights_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
-                        scene=args.scene, imgsz=args.imgsz, conf=args.conf, device=args.device,
-                        rect=not args.square, target_fps=args.fps,
+        artifact = args.model if args.backend == 'torch' else args.model_manifest
+        manifest = dict(weights=str(artifact.resolve()),
+                        weights_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
+                        backend=args.backend, detector=model.metadata,
+                        scene=args.scene, imgsz=effective_imgsz, conf=args.conf, device=args.device,
+                        rect=effective_rect, target_fps=args.fps,
                         camera_timeout_seconds=args.camera_timeout,
                         class_names=model.names, started_wall_time=time.time())
         (args.record_dir / 'session.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     page = Path(__file__).with_name('live_dashboard.html').read_bytes()
-    session = LiveSession(model, args.bridge, args.imgsz, args.conf, args.device, args.fps, args.record_dir,
-                          args.camera_timeout, rect=not args.square)
+    session = LiveSession(model, args.bridge, effective_imgsz, args.conf, args.device, args.fps, args.record_dir,
+                          args.camera_timeout, rect=effective_rect)
     session.thread.start()
-    print(f'Live rover view: http://127.0.0.1:{args.port} | weights: {args.model.resolve()}', flush=True)
+    print(f'Live rover view: http://127.0.0.1:{args.port} | backend: {args.backend} '
+          f'({model.metadata.get("precision", "unknown")}) | model: {model.metadata.get("model")}', flush=True)
     try:
         serve(session, page, args.port)
     except KeyboardInterrupt:

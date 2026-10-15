@@ -10,7 +10,7 @@
 <div id="status" role="status">Waiting for the simulator camera…</div>
 <div class="layout"><section>
 <div class="camera"><canvas id="camera" width="960" height="540" aria-label="Live rover camera with predicted objects"></canvas></div>
-<div class="metrics"><span id="fps">Display — FPS</span><span id="inference">Detection — ms</span><span id="latency">Controls — ms</span><span id="age">Camera age —</span><span id="simSpeed">Simulation —</span></div>
+<div class="metrics"><span id="backend">Detector initializing</span><span id="fps">Display — FPS</span><span id="inference">Detection — ms</span><span id="latency">Controls — ms</span><span id="age">Camera age —</span><span id="simSpeed">Simulation —</span></div>
 <p id="detections">No predictions received yet.</p>
 </section><aside id="browserControls">
 <strong>Drive the rover</strong>
@@ -113,11 +113,14 @@ setInterval(()=>{
 },50);
 function refresh(){
   const connected=control?.readyState===WebSocket.OPEN, fresh=canDrive();
+  const engine=state.detector||{};
+  $('#backend').textContent=engine.backend==='npu'?`AMD NPU · ${engine.precision||'pending'}`:engine.backend==='torch'?'PyTorch detector':'Detector initializing';
+  $('#backend').title=engine.model_file||engine.model||'';
   $('#driveMode').textContent=connected?'Browser controls connected':'Connecting controls — close other driving tabs';
   $('#status').className=fresh&&connected?'ready':'';
   $('#status').textContent=state.error||(fresh?(connected?'Live — hold a direction to drive.':'Camera ready. Waiting for controls.'):'Waiting for a fresh camera frame. Movement is stopped.');
   $('#fps').textContent=`Display ${cameraAge()<1?displayFPS.toFixed(1):'0.0'} FPS`;
-  $('#inference').textContent=`Detection ${state.inference_ms?.toFixed(1)||'—'} ms`;
+  $('#inference').textContent=`Detection ${state.inference_ms?.toFixed(1)||'—'} ms · ${state.loop_fps?.toFixed(1)||'0.0'} FPS`;
   $('#latency').textContent=`Controls ${controlRTT===null?'—':controlRTT.toFixed(0)} ms`;
   $('#age').textContent=`Camera age ${Number.isFinite(cameraAge())?cameraAge().toFixed(2)+' s':'—'}`;
   $('#simSpeed').textContent=`Simulation ${state.sim_speed===undefined||state.sim_speed===null?'—':state.sim_speed.toFixed(2)+'×'}`;
