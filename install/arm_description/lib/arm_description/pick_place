@@ -35,7 +35,7 @@ APPROACH_DEG = (90, 75, 60, 45, 30)   # tool pitch to try; 90 = straight down
 ROLL = 0.0              # Joint_6 angle; rotates the jaws about the tool axis
 SPEED = 0.4             # rad/s used to time moves
 HOME = [0.0, 0.0, 0.0, 0.0, 0.0]
-ROD_PICK = (0.38, 0.0, 0.06)
+ROD_PICK = (0.40, 0.0, 0.06)
 ROD_PLACE = (0.25, 0.15, 0.06)
 ROD_PREGRASP_DISTANCE = 0.06
 ROD_LIFT_HEIGHT = 0.06
