@@ -33,6 +33,8 @@ def generate_launch_description():
            arguments=['-file', os.path.join(pkg, 'models', 'rod.sdf'),
                       '-entity', 'rod'])
 
+    
+
     def spawner(name):
         return Node(
             package='controller_manager',
@@ -50,7 +52,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         SetEnvironmentVariable('GAZEBO_MODEL_PATH', gazebo_model_path),
-        gazebo, rsp, spawn, rod,
+        gazebo, rsp, spawn, rod, 
         RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[jsb])),
         RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[arm])),
         RegisterEventHandler(OnProcessExit(target_action=arm, on_exit=[grip])),

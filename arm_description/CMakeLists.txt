@@ -22,7 +22,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_package()
+
 
 install(
   DIRECTORY urdf
@@ -47,3 +47,7 @@ install(DIRECTORY urdf launch config meshes models
 install(PROGRAMS src/pick_place.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME pick_place)
+
+
+
+  ament_package()

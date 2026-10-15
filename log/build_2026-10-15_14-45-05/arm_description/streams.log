@@ -1,0 +1,72 @@
+[0.010s] Invoking command in '/root/Capstone/AMD-Capstone/build/arm_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20
+[0.091s] -- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.162s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.174s] -- Found xacro: 2.1.1 (/opt/ros/humble/share/xacro/cmake)
+[0.175s] -- Found robot_state_publisher: 3.0.3 (/opt/ros/humble/share/robot_state_publisher/cmake)
+[0.295s] -- Found rosidl_generator_c: 3.1.9 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.298s] -- Found rosidl_adapter: 3.1.9 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.304s] -- Found rosidl_generator_cpp: 3.1.9 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.313s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.323s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.357s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[0.358s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[0.384s] -- Found rmw_implementation_cmake: 6.1.4 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.385s] -- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[4.352s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[5.461s] -- Found ament_lint_auto: 0.12.15 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[5.508s] -- Added test 'flake8' to check Python code syntax and style conventions
+[5.509s] -- Added test 'lint_cmake' to check CMake code style
+[5.509s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[5.510s] -- Added test 'xmllint' to check XML markup files
+[5.512s] -- Configuring done
+[5.517s] -- Generating done
+[5.520s] -- Build files have been written to: /root/Capstone/AMD-Capstone/build/arm_description
+[5.536s] Invoked command in '/root/Capstone/AMD-Capstone/build/arm_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20
+[5.541s] Invoking command in '/root/Capstone/AMD-Capstone/build/arm_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_description
+[5.545s] -- Install configuration: ""
+[5.545s] -- Execute custom install script
+[5.546s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro
+[5.546s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro
+[5.546s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py
+[5.546s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml
+[5.547s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL
+[5.547s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL
+[5.547s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL
+[5.547s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL
+[5.548s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL
+[5.548s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL
+[5.548s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL
+[5.548s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL
+[5.548s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro
+[5.548s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL
+[5.549s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/grey_box.sdf
+[5.550s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/rod.sdf
+[5.550s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/package_run_dependencies/arm_description
+[5.550s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/parent_prefix_path/arm_description
+[5.550s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.sh
+[5.551s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.dsv
+[5.551s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.sh
+[5.551s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.dsv
+[5.551s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.bash
+[5.552s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.sh
+[5.552s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.zsh
+[5.552s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.dsv
+[5.552s] -- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.dsv
+[5.557s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/packages/arm_description
+[5.558s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig.cmake
+[5.558s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig-version.cmake
+[5.558s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.xml
+[5.558s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_teleop
+[5.559s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_control
+[5.559s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/pick_place
+[5.559s] -- Installing: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/gripper_hold
+[5.560s] Invoked command in '/root/Capstone/AMD-Capstone/build/arm_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_description

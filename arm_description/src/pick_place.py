@@ -14,7 +14,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 ARM_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
 GRIPPER = 'Joint_Gripper'
 
-GRIPPER_EFFORT_LIMIT = 0.35
+GRIPPER_EFFORT_LIMIT = 1.0
 GRIP_OPEN_EFFORT = -GRIPPER_EFFORT_LIMIT
 GRIP_CLOSE_EFFORT = GRIPPER_EFFORT_LIMIT
 GRIPPER_SETTLE_SECONDS = 0.5
@@ -68,7 +68,7 @@ class PickPlace(Node):
             self, FollowJointTrajectory, '/arm_controller/follow_joint_trajectory')
         self.grip_pub = self.create_publisher(
             Float64MultiArray, '/gripper_controller/commands', 10)
-        self.grip_cmd = GRIP_OPEN_EFFORT
+        self.grip_cmd = 0.0
         self.create_timer(0.05, self._grip_tick)
 
 
@@ -175,6 +175,9 @@ class PickPlace(Node):
         self.grip_cmd = effort
         self.grip_pub.publish(Float64MultiArray(data=[effort]))
         self.spin_for(GRIPPER_SETTLE_SECONDS)
+        if effort == GRIP_OPEN_EFFORT:
+            self.grip_cmd = 0.0
+            self.grip_pub.publish(Float64MultiArray(data=[0.0]))
 
     # ---------- task ----------
     def execute(self, d):
@@ -305,8 +308,9 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        node.grip_cmd = 0.0
         if node.grip_pub.get_subscription_count() > 0:
-            node.grip_pub.publish(Float64MultiArray(data=[GRIP_OPEN_EFFORT]))
+            node.grip_pub.publish(Float64MultiArray(data=[0.0]))
             rclpy.spin_once(node, timeout_sec=0.05)
         node.destroy_node()
         if rclpy.ok():
