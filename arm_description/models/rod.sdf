@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="rod">
+    <pose>0.38 0 0.06 0 0 0</pose>
+    <link name="link">
+      <inertial>
+        <mass>0.03</mass>
+        <inertia>
+          <ixx>3.675e-5</ixx><iyy>3.675e-5</iyy><izz>1.5e-6</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="c">
+        <geometry><cylinder><radius>0.01</radius><length>0.12</length></cylinder></geometry>
+        <surface>
+          <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
+          <contact><ode><kp>1e5</kp><kd>10</kd></ode></contact>
+        </surface>
+      </collision>
+      <visual name="v">
+        <geometry><cylinder><radius>0.01</radius><length>0.12</length></cylinder></geometry>
+        <material>
+          <ambient>0.8 0.3 0.1 1</ambient>
+          <diffuse>0.8 0.3 0.1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -21,14 +21,15 @@ ARM_JOINTS = (
     'Joint_4',
     'Joint_6',
 )
-CONTROLLED_JOINTS = ARM_JOINTS + ('Joint_Gripper',)
+GRIPPER = 'Joint_Gripper'
+GRIPPER_EFFORT_LIMIT = 1.0
+CONTROLLED_JOINTS = ARM_JOINTS
 # Bounded joints only; continuous Joint_1 intentionally has no entry.
 JOINT_LIMITS = {
     'Joint_2': (-1.57, 1.57),
     'Joint_3': (-1.57, 1.57),
     'Joint_4': (-1.57, 1.57),
     'Joint_6': (-3.14, 3.14),
-    'Joint_Gripper': (-0.5, 0.18),
 }
 KEY_BINDINGS = {
     'q': ('Joint_1', 1),
@@ -41,8 +42,8 @@ KEY_BINDINGS = {
     'f': ('Joint_4', -1),
     'y': ('Joint_6', 1),
     'h': ('Joint_6', -1),
-    'u': ('Joint_Gripper', 1),
-    'j': ('Joint_Gripper', -1),
+    'u': (GRIPPER, -1),
+    'j': (GRIPPER, 1),
 }
 STEP_RADIANS = 0.02
 MOVE_DURATION_SECONDS = 0.3
@@ -106,13 +107,24 @@ class ArmTeleop(Node):
     def jog(self, joint_name, direction):
         publisher = (
             self.gripper_publisher
-            if joint_name == 'Joint_Gripper'
+            if joint_name == GRIPPER
             else self.arm_publisher
         )
         if publisher.get_subscription_count() == 0:
             raise RuntimeError(
                 f'No active controller is subscribed for {joint_name}.'
             )
+
+        if joint_name == GRIPPER:
+            effort = direction * GRIPPER_EFFORT_LIMIT
+            self.gripper_publisher.publish(Float64MultiArray(data=[effort]))
+            action = 'opening' if effort < 0 else 'closing'
+            print(
+                f'\rGripper {action} at {abs(effort):.1f} effort '
+                '(latched; press the other gripper key or x to stop)     ',
+                end='', flush=True,
+            )
+            return
 
         requested = self.joint_positions[joint_name] + direction * STEP_RADIANS
         limits = JOINT_LIMITS.get(joint_name)
@@ -123,37 +135,35 @@ class ArmTeleop(Node):
             target = min(max(requested, lower), upper)
         self.joint_positions[joint_name] = target
 
-        if joint_name == 'Joint_Gripper':
-            command = Float64MultiArray()
-            command.data = [target]
-            self.gripper_publisher.publish(command)
-        else:
-            joint_index = ARM_JOINTS.index(joint_name)
-            self.arm_targets[joint_index] = target
-            trajectory = JointTrajectory()
-            trajectory.joint_names = list(ARM_JOINTS)
-            point = JointTrajectoryPoint()
-            point.positions = list(self.arm_targets)
-            point.time_from_start.sec = int(MOVE_DURATION_SECONDS)
-            point.time_from_start.nanosec = int(
-                (MOVE_DURATION_SECONDS % 1) * 1_000_000_000
-            )
-            trajectory.points = [point]
-            self.arm_publisher.publish(trajectory)
+        joint_index = ARM_JOINTS.index(joint_name)
+        self.arm_targets[joint_index] = target
+        self._publish_arm_position(MOVE_DURATION_SECONDS)
 
         angle = math.degrees(target)
         reached_limit = limits is not None and target != requested
         status = ' (limit reached)' if reached_limit else ''
         print(f'\r{joint_name}: {angle:+.1f} deg{status}     ', end='', flush=True)
 
+    def _publish_arm_position(self, duration):
+        trajectory = JointTrajectory()
+        trajectory.joint_names = list(ARM_JOINTS)
+        point = JointTrajectoryPoint()
+        point.positions = list(self.arm_targets)
+        point.time_from_start.sec = int(duration)
+        point.time_from_start.nanosec = int(
+            (duration % 1) * 1_000_000_000
+        )
+        trajectory.points = [point]
+        self.arm_publisher.publish(trajectory)
 
 def print_controls():
     print('Arm keyboard teleop (each key jogs 0.02 rad, about 1.15 deg)')
     print('Positive / negative joint jogs:')
     print('  Joint_1: q / a     Joint_2: w / s     Joint_3: e / d')
     print('  Joint_4: r / f     Joint_6: y / h')
-    print('  Gripper: u / j')
-    print('Press x or Ctrl+C to quit. Joint targets are clamped to URDF limits.')
+    print('  Gripper: u opens / j closes (effort stays active until changed)')
+    print('Press x or Ctrl+C to quit; quitting sends zero gripper effort.')
+    print('Arm joint targets are clamped to URDF limits.')
 
 
 def main():
@@ -197,6 +207,9 @@ def main():
         if str(error):
             print(f'\nTeleop stopped: {error}', file=sys.stderr)
     finally:
+        if node.gripper_publisher.get_subscription_count() > 0:
+            node.gripper_publisher.publish(Float64MultiArray(data=[0.0]))
+            rclpy.spin_once(node, timeout_sec=0.05)
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

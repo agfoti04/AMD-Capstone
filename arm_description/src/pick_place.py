@@ -13,6 +13,11 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 ARM_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
 GRIPPER = 'Joint_Gripper'
+
+GRIPPER_EFFORT_LIMIT = 0.35
+GRIP_OPEN_EFFORT = -GRIPPER_EFFORT_LIMIT
+GRIP_CLOSE_EFFORT = GRIPPER_EFFORT_LIMIT
+GRIPPER_SETTLE_SECONDS = 0.5
 LO, HI = -1.57, 1.57            # limits of Joint_2..Joint_4
 
 # ---- Geometry in the arm's x-z plane (meters), from the repo URDF. ----
@@ -25,14 +30,17 @@ J4_OFF = (0.1378, 0.00016506)            # Joint_3 -> Joint_4, in Link_3 frame
 TOOL = (0.0922 + 0.05, -0.00755)         # Joint_4 -> gripper tip, in Link_4 frame
 
 # ---- Task tuning ----
-GRIP_OPEN = -0.5        # CHECK which end of [-0.5, 0.18] is open on your gripper
-GRIP_CLOSED = 0.17
-GRIP_TIME = 1.5         # s to let the gripper move
 PRE_HEIGHT = 0.06       # m above the grasp point for approach and lift
 APPROACH_DEG = (90, 75, 60, 45, 30)   # tool pitch to try; 90 = straight down
 ROLL = 0.0              # Joint_6 angle; rotates the jaws about the tool axis
 SPEED = 0.4             # rad/s used to time moves
 HOME = [0.0, 0.0, 0.0, 0.0, 0.0]
+ROD_PICK = (0.38, 0.0, 0.06)
+ROD_PLACE = (0.25, 0.15, 0.06)
+ROD_PREGRASP_DISTANCE = 0.06
+ROD_LIFT_HEIGHT = 0.06
+ROD_TOOL_PITCH = 0.0
+ROD_ROLL = math.pi / 2
 
 
 def rot(th, x, z):
@@ -60,19 +68,27 @@ class PickPlace(Node):
             self, FollowJointTrajectory, '/arm_controller/follow_joint_trajectory')
         self.grip_pub = self.create_publisher(
             Float64MultiArray, '/gripper_controller/commands', 10)
+        self.grip_cmd = GRIP_OPEN_EFFORT
+        self.create_timer(0.05, self._grip_tick)
+
+
+    def _grip_tick(self):
+        self.grip_pub.publish(Float64MultiArray(data=[self.grip_cmd]))
 
     def _on_state(self, msg):
         for n, p in zip(msg.name, msg.position):
             self.pos[n] = p
 
     def _on_request(self, msg):
-        if len(msg.data) != 6:
-            self.get_logger().error('Need [pick_x, pick_y, pick_z, place_x, place_y, place_z]')
+        if len(msg.data) not in (0, 6):
+            self.get_logger().error(
+                'Send an empty request for the default rod transfer, or '
+                '[pick_x, pick_y, pick_z, place_x, place_y, place_z] for a custom transfer')
             return
         self.request = list(msg.data)
 
     # ---------- kinematics ----------
-    def ik(self, x, y, z, phi, prev):
+    def ik(self, x, y, z, phi, prev, roll=ROLL):
         """Return [q1, q2, q3, q4, q6] or None. phi is tool pitch (down = +)."""
         r = math.hypot(x, y)
         q = np.arange(LO, HI + 1e-6, 0.01)
@@ -86,7 +102,7 @@ class PickPlace(Node):
         i = np.unravel_index(np.argmin(cost), cost.shape)
         if not np.isfinite(cost[i]) or err[i] > 0.006:
             return None
-        return [math.atan2(y, x), float(Q2[i]), float(Q3[i]), float(Q4[i]), ROLL]
+        return [math.atan2(y, x), float(Q2[i]), float(Q3[i]), float(Q4[i]), roll]
 
     def plan_vertical(self, x, y, z_low, z_high, prev):
         """Waypoints from z_high down to z_low at one approach angle."""
@@ -105,6 +121,21 @@ class PickPlace(Node):
                     f'({x:.2f},{y:.2f}) reachable with tool pitch {deg} deg')
                 return wps
         return None
+
+    def plan_line(self, start, end, phi, prev, roll=ROLL):
+        """Plan Cartesian waypoints between two positions at a fixed tool pitch."""
+        waypoints, previous = [], prev
+        for fraction in np.linspace(0.0, 1.0, 4):
+            point = [
+                start[i] + float(fraction) * (end[i] - start[i])
+                for i in range(3)
+            ]
+            solution = self.ik(point[0], point[1], point[2], phi, previous, roll)
+            if solution is None:
+                return None
+            waypoints.append(solution)
+            previous = solution
+        return waypoints
 
     # ---------- motion ----------
     def arm_now(self):
@@ -140,12 +171,17 @@ class PickPlace(Node):
         while rclpy.ok() and time.monotonic() < end:
             rclpy.spin_once(self, timeout_sec=0.05)
 
-    def grip(self, value):
-        self.grip_pub.publish(Float64MultiArray(data=[value]))
-        self.spin_for(GRIP_TIME)
+    def grip(self, effort):
+        self.grip_cmd = effort
+        self.grip_pub.publish(Float64MultiArray(data=[effort]))
+        self.spin_for(GRIPPER_SETTLE_SECONDS)
 
     # ---------- task ----------
     def execute(self, d):
+        if not d:
+            self.execute_rod_transfer()
+            return
+
         px, py, pz, qx, qy, qz = d
         cur = self.arm_now()
         pick = self.plan_vertical(px, py, pz, pz + PRE_HEIGHT, cur)
@@ -162,12 +198,12 @@ class PickPlace(Node):
         place_up = place[::-1]
 
         self.get_logger().info('Opening gripper')
-        self.grip(GRIP_OPEN)
+        self.grip(GRIP_OPEN_EFFORT)
         self.get_logger().info('Approach and descend')
         if not self.send(pick_down):
             return
         self.get_logger().info('Closing gripper')
-        self.grip(GRIP_CLOSED)
+        self.grip(GRIP_CLOSE_EFFORT)
         self.get_logger().info('Lift')
         if not self.send(pick_up):
             return
@@ -175,22 +211,88 @@ class PickPlace(Node):
         if not self.send(place_down):
             return
         self.get_logger().info('Releasing')
-        self.grip(GRIP_OPEN)
+        self.grip(GRIP_OPEN_EFFORT)
         self.get_logger().info('Retreat and home')
         if not self.send(place_up):
             return
         self.send([HOME])
         self.get_logger().info('Done')
 
+    def execute_rod_transfer(self):
+        px, py, pz = ROD_PICK
+        qx, qy, qz = ROD_PLACE
+        radius = math.hypot(px, py)
+        if radius <= ROD_PREGRASP_DISTANCE:
+            self.get_logger().error('Rod pre-grasp distance reaches behind the robot base')
+            return
+
+        pregrasp = (
+            px * (radius - ROD_PREGRASP_DISTANCE) / radius,
+            py * (radius - ROD_PREGRASP_DISTANCE) / radius,
+            pz,
+        )
+        pick = (px, py, pz)
+        lift = (px, py, pz + ROD_LIFT_HEIGHT)
+        place = (qx, qy, qz)
+        place_lift = (qx, qy, qz + ROD_LIFT_HEIGHT)
+
+        approach_path = self.plan_line(
+            pregrasp, pick, ROD_TOOL_PITCH, self.arm_now(), ROD_ROLL)
+        if approach_path is None:
+            self.get_logger().error('Rod midpoint approach is unreachable')
+            return
+        lift_path = self.plan_line(
+            pick, lift, ROD_TOOL_PITCH, approach_path[-1], ROD_ROLL)
+        if lift_path is None:
+            self.get_logger().error('Rod lift path is unreachable')
+            return
+        carry_path = self.plan_line(
+            lift, place_lift, ROD_TOOL_PITCH, lift_path[-1], ROD_ROLL)
+        if carry_path is None:
+            self.get_logger().error('Rod carry path is unreachable')
+            return
+        lower_path = self.plan_line(
+            place_lift, place, ROD_TOOL_PITCH, carry_path[-1], ROD_ROLL)
+        if lower_path is None:
+            self.get_logger().error('Rod set-down path is unreachable')
+            return
+        retreat_path = self.plan_line(
+            place, place_lift, ROD_TOOL_PITCH, lower_path[-1], ROD_ROLL)
+        if retreat_path is None:
+            self.get_logger().error('Rod retreat path is unreachable')
+            return
+
+        self.get_logger().info(
+            f'Grasping rod midpoint at ({px:.2f}, {py:.2f}, {pz:.2f})')
+        self.grip(GRIP_OPEN_EFFORT)
+        if not self.send(approach_path):
+            return
+        self.grip(GRIP_CLOSE_EFFORT)
+        if not self.send(lift_path):
+            return
+        if not self.send(carry_path):
+            return
+        if not self.send(lower_path):
+            return
+        self.grip(GRIP_OPEN_EFFORT)
+        if not self.send(retreat_path):
+            return
+        if self.send([HOME]):
+            self.get_logger().info('Rod transfer complete')
+
     def run(self):
         self.get_logger().info('Waiting for joint states and controller...')
         while rclpy.ok() and not set(ARM_JOINTS + (GRIPPER,)).issubset(self.pos):
             rclpy.spin_once(self, timeout_sec=0.1)
         self.client.wait_for_server()
-        self.get_logger().info('Ready. Publish to /pick_place')
+        while rclpy.ok() and self.grip_pub.get_subscription_count() == 0:
+            rclpy.spin_once(self, timeout_sec=0.1)
+        self.get_logger().info(
+            'Ready. Publish an empty Float64MultiArray to /pick_place for the '
+            'rod transfer, or six coordinates for a custom transfer')
         while rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
-            if self.request:
+            if self.request is not None:
                 req, self.request = self.request, None
                 self.execute(req)
 
@@ -203,6 +305,9 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        if node.grip_pub.get_subscription_count() > 0:
+            node.grip_pub.publish(Float64MultiArray(data=[GRIP_OPEN_EFFORT]))
+            rclpy.spin_once(node, timeout_sec=0.05)
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

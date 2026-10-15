@@ -7,7 +7,7 @@ controller_manager:
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
     gripper_controller:
-      type: position_controllers/JointGroupPositionController
+      type: effort_controllers/JointGroupEffortController
 
 joint_state_broadcaster:
   ros__parameters:
@@ -23,5 +23,5 @@ arm_controller:
 gripper_controller:
   ros__parameters:
     joints: [Joint_Gripper]
-    interface_name: position
+    interface_name: effort
     use_sim_time: true
