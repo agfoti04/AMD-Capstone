@@ -35,7 +35,10 @@ class FakeOrt:
         self.profile_providers = [VITIS_PROVIDER]
         self.run_error = None
         self.calls = []
-        self.SessionOptions = types.SimpleNamespace
+        class SessionOptions(types.SimpleNamespace):
+            def add_session_config_entry(self, key, value):
+                self.__dict__.setdefault('config_entries', {})[key] = value
+        self.SessionOptions = SessionOptions
 
     def get_available_providers(self):
         return self.available
@@ -123,6 +126,62 @@ class DecodeTests(unittest.TestCase):
     def setUp(self):
         _, self.transform = preprocess_image(np.zeros((2, 4, 3), np.uint8), (8, 8))
 
+    def test_sparse_dfl_decodes_known_bin_grid_and_class(self):
+        _, transform = preprocess_image(np.zeros((64, 64, 3), np.uint8), (64, 64))
+        # 8x8 + 4x4 + 2x2 anchors. Anchor 27 has center (28,28),
+        # stride 8; bin 1 in each direction gives box (20,20,36,36).
+        output = np.full((1, 68, 84), -100, np.float32)
+        for side in range(4):
+            output[0, side * 16 + 1, 27] = 100
+        output[0, 67, 27] = 2
+        self.assertEqual(infer_output_format(output.shape, 4), 'yolo_dfl')
+        rows = decode_output(output, 'yolo_dfl', NAMES, transform)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['class_name'], 'mudstone_slab')
+        np.testing.assert_allclose(rows[0]['xyxy'], [20, 20, 36, 36])
+        self.assertAlmostEqual(rows[0]['confidence'], 1 / (1 + np.exp(-2)), places=6)
+        output[0, 67, 27] = 80
+        self.assertEqual(len(decode_output(output, 'yolo_dfl', NAMES, transform, conf=1)), 1)
+        output[0, 0, 27] = np.nan
+        self.assertEqual(decode_output(output, 'yolo_dfl', NAMES, transform), [])
+
+    def test_sparse_dfl_empty_and_wrong_grid(self):
+        _, transform = preprocess_image(np.zeros((64, 64, 3), np.uint8), (64, 64))
+        output = np.full((1, 68, 84), -100, np.float32)
+        self.assertEqual(decode_output(output, 'yolo_dfl', NAMES, transform), [])
+        with self.assertRaisesRegex(ValueError, 'stride grids'):
+            decode_output(output[:, :, :-1], 'yolo_dfl', NAMES, transform)
+
+    def test_sparse_dfl_matches_dense_for_survivor_counts_and_rectangular_scaling(self):
+        _, transform = preprocess_image(np.zeros((30, 48, 3), np.uint8), (64, 96))
+        centers, strides = [], []
+        for stride in (8, 16, 32):
+            y, x = np.mgrid[:64 // stride, :96 // stride]
+            centers.extend(zip((x.ravel() + .5) * stride, (y.ravel() + .5) * stride))
+            strides.extend([stride] * x.size)
+        n = len(centers)
+        for count in (0, 1, 7, 8, 9, 80):
+            logits = np.full((1, 68, n), -100, np.float32)
+            for side in range(4):
+                logits[0, side * 16 + 1] = 100
+            dense = np.zeros((1, 8, n), np.float32)
+            dense[0, :2] = np.asarray(centers).T
+            dense[0, 2:4] = 2 * np.asarray(strides)
+            for index in range(count):
+                logits[0, 64 + index % 4, index] = 2
+                dense[0, 4 + index % 4, index] = 1 / (1 + np.exp(-2))
+            for confidence in (.001, .25):
+                with self.subTest(count=count, confidence=confidence):
+                    actual = decode_output(logits, 'yolo_dfl', NAMES, transform, confidence)
+                    expected = decode_output(dense, 'yolo_raw', NAMES, transform, confidence)
+                    self.assertEqual([r['class_id'] for r in actual], [r['class_id'] for r in expected])
+                    np.testing.assert_allclose([r['xyxy'] for r in actual], [r['xyxy'] for r in expected], atol=1e-5)
+                    np.testing.assert_allclose([r['confidence'] for r in actual], [r['confidence'] for r in expected], atol=1e-6)
+
+    def test_external_raw_eight_by_eight_remains_ambiguous(self):
+        with self.assertRaisesRegex(ValueError, 'xywh/class channels'):
+            decode_output(np.zeros((1, 8, 8)), 'yolo_raw', NAMES, self.transform)
+
     def test_end2end_inverse_scaling_and_four_class_mapping(self):
         output = np.array([[[2, 2, 6, 6, 0.8, 3]]], np.float32)
         rows = decode_output(output, 'yolo_end2end', NAMES, self.transform)
@@ -209,6 +268,35 @@ class BackendTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'no automatic fallback'):
             OnnxDetector(self.path)
         self.assertEqual(self.ort.calls, [])
+
+    def test_runtime_scheduling_applied_without_changing_compiled_model(self):
+        original = OnnxDetector(self.path)
+        self.write_manifest(runtime_options={'intra_op_num_threads': 1, 'allow_spinning': False})
+        tuned = OnnxDetector(self.path)
+        options = self.ort.calls[-1][1]
+        self.assertEqual(options.intra_op_num_threads, 1)
+        self.assertEqual(options.config_entries['session.intra_op.allow_spinning'], '0')
+        self.assertEqual(original.cache_key, tuned.cache_key)
+        self.assertNotEqual(original.metadata['runtime_options'], tuned.metadata['runtime_options'])
+
+    def test_invalid_runtime_scheduling_rejected_before_loading(self):
+        for options in (None, {'intra_op_num_threads': True}, {'intra_op_num_threads': -1},
+                        {'intra_op_num_threads': 65}, {'allow_spinning': 'false'}, {'unknown': 1}):
+            self.write_manifest(runtime_options=options)
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                OnnxDetector(self.path)
+
+    def test_dfl_manifest_requires_unchanged_model_bound_parity(self):
+        report = self.path.parent / 'dfl_parity.json'
+        report.write_text(json.dumps({'passed': True, 'model_sha256': self.manifest['model_sha256']}))
+        digest = hashlib.sha256(report.read_bytes()).hexdigest()
+        self.write_manifest(input_size=[64, 64], output_format='yolo_dfl',
+                            decoder={'reg_max': 16, 'strides': [8, 16, 32]},
+                            dfl_parity_report=report.name, dfl_parity_report_sha256=digest)
+        self.assertEqual(validate_manifest(self.path)['output_format'], 'yolo_dfl')
+        report.write_text(json.dumps({'passed': True, 'model_sha256': 'b' * 64}))
+        with self.assertRaisesRegex(ValueError, 'parity evidence'):
+            validate_manifest(self.path)
 
     def test_provider_initialization_fallback_is_rejected(self):
         self.ort.initialized = ['CPUExecutionProvider']
@@ -370,6 +458,19 @@ class TorchAndDrawingTests(unittest.TestCase):
     def test_torch_invalid_classes_rejected(self):
         with self.assertRaises(ValueError):
             TorchDetector(model=types.SimpleNamespace(names={0: 'person'}))
+
+    def test_torch_rectangular_warmup_uses_same_input_as_backend_comparison(self):
+        seen = []
+        model = types.SimpleNamespace(names=dict(enumerate(NAMES)))
+        def predict(image, **options):
+            seen.append((image.shape, options))
+            return [types.SimpleNamespace(boxes=None, names=model.names)]
+        model.predict = predict
+        detector = TorchDetector(model=model, imgsz=[576, 960], rect=False)
+        detector.warmup()
+        self.assertEqual(seen[0][0], (576, 960, 3))
+        self.assertEqual(seen[0][1]['imgsz'], [576, 960])
+        self.assertEqual(detector.metadata['input_size'], [576, 960])
 
     def test_torch_refreshes_valid_names_and_hashes_checkpoint(self):
         with tempfile.TemporaryDirectory() as directory:

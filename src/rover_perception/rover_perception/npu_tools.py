@@ -81,6 +81,41 @@ def host_identity():
             'kernel': platform.release()}
 
 
+def performance_context():
+    """Read settings that affect timing, without changing hardware policy."""
+    result = {'cpu_count': os.cpu_count(), 'npu_power_mode': None}
+    for key, filename in (
+            ('cpu_governor', '/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'),
+            ('platform_profile', '/sys/firmware/acpi/platform_profile')):
+        try:
+            result[key] = Path(filename).read_text().strip()
+        except OSError:
+            result[key] = None
+    executable = shutil.which('xrt-smi')
+    if executable:
+        report = command([executable, 'examine', '--report', 'platform', '--batch'], timeout=10)
+        match = re.search(r'Power Mode\s*:\s*(\w+)', report['stdout'])
+        result['npu_power_mode'] = match.group(1) if match and report['returncode'] == 0 else None
+    return result
+
+
+def resource_sample():
+    """Read process memory and GPU utilization without loading GPU libraries."""
+    sample = {'process_rss_mb': None, 'available_memory_mb': None, 'gpu_busy_percent': {}}
+    try:
+        sample['process_rss_mb'] = int(Path('/proc/self/statm').read_text().split()[1]) * os.sysconf('SC_PAGE_SIZE') / 1048576
+        memory = Path('/proc/meminfo').read_text()
+        sample['available_memory_mb'] = int(re.search(r'MemAvailable:\s+(\d+)', memory).group(1)) / 1024
+    except (OSError, ValueError, IndexError, AttributeError):
+        pass
+    for device in Path('/sys/class/drm').glob('card[0-9]*/device/gpu_busy_percent'):
+        try:
+            sample['gpu_busy_percent'][device.parent.parent.name] = float(device.read_text())
+        except (OSError, ValueError):
+            pass
+    return sample
+
+
 def kernel_at_least(version, required=(6, 10)):
     match = re.match(r'(\d+)\.(\d+)', version)
     return bool(match and tuple(map(int, match.groups())) >= required)
@@ -198,6 +233,7 @@ def detector_metadata(detector):
                      and evidence.get('manifest_sha256') == sha256(manifest)
                      and evidence.get('model_sha256') == metadata.get('model_sha256')
                      and compiled_backend.get('cache_key') == metadata.get('cache_key')
+                     and compiled_backend.get('runtime_options', {}) == metadata.get('runtime_options', {})
                      and compiled_backend.get('runtime_fingerprint') == metadata.get('runtime_fingerprint'))
         metadata['compile_evidence'] = {'path': str(path), 'verified': valid,
                                         'sha256': sha256(path) if path.is_file() else None}
@@ -314,9 +350,12 @@ def benchmark_detector(detector, frames, seconds=60, repeats=3, warmup=10,
     runs, all_timings = [], {name: [] for name in ('preprocess_ms', 'execution_ms', 'postprocess_ms',
                                                   'annotation_ms', 'encoding_ms', 'total_ms')}
     for repeat in range(repeats):
+        context_before = performance_context()
         timings = {name: [] for name in ('preprocess_ms', 'execution_ms', 'postprocess_ms',
                                         'annotation_ms', 'encoding_ms', 'total_ms')}
         start = time.perf_counter()
+        cpu_start = os.times()
+        resources, next_resource = [], start
         index = 0
         while time.perf_counter() - start < seconds:
             tick = time.perf_counter()
@@ -334,9 +373,21 @@ def benchmark_detector(detector, frames, seconds=60, repeats=3, warmup=10,
             timings['encoding_ms'].append((completed - encode_start) * 1000)
             timings['total_ms'].append((completed - tick) * 1000)
             index += 1
+            if completed >= next_resource:
+                resources.append(resource_sample())
+                next_resource = completed + .5
         elapsed = time.perf_counter() - start
+        cpu_end = os.times()
+        usage = {'cpu_percent_one_core': 100 * (cpu_end.user + cpu_end.system - cpu_start.user - cpu_start.system) / elapsed,
+                 'sample_count': len(resources),
+                 'process_rss_mb': summary([r['process_rss_mb'] for r in resources if r['process_rss_mb'] is not None]),
+                 'available_memory_mb': summary([r['available_memory_mb'] for r in resources if r['available_memory_mb'] is not None]),
+                 'gpu_busy_percent': {name: summary([r['gpu_busy_percent'][name] for r in resources if name in r['gpu_busy_percent']])
+                                      for name in sorted({key for r in resources for key in r['gpu_busy_percent']})}}
         runs.append({'repeat': repeat + 1, 'frames': index, 'seconds': elapsed,
                      'processed_fps': index / elapsed,
+                     'resource_usage': usage,
+                     'context_before': context_before, 'context_after': performance_context(),
                      'timings': {name: summary(values) for name, values in timings.items()}})
         for name, values in timings.items():
             all_timings[name].extend(values)
@@ -548,7 +599,7 @@ def evaluate_detector(detector, samples, dataset, confidence=0.001):
 def model_identity(metadata):
     """Join evaluation/benchmark only when they describe the same executable model."""
     keys = ('backend', 'model', 'model_sha256', 'source_checkpoint_sha256', 'precision',
-            'input_size', 'cache_key', 'runtime_fingerprint')
+            'input_size', 'cache_key', 'runtime_fingerprint', 'runtime_options')
     return json_hash({key: metadata.get(key) for key in keys})
 
 
@@ -652,26 +703,71 @@ def live_check(url, seconds=300, interval=0.25):
         url += '/status'
     records, errors = [], []
     start = time.monotonic()
-    while time.monotonic() - start < seconds:
+    deadline = start + seconds
+    while True:
         tick = time.monotonic()
         try:
             with urllib.request.urlopen(url, timeout=3) as response:
                 status = json.load(response)
             records.append({'offset_seconds': time.monotonic() - start, 'status': status})
+            if len(records) == 1:
+                # Include complete minute windows after the first observation.
+                deadline = time.monotonic() + seconds
         except (OSError, ValueError) as error:
             errors.append({'offset_seconds': time.monotonic() - start, 'error': str(error)})
-        time.sleep(max(0, interval - (time.monotonic() - tick)))
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(remaining, max(0, interval - (time.monotonic() - tick))))
     elapsed = time.monotonic() - start
+    report = summarize_live_samples(records, errors, elapsed)
+    report['url'] = url
+    return report
+
+
+def summarize_live_samples(records, errors, elapsed):
+    """Use completed-frame counters, not the number of HTTP status samples."""
     ages = [row['status']['frame_age_seconds'] for row in records
             if row['status'].get('frame_age_seconds') is not None]
     fps = [float(row['status'].get('loop_fps', 0)) for row in records]
     ready = [bool(row['status'].get('ready')) for row in records]
-    sequences = []
+    points, failures = [], []
+    session_id = None
+    last_change = None
     for record in records:
-        value = record['status'].get('sequence')
-        if value is not None and (not sequences or value != sequences[-1][1]):
-            sequences.append((record['offset_seconds'], value))
-    unique_fps = (len(sequences) - 1) / (sequences[-1][0] - sequences[0][0]) if len(sequences) > 1 else 0
+        status = record['status']
+        value, identity = status.get('processed_frames'), status.get('processing_session_id')
+        offset = record['offset_seconds']
+        if (isinstance(value, bool) or not isinstance(value, int) or value < 0
+                or not isinstance(identity, str) or not identity):
+            failures.append('Missing or invalid processed-frame/session telemetry')
+            continue
+        if session_id is None:
+            session_id, last_change = identity, offset
+        elif identity != session_id:
+            failures.append('Processing session restarted during observation')
+        if points:
+            if offset <= points[-1][0] or value < points[-1][1]:
+                failures.append('Processed-frame counter reset or observation clock reversed')
+            if value != points[-1][1]:
+                last_change = offset
+            elif offset - last_change >= 1:
+                failures.append('Processing stalled for at least one second')
+        points.append((offset, value))
+    duration = points[-1][0] - points[0][0] if len(points) > 1 else 0
+    unique_fps = (points[-1][1] - points[0][1]) / duration if duration > 0 and not failures else 0
+    windows = []
+    if len(points) > 1 and not failures:
+        def count_at(offset):
+            for (ta, ca), (tb, cb) in zip(points, points[1:]):
+                if ta <= offset <= tb:
+                    return ca + (cb - ca) * (offset - ta) / (tb - ta)
+            raise ValueError('Counter interpolation outside observed interval')
+        for index in range(int((duration + 1e-6) // 60)):
+            begin = points[0][0] + index * 60
+            end = min(begin + 60, points[-1][0])
+            windows.append({'start_seconds': begin, 'seconds': end - begin,
+                            'processed_fps': (count_at(end) - count_at(begin)) / (end - begin)})
     stage_keys = ('camera_fetch_ms', 'preprocess_ms', 'execution_ms', 'postprocess_ms',
                   'annotation_encode_ms', 'annotation_ms', 'encoding_ms')
     stage_timings = {}
@@ -700,8 +796,10 @@ def live_check(url, seconds=300, interval=0.25):
     else:
         bottleneck = 'Insufficient stage telemetry; compare camera bridge and detector status'
     report = {'schema_version': SCHEMA_VERSION, 'kind': 'live_acceptance', 'created_utc': utc_now(),
-              'host': host_identity(), 'url': url, 'seconds': elapsed, 'samples': records, 'errors': errors,
+              'host': host_identity(), 'seconds': elapsed, 'samples': records, 'errors': errors,
               'processed_fps_observed': unique_fps, 'reported_fps': summary(fps),
+              'processing_session_id': session_id, 'counter_observation_seconds': duration,
+              'minute_windows': windows, 'telemetry_failures': sorted(set(failures)),
               'camera_age_seconds': summary(ages),
               'camera_age_growth_seconds': age_growth, 'stage_timings_ms': stage_timings,
               'bottleneck_observation': bottleneck,
@@ -709,6 +807,8 @@ def live_check(url, seconds=300, interval=0.25):
               'five_minute_observation': elapsed >= 300,
               'note': 'Passive status sampling never sends drive commands. Verify held/released WASD and disconnection stop manually; browser/network latency requires client measurements.'}
     report['telemetry_gate_passed'] = (elapsed >= 300 and unique_fps >= 20 and all(ready)
+                                        and len(windows) >= 5 and all(w['processed_fps'] >= 20 for w in windows)
+                                        and not failures
                                         and not errors and age_growth is not None and age_growth <= 0.25)
     return report
 
@@ -759,7 +859,7 @@ def main(argv=None):
     live = sub.add_parser('live-check', help='Passive five-minute dashboard health observation')
     live.add_argument('--url', default='http://127.0.0.1:8771')
     live.add_argument('--seconds', type=float, default=300)
-    live.add_argument('--interval', type=float, default=0.02)
+    live.add_argument('--interval', type=float, default=0.25)
     live.add_argument('--output', required=True)
     args = parser.parse_args(argv)
     try:

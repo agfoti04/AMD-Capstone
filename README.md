@@ -8,12 +8,30 @@ Use the [Halo NPU guide](scripts/HALO_NPU_TESTING.md) and the
 [measured status report](docs/NPU_TEST_REPORT.md). Actual NPU execution,
 accuracy and throughput are separate acceptance gates; provider availability
 and successful compilation alone do not establish a working detector.
-The AMD reference CNN and four-class detector now execute on the Halo NPU.
-YOLO26n XINT8 sustained about 28 replay FPS but failed accuracy. The trained
-YOLOv8m XINT8 fallback reached validation mAP50-95 0.797 and 12.5 replay FPS,
-missing the speed and soil-recall limits; its BF16 alternative hit a compiler
-tiling error. GPU detection remains the default. No NPU candidate has passed
-adoption, and the five-minute NPU drive and held-out test remain unclaimed.
+The optimized October 15 NPU candidate is **YOLOv8s A16W8 at 960x576**, with
+per-channel weights, one runtime thread and sparse FP32 box decoding. It
+sustained **38.31-38.71 replay FPS** including drawing/JPEG, with **0.8420
+validation mAP50-95**, passing the original accuracy and replay speed limits.
+Its learned feature extraction and prediction execute on the NPU. This follows
+the earlier YOLO26n/YOLOv8m XINT8 accuracy/speed failures, which remain documented.
+The [Halo guide](scripts/HALO_NPU_TESTING.md#reproduce-scheduling-and-padding-experiments)
+contains the explicit NPU launch command. Existing checkpoint commands still
+select the GPU. The browser launcher can use an accepted NPU deployment by
+default after accuracy, replay, live throughput and manual stop checks pass;
+it refuses missing/stale acceptance evidence rather than changing backends.
+Five-minute live acceptance and selected-model held-out testing are reported
+separately; replay capacity is not remote-browser FPS.
+
+The October 16 resumption fixes the sparse decoder's eight-anchor edge case
+and measures live throughput with a completed-frame counter and session ID.
+Status polling frequency no longer limits measured FPS. Fresh reference CNN,
+XRT latency and rover-model offload checks passed on kernel 7.0.0-38. The
+resumed replay sustained **38.30-38.60 FPS**; paired held-out test mAP50-95 was
+**0.76665 NPU versus 0.72177 GPU**, with all class recall limits passing.
+These use the same evaluator and differ from the original Ultralytics summary.
+Five-minute driving/manual acceptance remains pending; an NPU default is not
+installed until those checks also pass. Isolated NPU replay sampled 0% GPU
+busy; this demonstrates GPU availability, not a measured power saving.
 
 The existing four-class YOLO26n completed training and synthetic testing on
 October 14: test mAP50 **0.924**, mAP50-95 **0.726** across 100 test images.

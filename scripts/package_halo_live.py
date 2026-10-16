@@ -48,6 +48,8 @@ PERCEPTION_REQUIRED = (
     'rover_perception/live_web.py',
     'rover_perception/detectors.py', 'rover_perception/npu_prepare.py',
     'rover_perception/npu_tools.py',
+    'rover_perception/npu_tune.py',
+    'rover_perception/npu_acceptance.py',
     'launch/detector.launch.py', 'config/sim.yaml', 'config/oak.yaml',
 )
 

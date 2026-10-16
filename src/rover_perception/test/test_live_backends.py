@@ -67,6 +67,10 @@ class BackendDeliveryTests(unittest.TestCase):
             self.assertGreaterEqual(status['annotation_ms'], 0)
             self.assertGreaterEqual(status['encoding_ms'], 0)
             self.assertEqual(status['detections'][0]['class_id'], 3)
+            self.assertEqual(status['processed_frames'], 1)
+            self.assertTrue(status['processing_session_id'])
+            time.sleep(.1)
+            self.assertEqual(session.snapshot()['processed_frames'], 1)
             self.assertGreater(session.drive_values(0.3, 0)['linear'], 0)
             detector.fail = True
             node.sequence += 1
@@ -74,6 +78,7 @@ class BackendDeliveryTests(unittest.TestCase):
             await_condition(lambda: bool(session.snapshot()['error']))
             self.assertIn('Controlled NPU execution failure', session.snapshot()['error'])
             self.assertEqual(session.drive_values(0.3, 0)['linear'], 0)
+            self.assertEqual(session.snapshot()['processed_frames'], 1)
         finally:
             session.close()
             bridge.shutdown()

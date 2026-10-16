@@ -4,6 +4,7 @@ import hashlib
 import json
 import threading
 import time
+import uuid
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -35,6 +36,8 @@ class LiveSession:
         self.stop = threading.Event()
         self.jpeg = None
         self.version = 0
+        self.processed_frames = 0
+        self.processing_session_id = str(uuid.uuid4())
         self.captured = 0.0
         self.control_mode = 'unknown'
         self.status = {'error': 'Waiting for the simulator camera', 'detections': []}
@@ -45,6 +48,8 @@ class LiveSession:
             age = time.monotonic() - self.captured if self.captured else None
             limit = min(self.camera_timeout, self.bridge_camera_timeout)
             return dict(self.status, frame_age_seconds=age, camera_timeout_seconds=limit,
+                        processed_frames=self.processed_frames,
+                        processing_session_id=self.processing_session_id,
                         class_names=getattr(self.model, 'names', {}),
                         detector=dict(getattr(self.model, 'metadata', {})),
                         pipeline_version=LIVE_PIPELINE_VERSION,
@@ -139,6 +144,7 @@ class LiveSession:
                     self.captured = captured
                     self.bridge_camera_timeout = bridge_limit
                     self.version += 1
+                    self.processed_frames += 1
                     self.status = status
                     self.condition.notify_all()
                 # Cache only successfully processed samples, so failed inference

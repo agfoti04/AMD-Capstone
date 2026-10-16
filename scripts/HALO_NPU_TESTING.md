@@ -5,10 +5,11 @@ the baseline. The NPU backend is explicit and never silently switches to GPU
 or accepts a CPU-only model. GPU segmentation and depth are a later milestone.
 See [measured status](../docs/NPU_TEST_REPORT.md) before assuming any target is met.
 
-The October 14 Halo comparison selected **retain GPU**. Real NPU inference and
-the browser stream work, but tested candidates miss accuracy/throughput gates.
-The commands below reproduce experiments; they are not a recommendation to
-replace the working GPU detector with a rejected candidate.
+The October 14 comparison selected **retain GPU**. The optimized October 15
+YOLOv8s candidate subsequently passed validation/replay; October 16 retesting
+uses fresh proof for kernel 7.0.0-38 and fixes its sparse-decoder edge case.
+Consult the measured report for the remaining held-out/live/manual gates.
+Historical commands below reproduce experiments and include rejected models.
 
 ## Environments and deployment
 
@@ -226,9 +227,112 @@ are `experiments/npu/yolov8m_960_xint8` and `yolov8m_640_xint8`. The BF16 candid
 with FP32 decoding is `yolov8m_960_bf16_fp32decode`. Preserve these directories;
 use new names when changing quantization/compiler options.
 
+## Reproduce scheduling and padding experiments
+
+Best measured candidate from October 15:
+`experiments/npu/optimization_20261015/s_rect_a16w8_sparse/manifest.json`.
+It is YOLOv8s, A16W8 with per-channel weights, static input `[576,960]`,
+one ORT thread, spinning disabled and sparse FP32 DFL decoding. Validation
+mAP50-95 is 0.84203; three 60-second replays achieved 38.31, 38.62 and
+38.71 FPS including drawing/JPEG. See the report for live/test status.
+
+With the existing simulator/camera bridge running, launch it explicitly:
+
+```bash
+cd /home/ian/capstone-training/mars-pilot50-v2
+source scripts/halo_npu_env.sh
+bash scripts/halo_live_vision.sh --backend npu \
+  --model-manifest experiments/npu/optimization_20261015/s_rect_a16w8_sparse/manifest.json \
+  --scene scene_050001
+```
+
+Use the existing browser/tunnel on port 8771. Stop an earlier dashboard with
+Ctrl+C first if it owns that port. The usual GPU checkpoint command is retained.
+
+Create a fresh scheduling/compiler variant without touching the source model:
+
+```bash
+python -m rover_perception.npu_tune \
+  --manifest experiments/npu/yolov8m_960_xint8/manifest.json \
+  --output experiments/npu/my_tuned_candidate \
+  --threads 1 --spinning off --opt-level 0
+python -m rover_perception.npu_prepare compile \
+  --manifest experiments/npu/my_tuned_candidate/manifest.json \
+  --hardware-evidence experiments/npu/reference_protocol7.json
+```
+
+Thread settings are part of the model manifest, browser/session metadata, and
+benchmark identity. They do not change the compiled graph cache key. A new
+manifest requires fresh execution/offload evidence before live use. Benchmark
+reports record CPU governor and NPU power mode before and after each run.
+AMD documents integer compiler levels 0, 1, 2, 3 and experimental 65536. Measure
+them individually; a higher level does not guarantee faster inference.
+
+The optional `--external-dfl` switch cuts the verified fixed YOLOv8 decoder from
+the ONNX graph. NumPy filters class logits first, then computes FP32 distance
+expectations only for surviving anchors. It preserves the learned NPU heads.
+The tool checks five training images at confidence 0.001 and 0.25 against the
+original CPU graph, with 0.01-pixel / 0.000001-confidence tolerances. It refuses
+unknown layouts or changed/missing parity evidence. Full NPU validation remains
+necessary: changing graph boundaries can change the AMD compiler's numerics.
+
+To reduce padding work while retaining the camera's 960-pixel width, export a
+separate static rectangular candidate in `rover-export`, then quantize it using
+the same frozen 300 training images:
+
+```bash
+python -m rover_perception.npu_prepare export \
+  --weights runs/detect/coverage500_fourclass_yolov8m_npu_960/weights/best.pt \
+  --dataset-manifest runs/detect/coverage500_fourclass_yolov8m_npu_960_dataset.json \
+  --imgsz 960 --input-height 576 \
+  --output experiments/npu/my_rect_fp32
+python -m rover_perception.npu_prepare quantize \
+  --manifest experiments/npu/my_rect_fp32/manifest.json \
+  --precision xint8 --output experiments/npu/my_rect_xint8
+```
+
+A 960x576 tensor has 40% fewer pixels than 960x960. A 960x540 camera frame
+gets 18 padding rows on either side instead of 210; the difference is divisible
+by the largest stride, 32. This preserves image detail and grid alignment, but
+boundary context and quantization can still affect predictions. Evaluate all
+100 validation images before choosing it. Runtime size comes from the manifest;
+the camera itself stays 960x540. The existing fallback training helper also
+accepts an official YOLOv8s checkpoint as argument 2 and a fresh run name as
+argument 3, recording the actual base architecture.
+
+When XINT8 loses too much accuracy, test AMD's floating-scale integer formats
+in a fresh directory. These use the same training-only calibration checks:
+
+```bash
+python -m rover_perception.npu_prepare quantize \
+  --manifest experiments/npu/my_rect_fp32/manifest.json \
+  --precision a8w8 --per-channel --output experiments/npu/my_rect_a8w8
+```
+
+`a8w8` uses 8-bit activations/weights and floating scales; `a16w8` uses 16-bit
+activations and 8-bit weights. The optional `--per-channel` flag applies weight
+scales per channel for these experiments. The manifest records the exact
+precision and setting. Both use AMD's X2 integer compiler and require fresh
+runtime proof and accuracy evaluation; neither implies CPU fallback is allowed.
+See [AMD's integer quantization guidance](https://quark.docs.amd.com/latest/supported_accelerators/ryzenai/int8_int16_quantization.html).
+For the observed YOLO26 shared-output assertion in Quark's concat alignment,
+`--no-align-concat` exposes the supported setting in a new experiment; the
+manifest records it. Recheck NPU execution and accuracy after this override.
+
+Run formal speed comparisons after training/calibration/compiler jobs finish.
+Stop Gazebo for isolated replay comparisons; keep it running for the live
+workload. Use the same replay and do three
+60-second batch-one runs. A short screen or a run competing with calibration
+does not establish sustained performance. Changing NPU power mode is optional
+and is never done by the launch scripts. On this staged XRT installation, a
+privileged invocation must explicitly retain both `XILINX_XRT` and
+`LD_LIBRARY_PATH`; the default mode should be restored after an experiment.
+See the measured report for actual results and the recommended candidate.
+
 ## Launch, drive, and rollback
 
-Only promote a candidate after its validation/replay comparison qualifies it.
+Only promote a candidate after validation, replay, held-out accuracy, five-minute
+live telemetry and the manual drive/stop review all pass.
 Also require `compile_report.json` to verify the current model/runtime. The
 paths above illustrate the workflow; consult the measured report for accepted
 artifacts. The early YOLO26 candidates failed accuracy and should not replace
@@ -236,7 +340,7 @@ the working GPU detector. To test a qualifying artifact in the NPU terminal:
 
 ```bash
 bash scripts/halo_live_vision.sh --backend npu \
-  --model-manifest experiments/npu/yolo26n_960_bf16/manifest.json \
+  --model-manifest experiments/npu/resume_20261016T221548Z/candidate/manifest.json \
   --scene scene_050001
 ```
 
@@ -255,6 +359,67 @@ python -m rover_perception.npu_tools live-check \
 The observer does not drive. Manually test hold, release, Space, loss of focus
 and disconnection. Inspect displayed FPS, camera age and control acknowledgment
 latency. A replay pass does not imply a live pass when Gazebo or the network is slow.
+
+For the resumed run, use a fresh NPU terminal and the exact experiment directory:
+
+```bash
+cd /home/ian/capstone-training/mars-pilot50-v2
+source scripts/halo_npu_env.sh
+NPU_RUN=experiments/npu/resume_20261016T221548Z
+python -m rover_perception.npu_tools live-check \
+  --seconds 300 --interval 0.25 --output "$NPU_RUN/live_acceptance.json"
+```
+
+Warm up the dashboard before starting the observer, then drive in
+`scene_050001` for the complete five minutes. Avoid raw-frame recording during
+the throughput acceptance run. The observer uses `processed_frames` and
+`processing_session_id`; it checks the total rate and every complete minute
+at >=20 FPS, readiness, errors, stalls, restarts and camera-age growth <=0.25 s.
+Four status requests per second can measure a 30-FPS detector accurately.
+Run deliberate stop/failure checks after the uninterrupted drive.
+
+The manual checklist is held WASD, simultaneous steering, speed sliders,
+release, Space, focus loss, browser disconnection, command expiry <=0.5 s,
+stale-camera stopping and backend-error stopping. The controlled backend,
+stale-camera and command-expiry regressions must also pass. Note the browser's
+display FPS and control acknowledgment latency separately from server FPS.
+Only after actually completing/reviewing these checks, record the human review:
+
+```bash
+python -m rover_perception.npu_acceptance confirm-controls \
+  --live "$NPU_RUN/live_acceptance.json" --reviewer ian --confirmed \
+  --notes 'Describe observed display FPS, control latency and stop checks here.' \
+  --output "$NPU_RUN/manual_controls.json"
+```
+
+Promote only the frozen model that produced all the matching reports:
+
+```bash
+python -m rover_perception.npu_acceptance promote \
+  --manifest "$NPU_RUN/candidate/manifest.json" \
+  --comparison "$NPU_RUN/comparison.json" \
+  --gpu-test "$NPU_RUN/gpu_test.json" --npu-test "$NPU_RUN/npu_test.json" \
+  --live "$NPU_RUN/live_acceptance.json" --controls "$NPU_RUN/manual_controls.json"
+```
+
+This writes the Git-ignored `experiments/npu/active_npu.json` only after all
+gates pass. Its model, reports, source files and runtime fingerprint are bound
+by hashes. After promotion, the normal NPU terminal command is:
+
+```bash
+bash scripts/halo_live_vision.sh --scene scene_050001
+```
+
+An explicit checkpoint or `--backend torch --model /path/to/best.pt` still
+selects GPU inference. Explicit `--backend npu --model-manifest ...` launches
+an experimental candidate without claiming full acceptance. Kernel/runtime,
+source or accepted-artifact changes invalidate automatic NPU launch and require
+fresh evidence; there is no silent CPU/GPU fallback.
+
+The resumed detached jobs, stage logs and reports are under `$NPU_RUN`.
+`formal_job.json` records completed stages or a failure; inspect this before
+restarting work after a network interruption. Source archives exclude these
+artifacts, datasets, checkpoints and SDKs. Existing experiments are preserved.
 
 To return to the GPU, release controls, stop the NPU dashboard with Ctrl+C,
 and in a fresh `rover-yolo` terminal run:

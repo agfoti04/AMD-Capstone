@@ -247,9 +247,12 @@ def check_parity(model, onnx_path, calibration, input_size, output_format, sampl
             'model_sha256': sha256(onnx_path), 'runtime_versions': _versions()}
 
 
-def export_candidate(weights, dataset_manifest, output, imgsz=960, parity_images=5):
+def export_candidate(weights, dataset_manifest, output, imgsz=960, parity_images=5, input_height=None):
     import onnx
     from ultralytics import YOLO
+    input_size = [imgsz if input_height is None else input_height, imgsz]
+    if any(type(size) is not int or size <= 0 or size % 32 for size in input_size):
+        raise ValueError('Static export dimensions must be positive multiples of 32')
     from .detectors import infer_output_format
 
     weights = Path(weights).expanduser().resolve(strict=True)
@@ -274,14 +277,14 @@ def export_candidate(weights, dataset_manifest, output, imgsz=960, parity_images
         # checkpoint was trained with its one-to-many branch. None exports raw
         # predictions without embedding NMS and preserves that trained branch.
         source_end2end = bool(getattr(model.model, 'end2end', False))
-        exported = Path(model.export(format='onnx', imgsz=imgsz, batch=1, opset=17,
+        exported = Path(model.export(format='onnx', imgsz=input_size, batch=1, opset=17,
                                      dynamic=False, simplify=False, half=False,
                                      nms=False if source_end2end else None, device='cpu'))
         onnx.checker.check_model(str(exported))
         graph = onnx.load(str(exported))
         def dimensions(value):
             return [dimension.dim_value for dimension in value.type.tensor_type.shape.dim]
-        if len(graph.graph.input) != 1 or dimensions(graph.graph.input[0]) != [1, 3, imgsz, imgsz]:
+        if len(graph.graph.input) != 1 or dimensions(graph.graph.input[0]) != [1, 3, *input_size]:
             raise ValueError('Export must have one static batch-one RGB input')
         if len(graph.graph.output) != 1:
             raise ValueError('Export must expose one detection tensor')
@@ -289,13 +292,13 @@ def export_candidate(weights, dataset_manifest, output, imgsz=960, parity_images
         output_format = infer_output_format(output_shape, len(CLASS_NAMES))
         model_file = output / 'model.onnx'
         shutil.copyfile(exported, model_file)
-        parity = check_parity(model, model_file, calibration, [imgsz, imgsz], output_format, parity_images)
+        parity = check_parity(model, model_file, calibration, input_size, output_format, parity_images)
     if sha256(weights) != source_hash:
         raise ValueError('Source checkpoint changed while exporting')
     _write_json(output / 'parity.json', parity)
     manifest = {'schema_version': 1, 'created_utc': _now(), 'model_file': 'model.onnx',
                 'model_sha256': sha256(model_file), 'source_checkpoint_sha256': source_hash,
-                'source_checkpoint': str(weights), 'class_names': CLASS_NAMES, 'input_size': [imgsz, imgsz],
+                'source_checkpoint': str(weights), 'class_names': CLASS_NAMES, 'input_size': input_size,
                 'input_name': graph.graph.input[0].name, 'output_shapes': [output_shape],
                 'output_format': output_format, 'precision': 'fp32', 'opset': 17,
                 'export_head': 'one2one' if output_format == 'yolo_end2end' else 'one2many',
@@ -371,7 +374,7 @@ def runtime_decoding_names(graph, decoding_nodes):
     return names
 
 
-def quantize_candidate(manifest_path, precision, output):
+def quantize_candidate(manifest_path, precision, output, per_channel=False, align_concat=None):
     import onnx
     from onnxruntime.quantization import CalibrationDataReader
     from quark.onnx import ModelQuantizer
@@ -387,8 +390,10 @@ def quantize_candidate(manifest_path, precision, output):
     if (sha256(parity_path) != source.get('parity_report_sha256') or not parity.get('passed')
             or parity.get('model_sha256') != source['model_sha256']):
         raise ValueError('A successful unchanged FP32 parity report is required before quantization')
-    if precision not in ('bf16', 'xint8'):
-        raise ValueError('Precision must be bf16 or xint8')
+    if precision not in ('bf16', 'xint8', 'a8w8', 'a16w8'):
+        raise ValueError('Precision must be bf16, xint8, a8w8 or a16w8')
+    if per_channel and precision not in ('a8w8', 'a16w8'):
+        raise ValueError('Per-channel experiments require floating-scale A8W8 or A16W8')
     input_model = _relative_file(source['model_file'], path.parent)
     graph = onnx.load(str(input_model))
     decoding_nodes = postprocessing_nodes(graph)
@@ -396,6 +401,12 @@ def quantize_candidate(manifest_path, precision, output):
     # rounding near 960-pixel coordinates can move a small box several pixels.
     excluded = decoding_nodes
     config = copy.deepcopy(get_default_config(precision.upper()))
+    if per_channel:
+        config.per_channel = True
+    if align_concat is not None:
+        if precision not in ('a8w8', 'a16w8'):
+            raise ValueError('Concat alignment override requires floating-scale integer quantization')
+        config.extra_options['AlignConcat'] = align_concat
     config.extra_options['BF16QDQToCast'] = True
     if excluded:
         config.nodes_to_exclude = excluded
@@ -435,6 +446,8 @@ def quantize_candidate(manifest_path, precision, output):
                     calibration_manifest_sha256=sha256(output / 'calibration.json'),
                     parity_report='fp32_parity.json', parity_report_sha256=sha256(output / 'fp32_parity.json'),
                     quantization={'tool': 'amd-quark', 'config': precision.upper(),
+                                  'per_channel': per_channel,
+                                  'align_concat': config.extra_options.get('AlignConcat'),
                                   'excluded_nodes': excluded, 'decoding_nodes': decoding_nodes,
                                   'BF16QDQToCast': True}, runtime_versions=_versions())
     if precision == 'bf16':
@@ -515,8 +528,8 @@ def compile_candidate(manifest_path, hardware_evidence):
     evidence_path = Path(hardware_evidence).resolve(strict=True)
     evidence = validate_hardware_evidence(evidence_path)
     path, manifest, calibration = _load_prepared(manifest_path)
-    if manifest['precision'] not in ('bf16', 'xint8'):
-        raise ValueError('Compile the BF16 or XINT8 candidate after FP32 parity')
+    if manifest['precision'] not in ('bf16', 'xint8', 'a8w8', 'a16w8'):
+        raise ValueError('Compile a BF16 or integer candidate after FP32 parity')
     report_path = path.parent / 'compile_report.json'
     detector = OnnxDetector(path, backend='npu')
     detector.warmup()
@@ -555,10 +568,13 @@ def main(argv=None):
     export.add_argument('--dataset-manifest', required=True)
     export.add_argument('--output', required=True)
     export.add_argument('--imgsz', type=int, choices=(640, 960), default=960)
+    export.add_argument('--input-height', type=int, help='Optional static rectangular height, multiple of 32')
     export.add_argument('--parity-images', type=int, default=5)
-    quantize = sub.add_parser('quantize', help='AMD Quark BF16 or XINT8; train-only calibration')
+    quantize = sub.add_parser('quantize', help='AMD Quark BF16 or integer quantization; train-only calibration')
     quantize.add_argument('--manifest', required=True)
-    quantize.add_argument('--precision', choices=('bf16', 'xint8'), required=True)
+    quantize.add_argument('--precision', choices=('bf16', 'xint8', 'a8w8', 'a16w8'), required=True)
+    quantize.add_argument('--per-channel', action='store_true', help='Per-channel weights for floating-scale integer experiments')
+    quantize.add_argument('--no-align-concat', action='store_true', help='Disable Quark concat alignment for graphs with shared concat outputs')
     quantize.add_argument('--output', required=True)
     compile_parser = sub.add_parser('compile', help='Compile, execute and verify NPU assignment on the Halo')
     compile_parser.add_argument('--manifest', required=True)
@@ -566,9 +582,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == 'export':
-            result = export_candidate(args.weights, args.dataset_manifest, args.output, args.imgsz, args.parity_images)
+            result = export_candidate(args.weights, args.dataset_manifest, args.output, args.imgsz,
+                                      args.parity_images, args.input_height)
         elif args.command == 'quantize':
-            result = quantize_candidate(args.manifest, args.precision, args.output)
+            result = quantize_candidate(args.manifest, args.precision, args.output, args.per_channel,
+                                        False if args.no_align_concat else None)
         else:
             result = compile_candidate(args.manifest, args.hardware_evidence)
     except (ValueError, FileNotFoundError, ImportError, RuntimeError) as error:

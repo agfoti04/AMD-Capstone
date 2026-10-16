@@ -11,7 +11,11 @@ software-rendering fallback. GPU use by YOLO alone does not accelerate Gazebo.
 Successful GPU rendering depends on the container's Mesa/EGL support.
 
 The dashboard targets up to 30 processed frames per wall second. Actual FPS
-depends on Gazebo rendering, simulation speed, GPU inference and the network.
+depends on Gazebo rendering, simulation speed, detector execution and the network.
+For NPU testing and accepted NPU-default launch, follow
+[the NPU guide](HALO_NPU_TESTING.md#launch-drive-and-rollback). Explicit checkpoint
+commands in this guide continue to select the GPU. The NPU and GPU use separate
+Python environments; acceptance checks never silently switch between them.
 The previous dashboard capped processing at 8 FPS and rendered all capture
 sensors at full resolution. The new input uses rectangular inference at
 `imgsz=960`; `--square` restores square padding for a comparison. Live imagery

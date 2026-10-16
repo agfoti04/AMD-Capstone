@@ -218,6 +218,55 @@ class ReferenceTests(unittest.TestCase):
             self.assertFalse(tools.kernel_at_least(version))
 
 
+class LiveCounterTests(unittest.TestCase):
+    def samples(self):
+        return [{'offset_seconds': index / 4, 'status': {
+            'processed_frames': int(index / 4 * 30), 'processing_session_id': 'session-one',
+            'frame_age_seconds': .05, 'loop_fps': 30, 'ready': True}}
+            for index in range(1201)]
+
+    def test_four_hz_polling_measures_thirty_processed_fps(self):
+        result = tools.summarize_live_samples(self.samples(), [], 300)
+        self.assertEqual(result['processed_fps_observed'], 30)
+        self.assertEqual(len(result['minute_windows']), 5)
+        self.assertTrue(result['telemetry_gate_passed'])
+
+    def test_missing_restarted_reset_or_stalled_counters_fail(self):
+        for change in ('missing', 'restart', 'reset', 'stall'):
+            samples = self.samples()
+            if change == 'missing':
+                samples[20]['status'].pop('processed_frames')
+            elif change == 'restart':
+                samples[20]['status']['processing_session_id'] = 'another-session'
+            elif change == 'reset':
+                samples[20]['status']['processed_frames'] = 0
+            else:
+                for item in samples[20:30]:
+                    item['status']['processed_frames'] = samples[19]['status']['processed_frames']
+            with self.subTest(change=change):
+                result = tools.summarize_live_samples(samples, [], 300)
+                self.assertFalse(result['telemetry_gate_passed'])
+                self.assertTrue(result['telemetry_failures'])
+
+    def test_short_slow_minute_camera_growth_errors_and_unready_fail(self):
+        samples = self.samples()
+        self.assertFalse(tools.summarize_live_samples(samples[:100], [], 25)['telemetry_gate_passed'])
+        self.assertFalse(tools.summarize_live_samples(samples, [{'error': 'offline'}], 300)['telemetry_gate_passed'])
+        samples[10]['status']['ready'] = False
+        self.assertFalse(tools.summarize_live_samples(samples, [], 300)['telemetry_gate_passed'])
+        samples = self.samples()
+        for item in samples[900:]:
+            item['status']['frame_age_seconds'] = 1
+        self.assertFalse(tools.summarize_live_samples(samples, [], 300)['telemetry_gate_passed'])
+        samples = self.samples()
+        for item in samples:
+            t = item['offset_seconds']
+            item['status']['processed_frames'] = int(10 * min(t, 60) + 40 * max(0, t - 60))
+        result = tools.summarize_live_samples(samples, [], 300)
+        self.assertGreater(result['processed_fps_observed'], 20)
+        self.assertFalse(result['telemetry_gate_passed'])
+
+
 class DatasetTests(unittest.TestCase):
     def create_export(self, directory):
         root = Path(directory)

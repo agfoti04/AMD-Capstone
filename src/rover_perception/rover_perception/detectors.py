@@ -4,6 +4,7 @@ ONNX Runtime and Ultralytics are deliberately imported only by their adapters.
 The camera, controls and drawing code need neither framework installed.
 """
 from dataclasses import dataclass
+from functools import lru_cache
 import hashlib
 import importlib.metadata
 import json
@@ -90,6 +91,8 @@ def infer_output_format(shape, nclass):
     channels = 4 + nclass
     if (shape[1] == channels) != (shape[2] == channels):
         return 'yolo_raw'
+    if shape[1] == 64 + nclass and shape[2] > shape[1]:
+        return 'yolo_dfl'
     raise ValueError(f'Cannot identify detection output {shape} for {nclass} classes')
 
 
@@ -112,10 +115,53 @@ def _nms(boxes, scores, classes, iou, max_det):
     return np.asarray(keep, dtype=np.int64)
 
 
+@lru_cache(maxsize=8)
+def _dfl_anchors(height, width):
+    anchors, strides = [], []
+    for stride in (8, 16, 32):
+        if height % stride or width % stride:
+            raise ValueError('DFL input dimensions must be divisible by 32')
+        y, x = np.mgrid[:height // stride, :width // stride]
+        anchors.append(np.stack((x.ravel() + 0.5, y.ravel() + 0.5)).astype(np.float32))
+        strides.append(np.full(x.size, stride, dtype=np.float32))
+    return np.concatenate(anchors, axis=1), np.concatenate(strides)
+
+
+def decode_dfl(output, names, transform, conf):
+    """Decode only anchors that survive class filtering; learned heads stay on NPU.
+
+    Supported layout is YOLOv8's 4x16 distance logits followed by class logits,
+    with stride-8,16,32 grids. All probabilities and coordinates remain FP32.
+    """
+    prediction = np.asarray(output)
+    anchors, strides = _dfl_anchors(*transform.input_size)
+    if prediction.shape != (1, 64 + len(names), anchors.shape[1]):
+        raise ValueError('DFL output must match the declared stride grids and 16-bin layout')
+    logits = prediction[0, 64:]
+    best_scores = np.exp(-np.logaddexp(np.float32(0), -logits.max(axis=0)))
+    selected = np.flatnonzero(np.isfinite(logits).all(axis=0) & (best_scores >= conf))
+    distances = prediction[0, :64, selected].T
+    valid = np.isfinite(distances).all(axis=0)
+    selected, distances = selected[valid], distances[:, valid]
+    distances = distances.reshape(4, 16, -1)
+    probabilities = np.exp(distances - distances.max(axis=1, keepdims=True))
+    probabilities /= probabilities.sum(axis=1, keepdims=True)
+    distances = np.sum(probabilities * np.arange(16, dtype=np.float32)[None, :, None], axis=1)
+    xy1 = anchors[:, selected] - distances[:2]
+    xy2 = anchors[:, selected] + distances[2:]
+    boxes = np.concatenate(((xy1 + xy2) / 2, xy2 - xy1), axis=0) * strides[selected]
+    scores = np.exp(-np.logaddexp(np.float32(0), -logits[:, selected]))
+    return np.concatenate((boxes, scores), axis=0)[None]
+
+
 def decode_output(output, output_format, names, transform, conf=0.25, iou=0.7, max_det=300):
     """Decode YOLO26 end-to-end or YOLOv8 raw output into original image pixels."""
     conf = _confidence(conf)
     names = rover_model_names(names)
+    known_dfl_layout = output_format == 'yolo_dfl'
+    if output_format == 'yolo_dfl':
+        output = decode_dfl(output, names, transform, conf)
+        output_format = 'yolo_raw'
     prediction = np.asarray(output)
     if prediction.ndim == 3 and prediction.shape[0] == 1:
         prediction = prediction[0]
@@ -129,7 +175,11 @@ def decode_output(output, output_format, names, transform, conf=0.25, iou=0.7, m
         classes = np.rint(np.where(valid_class, classes_float, -1)).astype(np.int64)
     elif output_format == 'yolo_raw':
         channels = 4 + len(names)
-        if prediction.shape[0] == channels and prediction.shape[1] != channels:
+        if known_dfl_layout:
+            # decode_dfl always returns channels-first, including (8, 8).
+            # External raw tensors still require an unambiguous layout.
+            prediction = prediction.T
+        elif prediction.shape[0] == channels and prediction.shape[1] != channels:
             prediction = prediction.T
         elif prediction.shape[1] != channels or prediction.shape[0] == channels:
             raise ValueError(f'Raw output must contain exactly {channels} xywh/class channels')
@@ -166,6 +216,18 @@ def _digest(value):
     return isinstance(value, str) and len(value) == 64 and all(c in '0123456789abcdef' for c in value)
 
 
+def validate_runtime_options(options):
+    """Keep scheduling explicit and reproducible without changing model arithmetic."""
+    if not isinstance(options, dict) or set(options) - {'intra_op_num_threads', 'allow_spinning'}:
+        raise ValueError('Unsupported ONNX runtime_options')
+    threads = options.get('intra_op_num_threads', 0)
+    if type(threads) is not int or not 0 <= threads <= 64:
+        raise ValueError('intra_op_num_threads must be an integer from 0 to 64')
+    if 'allow_spinning' in options and type(options['allow_spinning']) is not bool:
+        raise ValueError('allow_spinning must be boolean')
+    return dict(options)
+
+
 def validate_manifest(manifest_path):
     """Validate portable deployment metadata and its model before importing ORT."""
     path = Path(manifest_path).resolve()
@@ -175,6 +237,7 @@ def validate_manifest(manifest_path):
         raise ValueError('Unsupported model manifest schema; expected schema_version 1')
     if manifest.get('opset') != 17:
         raise ValueError('NPU experiments require ONNX opset 17')
+    validate_runtime_options(manifest.get('runtime_options', {}))
     names = manifest.get('class_names')
     if not isinstance(names, list):
         raise ValueError('Manifest class_names must be an ordered list')
@@ -183,9 +246,23 @@ def validate_manifest(manifest_path):
     if (not isinstance(size, list) or len(size) != 2 or
             any(type(n) is not int or n <= 0 for n in size)):
         raise ValueError('Manifest input_size must be [height, width] positive integers')
-    if manifest.get('output_format') not in ('yolo_end2end', 'yolo_raw'):
+    if manifest.get('output_format') not in ('yolo_end2end', 'yolo_raw', 'yolo_dfl'):
         raise ValueError('Unsupported ONNX output format')
-    if manifest.get('precision') not in ('fp32', 'bf16', 'xint8'):
+    if manifest.get('output_format') == 'yolo_dfl' and manifest.get('decoder') != {
+            'reg_max': 16, 'strides': [8, 16, 32]}:
+        raise ValueError('DFL manifest requires the explicit 16-bin stride-8/16/32 decoder')
+    if manifest.get('output_format') == 'yolo_dfl':
+        if any(dimension % 32 for dimension in size):
+            raise ValueError('DFL input dimensions must be divisible by 32')
+        report = (path.parent / manifest.get('dfl_parity_report', '')).resolve()
+        if not report.is_relative_to(path.parent) or not report.is_file():
+            raise ValueError('DFL parity report must be inside the candidate directory')
+        evidence = json.loads(report.read_text(encoding='utf-8'))
+        if (sha256_file(report) != manifest.get('dfl_parity_report_sha256')
+                or evidence.get('passed') is not True
+                or evidence.get('model_sha256') != manifest.get('model_sha256')):
+            raise ValueError('DFL parity evidence is missing, changed or belongs to another model')
+    if manifest.get('precision') not in ('fp32', 'bf16', 'xint8', 'a8w8', 'a16w8'):
         raise ValueError('Unsupported model precision')
     prep = manifest.get('preprocessing', {})
     if (not isinstance(prep, dict) or any(prep.get(k) != v for k, v in _PREPROCESSING.items())):
@@ -336,9 +413,10 @@ class TorchDetector:
             from ultralytics import YOLO
             model = YOLO(str(model_path))
         self.model, self.device, self.imgsz, self.rect = model, device, imgsz, rect
+        self.input_size = [imgsz, imgsz] if isinstance(imgsz, int) else list(imgsz)
         self.names = rover_model_names(model.names)
         self.metadata = {'backend': 'torch', 'model': str(model_path) if model_path else 'injected_model',
-                         'precision': 'fp32', 'input_size': [imgsz, imgsz], 'device': str(device),
+                         'precision': 'fp32', 'input_size': self.input_size, 'device': str(device),
                          'class_names': list(self.names.values())}
         if model_path is not None and Path(model_path).is_file():
             digest = sha256_file(model_path)
@@ -363,7 +441,7 @@ class TorchDetector:
         return DetectionResult(rows, timings)
 
     def warmup(self):
-        return self.detect(np.zeros((self.imgsz, self.imgsz, 3), dtype=np.uint8))
+        return self.detect(np.zeros((*self.input_size, 3), dtype=np.uint8))
 
 
 class OnnxDetector:
@@ -404,12 +482,21 @@ class OnnxDetector:
                          'input_size': list(self.input_size), 'model_sha256': self.manifest['model_sha256'],
                          'source_checkpoint_sha256': self.manifest['source_checkpoint_sha256'],
                          'class_names': list(self.names.values()),
+                         'output_format': self.manifest['output_format'],
+                         'decoder': self.manifest.get('decoder'),
+                         'runtime_options': dict(self.manifest.get('runtime_options', {})),
                          'runtime_fingerprint': fingerprint, 'cache_key': self.cache_key,
                          'cache_dir': str(self.cache_dir), 'providers': [],
                          'operator_assignment': None, 'proof_state': 'unverified',
                          'computation_offload_verified': False, 'compute_offload': compute_offload(None),
                          'execution_providers_seen': [], 'profile_path': None}
         session_options = ort.SessionOptions()
+        runtime_options = self.metadata['runtime_options']
+        if 'intra_op_num_threads' in runtime_options:
+            session_options.intra_op_num_threads = runtime_options['intra_op_num_threads']
+        if 'allow_spinning' in runtime_options:
+            session_options.add_session_config_entry('session.intra_op.allow_spinning',
+                                                     '1' if runtime_options['allow_spinning'] else '0')
         session_options.log_severity_level = 1 if backend == 'npu' else 2
         session_options.enable_profiling = backend == 'npu'
         if backend == 'npu':
