@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/arm_description/launch/sim_move_group.launch.py

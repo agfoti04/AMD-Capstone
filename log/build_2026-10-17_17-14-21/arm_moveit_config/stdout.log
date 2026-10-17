@@ -1,0 +1,49 @@
+-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /root/Capstone/AMD-Capstone/build/arm_moveit_config
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/ament_index/resource_index/package_run_dependencies/arm_moveit_config
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/ament_index/resource_index/parent_prefix_path/arm_moveit_config
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/environment/ament_prefix_path.sh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/environment/ament_prefix_path.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/environment/path.sh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/environment/path.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/local_setup.bash
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/local_setup.sh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/local_setup.zsh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/local_setup.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/ament_index/resource_index/packages/arm_moveit_config
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/cmake/arm_moveit_configConfig.cmake
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/cmake/arm_moveit_configConfig-version.cmake
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.xml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/demo.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/move_group.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/moveit_rviz.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/rsp.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/setup_assistant.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/sim_move_group.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/spawn_controllers.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/static_virtual_joint_tfs.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/warehouse_db.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/.setup_assistant
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/demo.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/move_group.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/moveit_rviz.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/rsp.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/setup_assistant.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/sim_move_group.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/spawn_controllers.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/static_virtual_joint_tfs.launch.py
+-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/warehouse_db.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/config/arm_description.srdf
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/config/joint_limits.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/config/kinematics.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/config/moveit.rviz
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/config/moveit_controllers.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/config/pilz_cartesian_limits.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/config/sensors_3d.yaml

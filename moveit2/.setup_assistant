@@ -5,6 +5,6 @@ moveit_setup_assistant_config:
   srdf:
     relative_path: config/arm_description.srdf
   package_settings:
-    author_name: ""
-    author_email: ""
-    generated_timestamp: 1792097246
+    author_name: Anthony
+    author_email: a.g.foti1@gmail.com
+    generated_timestamp: 1792098410
