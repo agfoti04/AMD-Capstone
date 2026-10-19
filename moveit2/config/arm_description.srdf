@@ -16,7 +16,7 @@
         <joint name="Joint_4"/>
         <joint name="Joint_3"/>
         <joint name="Joint_6"/>
-        <joint name="Joint_Gripper"/>
+        
     </group>
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="virtual_joint" type="fixed" parent_frame="world" child_link="base_link"/>
