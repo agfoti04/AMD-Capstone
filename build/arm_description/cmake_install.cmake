@@ -58,6 +58,14 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/arm_description" TYPE PROGRAM RENAME "pick_place" FILES "/root/Capstone/AMD-Capstone/arm_description/src/pick_place.py")
 endif()
 
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/arm_description" TYPE PROGRAM RENAME "goto_xyz" FILES "/root/Capstone/AMD-Capstone/arm_description/src/goto_xyz.py")
+endif()
+
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/arm_description" TYPE PROGRAM RENAME "scene_setup" FILES "/root/Capstone/AMD-Capstone/arm_description/src/scene_setup.py")
+endif()
+
 if(CMAKE_INSTALL_COMPONENT)
   set(CMAKE_INSTALL_MANIFEST "install_manifest_${CMAKE_INSTALL_COMPONENT}.txt")
 else()

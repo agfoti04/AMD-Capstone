@@ -48,6 +48,10 @@ install(PROGRAMS src/pick_place.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME pick_place)
 
+install(PROGRAMS src/goto_xyz.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME goto_xyz)
 
+  install(PROGRAMS src/scene_setup.py DESTINATION lib/${PROJECT_NAME} RENAME scene_setup)
 
   ament_package()

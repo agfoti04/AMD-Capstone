@@ -129,6 +129,42 @@
 				"file" : 6,
 				"line" : 39,
 				"parent" : 18
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 51,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 20
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 21
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 55,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 23
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 24
 			}
 		]
 	},
@@ -175,6 +211,32 @@
 				{
 					"from" : "src/pick_place.py",
 					"to" : "pick_place"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/goto_xyz.py",
+					"to" : "goto_xyz"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/scene_setup.py",
+					"to" : "scene_setup"
 				}
 			],
 			"type" : "file"
