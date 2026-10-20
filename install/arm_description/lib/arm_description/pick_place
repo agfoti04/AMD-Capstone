@@ -7,53 +7,28 @@ import rclpy
 from control_msgs.action import FollowJointTrajectory
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from moveit_msgs.srv import GetPositionIK
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 ARM_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
 GRIPPER = 'Joint_Gripper'
+GROUP, TIP, FRAME = 'arm', 'EE_Gripper_Link', 'base_link'
 
 GRIPPER_EFFORT_LIMIT = 1.0
 GRIP_OPEN_EFFORT = -GRIPPER_EFFORT_LIMIT
 GRIP_CLOSE_EFFORT = GRIPPER_EFFORT_LIMIT
 GRIPPER_SETTLE_SECONDS = 0.5
-LO, HI = -1.57, 1.57            # limits of Joint_2..Joint_4
-
-# ---- Geometry in the arm's x-z plane (meters), from the repo URDF. ----
-# Joint_5 was removed, so TOOL assumes its 0.0345 m offset was merged into
-# Link_4 -> Link_6 (0.0345 + 0.0577) plus 0.05 to EE_Gripper_Link.
-# VERIFY with tf2_echo (see notes) and edit these if it disagrees.
-SHOULDER_Z = 0.052099975 + 0.054100025   # Joint_2 height above base_link
-J3_OFF = (0.0318, 0.1125)                # Joint_2 -> Joint_3, in Link_2 frame
-J4_OFF = (0.1378, 0.00016506)            # Joint_3 -> Joint_4, in Link_3 frame
-TOOL = (0.0922 + 0.05, -0.00755)         # Joint_4 -> gripper tip, in Link_4 frame
 
 # ---- Task tuning ----
 PRE_HEIGHT = 0.06       # m above the grasp point for approach and lift
-APPROACH_DEG = (90, 75, 60, 45, 30)   # tool pitch to try; 90 = straight down
-ROLL = 0.0              # Joint_6 angle; rotates the jaws about the tool axis
 SPEED = 0.4             # rad/s used to time moves
 HOME = [0.0, 0.0, 0.0, 0.0, 0.0]
-ROD_PICK = (0.38, 0.0, 0.06)
+ROD_PICK = (0.25, 0.0, 0.06)
 ROD_PLACE = (0.25, 0.15, 0.06)
 ROD_PREGRASP_DISTANCE = 0.06
 ROD_LIFT_HEIGHT = 0.06
-ROD_TOOL_PITCH = 0.0
-ROD_ROLL = math.pi / 2
-
-
-def rot(th, x, z):
-    """Rotate a point in the x-z plane about +y (the pitch axis)."""
-    return x * np.cos(th) + z * np.sin(th), -x * np.sin(th) + z * np.cos(th)
-
-
-def fk(q2, q3, q4):
-    """Planar tip position (reach, height) from the three pitch joints."""
-    ax, az = rot(q2, *J3_OFF)
-    bx, bz = rot(q2 + q3, *J4_OFF)
-    cx, cz = rot(q2 + q3 + q4, *TOOL)
-    return ax + bx + cx, SHOULDER_Z + az + bz + cz
 
 
 class PickPlace(Node):
@@ -61,6 +36,7 @@ class PickPlace(Node):
         super().__init__('pick_place')
         self.pos = {}
         self.request = None
+        self.ik_client = self.create_client(GetPositionIK, '/compute_ik')
         self.create_subscription(JointState, '/joint_states', self._on_state, 10)
         self.create_subscription(
             Float64MultiArray, '/pick_place', self._on_request, 10)
@@ -88,49 +64,56 @@ class PickPlace(Node):
         self.request = list(msg.data)
 
     # ---------- kinematics ----------
-    def ik(self, x, y, z, phi, prev, roll=ROLL):
-        """Return [q1, q2, q3, q4, q6] or None. phi is tool pitch (down = +)."""
-        r = math.hypot(x, y)
-        q = np.arange(LO, HI + 1e-6, 0.01)
-        Q2, Q3 = np.meshgrid(q, q)
-        Q4 = phi - Q2 - Q3
-        tx, tz = fk(Q2, Q3, Q4)
-        err = np.hypot(tx - r, tz - z)
-        cost = err * 50 + 0.1 * (np.abs(Q2 - prev[1]) + np.abs(Q3 - prev[2])
-                                 + np.abs(Q4 - prev[3]))
-        cost[(Q4 < LO) | (Q4 > HI)] = np.inf
-        i = np.unravel_index(np.argmin(cost), cost.shape)
-        if not np.isfinite(cost[i]) or err[i] > 0.006:
+    def ik(self, x, y, z, previous):
+        """Solve for the current URDF using the configured position-only IK."""
+        request = GetPositionIK.Request()
+        ik_request = request.ik_request
+        ik_request.group_name = GROUP
+        ik_request.ik_link_name = TIP
+        ik_request.avoid_collisions = True
+        ik_request.timeout.sec = 0
+        ik_request.timeout.nanosec = 200_000_000
+        ik_request.pose_stamped.header.frame_id = FRAME
+        ik_request.pose_stamped.pose.position.x = x
+        ik_request.pose_stamped.pose.position.y = y
+        ik_request.pose_stamped.pose.position.z = z
+        ik_request.pose_stamped.pose.orientation.w = 1.0
+        ik_request.robot_state.is_diff = True
+        ik_request.robot_state.joint_state.name = list(ARM_JOINTS)
+        ik_request.robot_state.joint_state.position = previous
+
+        future = self.ik_client.call_async(request)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        response = future.result()
+        if response is None or response.error_code.val != 1:
             return None
-        return [math.atan2(y, x), float(Q2[i]), float(Q3[i]), float(Q4[i]), roll]
+        solution = dict(zip(response.solution.joint_state.name,
+                            response.solution.joint_state.position))
+        if any(joint not in solution for joint in ARM_JOINTS):
+            self.get_logger().error('IK solution omitted one or more arm joints')
+            return None
+        return [float(solution[joint]) for joint in ARM_JOINTS]
 
     def plan_vertical(self, x, y, z_low, z_high, prev):
-        """Waypoints from z_high down to z_low at one approach angle."""
-        for deg in APPROACH_DEG:
-            phi = math.radians(deg)
-            wps, p, ok = [], prev, True
-            for z in np.linspace(z_high, z_low, 4):
-                sol = self.ik(x, y, float(z), phi, p)
-                if sol is None:
-                    ok = False
-                    break
-                wps.append(sol)
-                p = sol
-            if ok:
-                self.get_logger().info(
-                    f'({x:.2f},{y:.2f}) reachable with tool pitch {deg} deg')
-                return wps
-        return None
+        """Plan position waypoints, seeding each IK solve from the previous one."""
+        waypoints, previous = [], prev
+        for z in np.linspace(z_high, z_low, 4):
+            solution = self.ik(x, y, float(z), previous)
+            if solution is None:
+                return None
+            waypoints.append(solution)
+            previous = solution
+        return waypoints
 
-    def plan_line(self, start, end, phi, prev, roll=ROLL):
-        """Plan Cartesian waypoints between two positions at a fixed tool pitch."""
+    def plan_line(self, start, end, prev):
+        """Plan Cartesian position waypoints with seeded IK."""
         waypoints, previous = [], prev
         for fraction in np.linspace(0.0, 1.0, 4):
             point = [
                 start[i] + float(fraction) * (end[i] - start[i])
                 for i in range(3)
             ]
-            solution = self.ik(point[0], point[1], point[2], phi, previous, roll)
+            solution = self.ik(point[0], point[1], point[2], previous)
             if solution is None:
                 return None
             waypoints.append(solution)
@@ -239,28 +222,23 @@ class PickPlace(Node):
         place = (qx, qy, qz)
         place_lift = (qx, qy, qz + ROD_LIFT_HEIGHT)
 
-        approach_path = self.plan_line(
-            pregrasp, pick, ROD_TOOL_PITCH, self.arm_now(), ROD_ROLL)
+        approach_path = self.plan_line(pregrasp, pick, self.arm_now())
         if approach_path is None:
             self.get_logger().error('Rod midpoint approach is unreachable')
             return
-        lift_path = self.plan_line(
-            pick, lift, ROD_TOOL_PITCH, approach_path[-1], ROD_ROLL)
+        lift_path = self.plan_line(pick, lift, approach_path[-1])
         if lift_path is None:
             self.get_logger().error('Rod lift path is unreachable')
             return
-        carry_path = self.plan_line(
-            lift, place_lift, ROD_TOOL_PITCH, lift_path[-1], ROD_ROLL)
+        carry_path = self.plan_line(lift, place_lift, lift_path[-1])
         if carry_path is None:
             self.get_logger().error('Rod carry path is unreachable')
             return
-        lower_path = self.plan_line(
-            place_lift, place, ROD_TOOL_PITCH, carry_path[-1], ROD_ROLL)
+        lower_path = self.plan_line(place_lift, place, carry_path[-1])
         if lower_path is None:
             self.get_logger().error('Rod set-down path is unreachable')
             return
-        retreat_path = self.plan_line(
-            place, place_lift, ROD_TOOL_PITCH, lower_path[-1], ROD_ROLL)
+        retreat_path = self.plan_line(place, place_lift, lower_path[-1])
         if retreat_path is None:
             self.get_logger().error('Rod retreat path is unreachable')
             return
@@ -287,6 +265,9 @@ class PickPlace(Node):
         self.get_logger().info('Waiting for joint states and controller...')
         while rclpy.ok() and not set(ARM_JOINTS + (GRIPPER,)).issubset(self.pos):
             rclpy.spin_once(self, timeout_sec=0.1)
+        if not self.ik_client.wait_for_service(timeout_sec=10.0):
+            self.get_logger().error('MoveIt /compute_ik service is not available')
+            return
         self.client.wait_for_server()
         while rclpy.ok() and self.grip_pub.get_subscription_count() == 0:
             rclpy.spin_once(self, timeout_sec=0.1)

@@ -1,0 +1,233 @@
+<?xml version="1.0"?>
+<robot name="arm_description">
+  <link name="world"/>
+  <joint name="world_fixed" type="fixed">
+    <parent link="world"/><child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.06074408 0 0.03974999"/>
+      <mass value="0.125319388"/>
+      <inertia ixx="0.000333352169" ixy="0" ixz="0"
+               iyy="0.000901895184" iyz="0" izz="0.001103239047"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.006903"/>
+      <geometry><mesh filename="package://arm_description/meshes/base.stl"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.006903"/>
+      <geometry><mesh filename="package://arm_description/meshes/base.stl"/></geometry>
+    </collision>
+  </link>
+  <link name="shoulder_link">
+    <inertial>
+      <origin xyz="-0.00071377 0 0.02010688"/>
+      <mass value="0.048346936"/>
+      <inertia ixx="0.000032567811" ixy="0" ixz="0"
+               iyy="0.000032568110" iyz="0" izz="0.000052867674"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/shoulder.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/shoulder.stl"/></geometry></collision>
+  </link>
+  <link name="humerus_link">
+    <inertial>
+      <origin xyz="0.00021355 -0.00054000 0.05259709"/>
+      <mass value="0.019435509"/>
+      <inertia ixx="0.000032031340" ixy="0" ixz="0"
+               iyy="0.000027964460" iyz="0" izz="0.000006091413"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/humerus.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/humerus.stl"/></geometry></collision>
+  </link>
+  <link name="forearm_link">
+    <inertial>
+      <origin xyz="-0.00003645 0 0.04562231"/>
+      <mass value="0.041741760"/>
+      <inertia ixx="0.000053758808" ixy="0" ixz="0"
+               iyy="0.000045024344" iyz="0" izz="0.000013082564"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/forearm.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/forearm.stl"/></geometry></collision>
+  </link>
+  <link name="wrist_link">
+    <inertial>
+      <origin xyz="0.00986355 0.00054992 0.02406786"/>
+      <mass value="0.031196209"/>
+      <inertia ixx="0.000018547630" ixy="0" ixz="0"
+               iyy="0.000021977992" iyz="0" izz="0.000014241720"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/wrist.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/wrist.stl"/></geometry></collision>
+  </link>
+  <link name="hand_link">
+    <inertial>
+      <origin xyz="0.01615504 -0.00431014 0.02776795"/>
+      <mass value="0.017184899"/>
+      <inertia ixx="0.000008924167" ixy="0" ixz="0"
+               iyy="0.000008729011" iyz="0" izz="0.000008671204"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/hand.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/hand.stl"/></geometry></collision>
+  </link>
+  <link name="grip_left_link">
+    <inertial>
+      <origin xyz="-0.00029495 -0.00139186 0.00928137"/>
+      <mass value="0.002192063"/>
+      <inertia ixx="0.000000588817" ixy="0" ixz="0"
+               iyy="0.000000449149" iyz="0" izz="0.000000142956"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/carpal-left.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/carpal-left.stl"/></geometry></collision>
+  </link>
+  <link name="grip_right_link">
+    <inertial>
+      <origin xyz="0.00458001 0.00163531 0.00981343"/>
+      <mass value="0.002712472"/>
+      <inertia ixx="0.000000729147" ixy="0" ixz="0"
+               iyy="0.000000568082" iyz="0" izz="0.000000191833"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/carpal-right.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/carpal-right.stl"/></geometry></collision>
+  </link>
+  <link name="tendon_left_link">
+    <inertial>
+      <origin xyz="0.00004495 -0.00008102 0.01451009"/>
+      <mass value="0.000776811"/>
+      <inertia ixx="0.000000087159" ixy="0" ixz="0"
+               iyy="0.000000093216" iyz="0" izz="0.000000012587"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></collision>
+  </link>
+  <link name="tendon_right_link">
+    <inertial>
+      <origin xyz="0.00004495 -0.00008102 0.01451009"/>
+      <mass value="0.000776811"/>
+      <inertia ixx="0.000000087159" ixy="0" ixz="0"
+               iyy="0.000000093216" iyz="0" izz="0.000000012587"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></collision>
+  </link>
+  <link name="finger_left_link">
+    <inertial>
+      <origin xyz="0.00004495 -0.00517681 0.02470886"/>
+      <mass value="0.003005459"/>
+      <inertia ixx="0.000000986502" ixy="0" ixz="0"
+               iyy="0.000000890885" iyz="0" izz="0.000000113650"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry></collision>
+  </link>
+  <link name="finger_right_link">
+    <inertial>
+      <origin xyz="-0.00004495 0.00517681 0.02470886"/>
+      <mass value="0.003005459"/>
+      <inertia ixx="0.000000986502" ixy="0" ixz="0"
+               iyy="0.000000890885" iyz="0" izz="0.000000113650"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 3.14159"/>
+      <geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 3.14159"/>
+      <geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry>
+    </collision>
+  </link>
+  <link name="EE_Gripper_Link"/>
+
+  <joint name="Joint_1" type="revolute">
+    <parent link="base_link"/><child link="shoulder_link"/>
+    <origin xyz="0 0 0.059"/><axis xyz="0 0 1"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="Joint_2" type="revolute">
+    <parent link="shoulder_link"/><child link="humerus_link"/>
+    <origin xyz="-0.010 0 0.028"/><axis xyz="0 1 0"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="Joint_3" type="revolute">
+    <parent link="humerus_link"/><child link="forearm_link"/>
+    <origin xyz="0 0 0.105"/><axis xyz="0 -1 0"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="Joint_4" type="revolute">
+    <parent link="forearm_link"/><child link="wrist_link"/>
+    <origin xyz="0 0 0.090"/><axis xyz="0 -1 0"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="Joint_6" type="revolute">
+    <parent link="wrist_link"/><child link="hand_link"/>
+    <origin xyz="0 0 0.060"/><axis xyz="0 0 1"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="Joint_Gripper" type="fixed">
+  <parent link="hand_link"/><child link="grip_left_link"/>
+  <origin rpy="-1.57 0 0" xyz="0 0.015 0.030"/>
+</joint>
+<joint name="grip_right" type="fixed">
+  <parent link="hand_link"/><child link="grip_right_link"/>
+  <origin rpy="1.57 0 0" xyz="0 -0.015 0.030"/>
+</joint>
+<joint name="tendon_left" type="fixed">
+  <parent link="hand_link"/><child link="tendon_left_link"/>
+  <origin rpy="-1.57 0 0" xyz="0 0.005 0.050"/>
+</joint>
+<joint name="tendon_right" type="fixed">
+  <parent link="hand_link"/><child link="tendon_right_link"/>
+  <origin rpy="1.57 0 0" xyz="0 -0.005 0.050"/>
+</joint>
+<joint name="finger_left" type="fixed">
+  <parent link="grip_left_link"/><child link="finger_left_link"/>
+  <origin rpy="1.57 0 0" xyz="0 0 0.030"/>
+</joint>
+<joint name="finger_right" type="fixed">
+  <parent link="grip_right_link"/><child link="finger_right_link"/>
+  <origin rpy="-1.57 0 0" xyz="0 0 0.030"/>
+</joint>
+  <joint name="EE_Gripper_Joint" type="fixed">
+    <parent link="hand_link"/><child link="EE_Gripper_Link"/>
+    <origin xyz="0 0 0.056"/>
+  </joint>
+
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware><plugin>gazebo_ros2_control/GazeboSystem</plugin></hardware>
+    <joint name="Joint_1">
+      <command_interface name="position"/>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
+    <joint name="Joint_2">
+      <command_interface name="position"/>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
+    <joint name="Joint_3">
+      <command_interface name="position"/>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
+    <joint name="Joint_4">
+      <command_interface name="position"/>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
+    <joint name="Joint_6">
+      <command_interface name="position"/>
+      <state_interface name="position"/><state_interface name="velocity"/>
+    </joint>
+    
+  </ros2_control>
+  <gazebo>
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <parameters>$(find arm_description)/config/controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+  <gazebo reference="grip_left_link">
+    <mu1>10.0</mu1><mu2>10.0</mu2><kp>1e5</kp><kd>10</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+  <gazebo reference="grip_right_link">
+    <mu1>10.0</mu1><mu2>10.0</mu2><kp>1e5</kp><kd>10</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+</robot>

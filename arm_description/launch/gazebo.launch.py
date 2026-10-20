@@ -29,9 +29,9 @@ def generate_launch_description():
     spawn = Node(package='gazebo_ros', executable='spawn_entity.py', output='screen',
                  arguments=['-topic', 'robot_description', '-entity', 'six_servo_arm'])
 
-    rod = Node(package='gazebo_ros', executable='spawn_entity.py', output='screen',
-           arguments=['-file', os.path.join(pkg, 'models', 'rod.sdf'),
-                      '-entity', 'rod'])
+    # rod = Node(package='gazebo_ros', executable='spawn_entity.py', output='screen',
+    #        arguments=['-file', os.path.join(pkg, 'models', 'rod.sdf'),
+    #                   '-entity', 'rod'])
 
     
 
@@ -52,8 +52,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         SetEnvironmentVariable('GAZEBO_MODEL_PATH', gazebo_model_path),
-        gazebo, rsp, spawn, rod, 
+        gazebo, rsp, spawn,
         RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[jsb])),
         RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[arm])),
-        RegisterEventHandler(OnProcessExit(target_action=arm, on_exit=[grip])),
+        
     ])

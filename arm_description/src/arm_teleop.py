@@ -24,12 +24,12 @@ ARM_JOINTS = (
 GRIPPER = 'Joint_Gripper'
 GRIPPER_EFFORT_LIMIT = 1.0
 CONTROLLED_JOINTS = ARM_JOINTS
-# Bounded joints only; continuous Joint_1 intentionally has no entry.
 JOINT_LIMITS = {
+    'Joint_1': (-1.57, 1.57),
     'Joint_2': (-1.57, 1.57),
     'Joint_3': (-1.57, 1.57),
     'Joint_4': (-1.57, 1.57),
-    'Joint_6': (-3.14, 3.14),
+    'Joint_6': (-1.57, 1.57),
 }
 KEY_BINDINGS = {
     'q': ('Joint_1', 1),
@@ -42,8 +42,7 @@ KEY_BINDINGS = {
     'f': ('Joint_4', -1),
     'y': ('Joint_6', 1),
     'h': ('Joint_6', -1),
-    'u': (GRIPPER, -1),
-    'j': (GRIPPER, 1),
+
 }
 STEP_RADIANS = 0.02
 MOVE_DURATION_SECONDS = 0.3
@@ -62,9 +61,9 @@ class ArmTeleop(Node):
         self.arm_publisher = self.create_publisher(
             JointTrajectory, '/arm_controller/joint_trajectory', 10
         )
-        self.gripper_publisher = self.create_publisher(
-            Float64MultiArray, '/gripper_controller/commands', 10
-        )
+        # self.gripper_publisher = self.create_publisher(
+        #     Float64MultiArray, '/gripper_controller/commands', 10
+        # )
 
     def _on_joint_state(self, message):
         for name, position in zip(message.name, message.position):
@@ -95,7 +94,7 @@ class ArmTeleop(Node):
         deadline = time.monotonic() + CONTROLLER_TIMEOUT_SECONDS
         while (
             self.arm_publisher.get_subscription_count() == 0
-            or self.gripper_publisher.get_subscription_count() == 0
+            
         ):
             if time.monotonic() >= deadline:
                 raise RuntimeError(
@@ -106,25 +105,25 @@ class ArmTeleop(Node):
 
     def jog(self, joint_name, direction):
         publisher = (
-            self.gripper_publisher
-            if joint_name == GRIPPER
-            else self.arm_publisher
+            #self.gripper_publisher
+            # if joint_name == GRIPPER
+            self.arm_publisher
         )
         if publisher.get_subscription_count() == 0:
             raise RuntimeError(
                 f'No active controller is subscribed for {joint_name}.'
             )
 
-        if joint_name == GRIPPER:
-            effort = direction * GRIPPER_EFFORT_LIMIT
-            self.gripper_publisher.publish(Float64MultiArray(data=[effort]))
-            action = 'opening' if effort < 0 else 'closing'
-            print(
-                f'\rGripper {action} at {abs(effort):.1f} effort '
-                '(latched; press the other gripper key or x to stop)     ',
-                end='', flush=True,
-            )
-            return
+        # if joint_name == GRIPPER:
+        #     effort = direction * GRIPPER_EFFORT_LIMIT
+        #     self.gripper_publisher.publish(Float64MultiArray(data=[effort]))
+        #     action = 'opening' if effort < 0 else 'closing'
+        #     print(
+        #         f'\rGripper {action} at {abs(effort):.1f} effort '
+        #         '(latched; press the other gripper key or x to stop)     ',
+        #         end='', flush=True,
+        #     )
+        #     return
 
         requested = self.joint_positions[joint_name] + direction * STEP_RADIANS
         limits = JOINT_LIMITS.get(joint_name)
@@ -207,9 +206,9 @@ def main():
         if str(error):
             print(f'\nTeleop stopped: {error}', file=sys.stderr)
     finally:
-        if node.gripper_publisher.get_subscription_count() > 0:
-            node.gripper_publisher.publish(Float64MultiArray(data=[0.0]))
-            rclpy.spin_once(node, timeout_sec=0.05)
+        # if node.gripper_publisher.get_subscription_count() > 0:
+        #     node.gripper_publisher.publish(Float64MultiArray(data=[0.0]))
+        #     rclpy.spin_once(node, timeout_sec=0.05)
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

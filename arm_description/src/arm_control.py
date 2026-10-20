@@ -14,13 +14,13 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 ARM_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
 GRIPPER = 'Joint_Gripper'
 GRIPPER_EFFORT_LIMIT = 1.0
-# Keep aligned with the limits in urdf/arm.urdf.xacro
+# Keep aligned with the limits in urdf/new_arm.urdf.xacro
 LIMITS = {
-    'Joint_1': (-3.14, 3.14),
+    'Joint_1': (-1.57, 1.57),
     'Joint_2': (-1.57, 1.57),
     'Joint_3': (-1.57, 1.57),
     'Joint_4': (-1.57, 1.57),
-    'Joint_6': (-3.14, 3.14),
+    'Joint_6': (-1.57, 1.57),
 }
 SPEED = 0.5            # rad/s used to size each move
 MIN_MOVE_S = 0.5
