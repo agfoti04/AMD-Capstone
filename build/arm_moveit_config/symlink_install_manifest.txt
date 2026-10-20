@@ -19,6 +19,7 @@
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/rsp.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/setup_assistant.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/sim_move_group.launch.py
+/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/single_arm_demo.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/spawn_controllers.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/static_virtual_joint_tfs.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/warehouse_db.launch.py
@@ -29,6 +30,7 @@
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/rsp.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/setup_assistant.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/sim_move_group.launch.py
+/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/single_arm_demo.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/spawn_controllers.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/static_virtual_joint_tfs.launch.py
 /root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/launch/warehouse_db.launch.py
