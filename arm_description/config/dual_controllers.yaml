@@ -1,0 +1,42 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    use_sim_time: true
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    left_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    right_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+    left_gripper_controller:
+      type: position_controllers/JointGroupPositionController
+    right_gripper_controller:
+      type: position_controllers/JointGroupPositionController
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+
+left_arm_controller:
+  ros__parameters:
+    joints: [left_Joint_1, left_Joint_2, left_Joint_3, left_Joint_4, left_Joint_6]
+    command_interfaces: [position]
+    state_interfaces: [position, velocity]
+    use_sim_time: true
+
+right_arm_controller:
+  ros__parameters:
+    joints: [right_Joint_1, right_Joint_2, right_Joint_3, right_Joint_4, right_Joint_6]
+    command_interfaces: [position]
+    state_interfaces: [position, velocity]
+    use_sim_time: true
+
+left_gripper_controller:
+  ros__parameters:
+    joints: [left_Joint_Gripper, left_grip_right, left_tendon_left, left_tendon_right, left_finger_left, left_finger_right]
+    use_sim_time: true
+
+right_gripper_controller:
+  ros__parameters:
+    joints: [right_Joint_Gripper, right_grip_right, right_tendon_left, right_tendon_right, right_finger_left, right_finger_right]
+    use_sim_time: true

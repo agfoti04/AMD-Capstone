@@ -1,0 +1,54 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /root/Capstone/AMD-Capstone/build/dual_moveit
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/package_run_dependencies/dual_moveit
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/parent_prefix_path/dual_moveit
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/ament_prefix_path.sh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/ament_prefix_path.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/path.sh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/path.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.bash
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.sh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.zsh
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/package.dsv
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/packages/dual_moveit
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/cmake/dual_moveitConfig.cmake
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/cmake/dual_moveitConfig-version.cmake
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/package.xml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/demo.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/move_group.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/moveit_rviz.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/rsp.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/setup_assistant.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/spawn_controllers.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/static_virtual_joint_tfs.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/warehouse_db.launch.py
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.ros2_control.xacro
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.srdf
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.urdf.xacro
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/initial_positions.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/joint_limits.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/kinematics.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/moveit.rviz
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/moveit_controllers.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/pilz_cartesian_limits.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/ros2_controllers.yaml
+-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/.setup_assistant

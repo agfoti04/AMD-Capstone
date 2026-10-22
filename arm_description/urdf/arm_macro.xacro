@@ -1,0 +1,282 @@
+<?xml version="1.0"?>
+<!-- One arm as a reusable macro. Every link and joint name gets ${prefix} in front of it,
+     so two arms can live in one robot description without name clashes.
+     Geometry, limits, inertias and meshes are copied unchanged from new_arm_urdf.xacro. -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="arm" params="prefix parent *origin">
+    <joint name="${prefix}base_joint" type="fixed">
+      <parent link="${parent}"/><child link="${prefix}base_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+
+  <link name="${prefix}base_link">
+    <inertial>
+      <origin xyz="-0.06074408 0 0.03974999"/>
+      <mass value="0.125319388"/>
+      <inertia ixx="0.000333352169" ixy="0" ixz="0"
+               iyy="0.000901895184" iyz="0" izz="0.001103239047"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.006903"/>
+      <geometry><mesh filename="package://arm_description/meshes/base.stl"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.006903"/>
+      <geometry><mesh filename="package://arm_description/meshes/base.stl"/></geometry>
+    </collision>
+  </link>
+  <link name="${prefix}shoulder_link">
+    <inertial>
+      <origin xyz="-0.00071377 0 0.02010688"/>
+      <mass value="0.048346936"/>
+      <inertia ixx="0.000032567811" ixy="0" ixz="0"
+               iyy="0.000032568110" iyz="0" izz="0.000052867674"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/shoulder.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/shoulder.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}humerus_link">
+    <inertial>
+      <origin xyz="0.00021355 -0.00054000 0.05259709"/>
+      <mass value="0.019435509"/>
+      <inertia ixx="0.000032031340" ixy="0" ixz="0"
+               iyy="0.000027964460" iyz="0" izz="0.000006091413"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/humerus.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/humerus.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}forearm_link">
+    <inertial>
+      <origin xyz="-0.00003645 0 0.04562231"/>
+      <mass value="0.041741760"/>
+      <inertia ixx="0.000053758808" ixy="0" ixz="0"
+               iyy="0.000045024344" iyz="0" izz="0.000013082564"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/forearm.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/forearm.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}wrist_link">
+    <inertial>
+      <origin xyz="0.00986355 0.00054992 0.02406786"/>
+      <mass value="0.031196209"/>
+      <inertia ixx="0.000018547630" ixy="0" ixz="0"
+               iyy="0.000021977992" iyz="0" izz="0.000014241720"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/wrist.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/wrist.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}hand_link">
+    <inertial>
+      <origin xyz="0.01615504 -0.00431014 0.02776795"/>
+      <mass value="0.017184899"/>
+      <inertia ixx="0.000008924167" ixy="0" ixz="0"
+               iyy="0.000008729011" iyz="0" izz="0.000008671204"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/hand.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/hand.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}grip_left_link">
+    <inertial>
+      <origin xyz="-0.00029495 -0.00139186 0.00928137"/>
+      <mass value="0.002192063"/>
+      <inertia ixx="0.000000588817" ixy="0" ixz="0"
+               iyy="0.000000449149" iyz="0" izz="0.000000142956"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/carpal-left.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/carpal-left.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}grip_right_link">
+    <inertial>
+      <origin xyz="0.00458001 0.00163531 0.00981343"/>
+      <mass value="0.002712472"/>
+      <inertia ixx="0.000000729147" ixy="0" ixz="0"
+               iyy="0.000000568082" iyz="0" izz="0.000000191833"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/carpal-right.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/carpal-right.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}tendon_left_link">
+    <inertial>
+      <origin xyz="0.00004495 -0.00008102 0.01451009"/>
+      <mass value="0.000776811"/>
+      <inertia ixx="0.000000087159" ixy="0" ixz="0"
+               iyy="0.000000093216" iyz="0" izz="0.000000012587"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}tendon_right_link">
+    <inertial>
+      <origin xyz="0.00004495 -0.00008102 0.01451009"/>
+      <mass value="0.000776811"/>
+      <inertia ixx="0.000000087159" ixy="0" ixz="0"
+               iyy="0.000000093216" iyz="0" izz="0.000000012587"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}finger_left_link">
+    <inertial>
+      <origin xyz="0.00004495 -0.00517681 0.02470886"/>
+      <mass value="0.003005459"/>
+      <inertia ixx="0.000000986502" ixy="0" ixz="0"
+               iyy="0.000000890885" iyz="0" izz="0.000000113650"/>
+    </inertial>
+    <visual><geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry></visual>
+    <collision><geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry></collision>
+  </link>
+  <link name="${prefix}finger_right_link">
+    <inertial>
+      <origin xyz="-0.00004495 0.00517681 0.02470886"/>
+      <mass value="0.003005459"/>
+      <inertia ixx="0.000000986502" ixy="0" ixz="0"
+               iyy="0.000000890885" iyz="0" izz="0.000000113650"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 3.14159"/>
+      <geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 3.14159"/>
+      <geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry>
+    </collision>
+  </link>
+  <link name="${prefix}EE_Gripper_Link"/>
+
+  <joint name="${prefix}Joint_1" type="revolute">
+    <parent link="${prefix}base_link"/><child link="${prefix}shoulder_link"/>
+    <origin xyz="0 0 0.059"/><axis xyz="0 0 1"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="${prefix}Joint_2" type="revolute">
+    <parent link="${prefix}shoulder_link"/><child link="${prefix}humerus_link"/>
+    <origin xyz="-0.010 0 0.028"/><axis xyz="0 1 0"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="${prefix}Joint_3" type="revolute">
+    <parent link="${prefix}humerus_link"/><child link="${prefix}forearm_link"/>
+    <origin xyz="0 0 0.105"/><axis xyz="0 -1 0"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="${prefix}Joint_4" type="revolute">
+    <parent link="${prefix}forearm_link"/><child link="${prefix}wrist_link"/>
+    <origin xyz="0 0 0.090"/><axis xyz="0 -1 0"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="${prefix}Joint_6" type="revolute">
+    <parent link="${prefix}wrist_link"/><child link="${prefix}hand_link"/>
+    <origin xyz="0 0 0.060"/><axis xyz="0 0 1"/>
+    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+  </joint>
+  <joint name="${prefix}Joint_Gripper" type="revolute">
+  <parent link="${prefix}hand_link"/><child link="${prefix}grip_left_link"/>
+  <origin rpy="-1.57 0 0" xyz="0 0.015 0.030"/><axis xyz="-1 0 0"/>
+  <limit effort="1.0" lower="-1.57" upper="0" velocity="0.5"/>
+  <dynamics damping="0.02"/>
+  </joint>
+  <joint name="${prefix}grip_right" type="revolute">
+    <parent link="${prefix}hand_link"/><child link="${prefix}grip_right_link"/>
+    <origin rpy="1.57 0 0" xyz="0 -0.015 0.030"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="0" upper="1.57" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="${prefix}tendon_left" type="revolute">
+    <parent link="${prefix}hand_link"/><child link="${prefix}tendon_left_link"/>
+    <origin rpy="-1.57 0 0" xyz="0 0.005 0.050"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="-1.57" upper="0" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="${prefix}tendon_right" type="revolute">
+    <parent link="${prefix}hand_link"/><child link="${prefix}tendon_right_link"/>
+    <origin rpy="1.57 0 0" xyz="0 -0.005 0.050"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="0" upper="1.57" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="${prefix}finger_left" type="revolute">
+    <parent link="${prefix}grip_left_link"/><child link="${prefix}finger_left_link"/>
+    <origin rpy="1.57 0 0" xyz="0 0 0.030"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="0" upper="1.57" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="${prefix}finger_right" type="revolute">
+    <parent link="${prefix}grip_right_link"/><child link="${prefix}finger_right_link"/>
+    <origin rpy="-1.57 0 0" xyz="0 0 0.030"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="-1.57" upper="0" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="${prefix}EE_Gripper_Joint" type="fixed">
+    <parent link="${prefix}hand_link"/><child link="${prefix}EE_Gripper_Link"/>
+    <origin xyz="0 0 0.056"/>
+  </joint>
+
+  <gazebo reference="${prefix}grip_left_link">
+    <mu1>10.0</mu1><mu2>10.0</mu2><kp>1e5</kp><kd>10</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+  <gazebo reference="${prefix}grip_right_link">
+    <mu1>10.0</mu1><mu2>10.0</mu2><kp>1e5</kp><kd>10</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+  </xacro:macro>
+
+  <!-- Goes INSIDE the single <ros2_control> tag of the main file, once per arm -->
+  <xacro:macro name="arm_ros2_control_joints" params="prefix">
+    <joint name="${prefix}Joint_1">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}Joint_2">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}Joint_3">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}Joint_4">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}Joint_6">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}Joint_Gripper">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}grip_right">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}tendon_left">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}tendon_right">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}finger_left">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="${prefix}finger_right">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </xacro:macro>
+
+</robot>

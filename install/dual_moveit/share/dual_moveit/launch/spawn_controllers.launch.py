@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/dual_moveit/launch/spawn_controllers.launch.py

@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/dual_moveit/launch/moveit_rviz.launch.py

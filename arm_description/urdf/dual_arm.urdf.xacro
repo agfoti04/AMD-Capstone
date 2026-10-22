@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<robot name="dual_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find arm_description)/urdf/arm_macro.xacro"/>
+
+  <xacro:arg name="arm_spacing" default="0.30"/>
+  <xacro:property name="arm_spacing" value="$(arg arm_spacing)"/>
+
+  <link name="world"/>
+
+  <xacro:arm prefix="left_" parent="world">
+    <origin xyz="0 ${arm_spacing/2} 0" rpy="0 0 0"/>
+  </xacro:arm>
+
+  <xacro:arm prefix="right_" parent="world">
+    <origin xyz="0 ${-arm_spacing/2} 0" rpy="0 0 0"/>
+  </xacro:arm>
+
+  
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware><plugin>gazebo_ros2_control/GazeboSystem</plugin></hardware>
+    <xacro:arm_ros2_control_joints prefix="left_"/>
+    <xacro:arm_ros2_control_joints prefix="right_"/>
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <parameters>$(find arm_description)/config/dual_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>

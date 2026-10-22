@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/dual_moveit/launch/setup_assistant.launch.py

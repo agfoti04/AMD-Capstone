@@ -1,0 +1,13 @@
+# Default initial positions for dual_arm's ros2_control fake system
+
+initial_positions:
+  left_Joint_1: 0
+  left_Joint_2: 0
+  left_Joint_3: 0
+  left_Joint_4: 0
+  left_Joint_6: 0
+  right_Joint_1: 0
+  right_Joint_2: 0
+  right_Joint_3: 0
+  right_Joint_4: 0
+  right_Joint_6: 0
