@@ -7,7 +7,7 @@ from moveit_msgs.srv import GetPositionIK
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
-GROUP, TIP, FRAME = 'arm', 'EE_Gripper_Link', 'base_link'
+GROUP, TIP, FRAME = 'arm', 'hand_link', 'base_link'
 ARM_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
 
 
@@ -26,7 +26,7 @@ class GotoXYZ(Node):
         req = GetPositionIK.Request()
         r = req.ik_request
         r.group_name, r.ik_link_name, r.avoid_collisions = GROUP, TIP, True
-        r.timeout.sec, r.timeout.nanosec = 0, 200_000_000
+        r.timeout.sec, r.timeout.nanosec = 1, 0
         r.pose_stamped = PoseStamped()
         r.pose_stamped.header.frame_id = FRAME
         r.pose_stamped.pose.position = p
@@ -35,6 +35,8 @@ class GotoXYZ(Node):
         rclpy.spin_until_future_complete(self, fut, timeout_sec=5.0)
         res = fut.result()
         if res is None or res.error_code.val != 1:
+            code = None if res is None else res.error_code.val
+            self.get_logger().warn(f'IK failed, code={code}')
             return None
         sol = dict(zip(res.solution.joint_state.name,
                        res.solution.joint_state.position))
