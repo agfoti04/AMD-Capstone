@@ -1,4 +1,0 @@
-[0.055s] Invoking command in '/root/Capstone/AMD-Capstone/build/arm_moveit_config': AMENT_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble /usr/bin/cmake /root/Capstone/AMD-Capstone/moveit2 -DCMAKE_INSTALL_PREFIX=/root/Capstone/AMD-Capstone/install/arm_moveit_config
-[0.058s] CMake Error: The source directory "/root/Capstone/AMD-Capstone/moveit2" does not exist.
-[0.059s] Specify --help for usage, or press the help button on the CMake GUI.
-[0.059s] Invoked command in '/root/Capstone/AMD-Capstone/build/arm_moveit_config' returned '1': AMENT_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble /usr/bin/cmake /root/Capstone/AMD-Capstone/moveit2 -DCMAKE_INSTALL_PREFIX=/root/Capstone/AMD-Capstone/install/arm_moveit_config

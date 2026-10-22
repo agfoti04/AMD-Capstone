@@ -7,11 +7,13 @@ import termios
 import time
 import tty
 
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from std_msgs.msg import Float64
 
 
 ARM_JOINTS = (
@@ -22,7 +24,8 @@ ARM_JOINTS = (
     'Joint_6',
 )
 GRIPPER = 'Joint_Gripper'
-GRIPPER_EFFORT_LIMIT = 1.0
+GRIPPER_LIMITS = (-1.57, 0.0)   # matches Joint_Gripper limits in the URDF
+GRIPPER_STEP = 0.05             # rad per keypress
 CONTROLLED_JOINTS = ARM_JOINTS
 JOINT_LIMITS = {
     'Joint_1': (-1.57, 1.57),
@@ -42,6 +45,8 @@ KEY_BINDINGS = {
     'f': ('Joint_4', -1),
     'y': ('Joint_6', 1),
     'h': ('Joint_6', -1),
+    'u': (GRIPPER, 1),
+    'j': (GRIPPER, -1),
 
 }
 STEP_RADIANS = 0.02
@@ -61,12 +66,16 @@ class ArmTeleop(Node):
         self.arm_publisher = self.create_publisher(
             JointTrajectory, '/arm_controller/joint_trajectory', 10
         )
-        # self.gripper_publisher = self.create_publisher(
-        #     Float64MultiArray, '/gripper_controller/commands', 10
-        # )
+        self.gripper_q = None
+        self.gripper_publisher = self.create_publisher(Float64, '/gripper_cmd', 10)
 
     def _on_joint_state(self, message):
         for name, position in zip(message.name, message.position):
+            if name == GRIPPER:
+                lo, hi = GRIPPER_LIMITS
+                self.gripper_q = min(max(position, lo), hi)
+                continue
+
             if name not in CONTROLLED_JOINTS:
                 continue
 
@@ -89,41 +98,40 @@ class ArmTeleop(Node):
                 )
             rclpy.spin_once(self, timeout_sec=0.1)
 
+        while self.gripper_q is None:
+            if time.monotonic() >= deadline:
+                raise RuntimeError('No joint state received for Joint_Gripper.')
+            rclpy.spin_once(self, timeout_sec=0.1)
+
         self.arm_targets = [self.joint_positions[name] for name in ARM_JOINTS]
 
         deadline = time.monotonic() + CONTROLLER_TIMEOUT_SECONDS
         while (
             self.arm_publisher.get_subscription_count() == 0
-            
+            or self.gripper_publisher.get_subscription_count() == 0
         ):
             if time.monotonic() >= deadline:
                 raise RuntimeError(
-                    'Controller command topics are not available. '
-                    'Check that arm_controller and gripper_controller are active.'
+                    'Command topics not available. Check that arm_controller is '
+                    'active and that gripper_fanout is running.'
                 )
             rclpy.spin_once(self, timeout_sec=0.1)
 
     def jog(self, joint_name, direction):
-        publisher = (
-            #self.gripper_publisher
-            # if joint_name == GRIPPER
-            self.arm_publisher
-        )
-        if publisher.get_subscription_count() == 0:
+        if joint_name == GRIPPER:
+            lo, hi = GRIPPER_LIMITS
+            requested = self.gripper_q + direction * GRIPPER_STEP
+            self.gripper_q = min(max(requested, lo), hi)
+            self.gripper_publisher.publish(Float64(data=self.gripper_q))
+            status = ' (limit)' if self.gripper_q != requested else ''
+            print(f'\rGripper: {self.gripper_q:+.2f} rad{status}     ',
+                  end='', flush=True)
+            return
+
+        if self.arm_publisher.get_subscription_count() == 0:
             raise RuntimeError(
                 f'No active controller is subscribed for {joint_name}.'
             )
-
-        # if joint_name == GRIPPER:
-        #     effort = direction * GRIPPER_EFFORT_LIMIT
-        #     self.gripper_publisher.publish(Float64MultiArray(data=[effort]))
-        #     action = 'opening' if effort < 0 else 'closing'
-        #     print(
-        #         f'\rGripper {action} at {abs(effort):.1f} effort '
-        #         '(latched; press the other gripper key or x to stop)     ',
-        #         end='', flush=True,
-        #     )
-        #     return
 
         requested = self.joint_positions[joint_name] + direction * STEP_RADIANS
         limits = JOINT_LIMITS.get(joint_name)

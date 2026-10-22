@@ -52,6 +52,10 @@ install(PROGRAMS src/goto_xyz.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME goto_xyz)
 
+install(PROGRAMS src/gripper_fan.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME gripper_fan)
+
   install(PROGRAMS src/scene_setup.py DESTINATION lib/${PROJECT_NAME} RENAME scene_setup)
 
   ament_package()

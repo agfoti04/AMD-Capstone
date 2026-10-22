@@ -55,5 +55,5 @@ def generate_launch_description():
         gazebo, rsp, spawn,
         RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[jsb])),
         RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[arm])),
-        
+        RegisterEventHandler(OnProcessExit(target_action=arm, on_exit=[grip])),
     ])

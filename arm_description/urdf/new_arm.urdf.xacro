@@ -164,30 +164,42 @@
     <origin xyz="0 0 0.060"/><axis xyz="0 0 1"/>
     <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
   </joint>
-  <joint name="Joint_Gripper" type="fixed">
+  <joint name="Joint_Gripper" type="revolute">
   <parent link="hand_link"/><child link="grip_left_link"/>
-  <origin rpy="-1.57 0 0" xyz="0 0.015 0.030"/>
-</joint>
-<joint name="grip_right" type="fixed">
-  <parent link="hand_link"/><child link="grip_right_link"/>
-  <origin rpy="1.57 0 0" xyz="0 -0.015 0.030"/>
-</joint>
-<joint name="tendon_left" type="fixed">
-  <parent link="hand_link"/><child link="tendon_left_link"/>
-  <origin rpy="-1.57 0 0" xyz="0 0.005 0.050"/>
-</joint>
-<joint name="tendon_right" type="fixed">
-  <parent link="hand_link"/><child link="tendon_right_link"/>
-  <origin rpy="1.57 0 0" xyz="0 -0.005 0.050"/>
-</joint>
-<joint name="finger_left" type="fixed">
-  <parent link="grip_left_link"/><child link="finger_left_link"/>
-  <origin rpy="1.57 0 0" xyz="0 0 0.030"/>
-</joint>
-<joint name="finger_right" type="fixed">
-  <parent link="grip_right_link"/><child link="finger_right_link"/>
-  <origin rpy="-1.57 0 0" xyz="0 0 0.030"/>
-</joint>
+  <origin rpy="-1.57 0 0" xyz="0 0.015 0.030"/><axis xyz="-1 0 0"/>
+  <limit effort="1.0" lower="-1.57" upper="0" velocity="0.5"/>
+  <dynamics damping="0.02"/>
+  </joint>
+  <joint name="grip_right" type="revolute">
+    <parent link="hand_link"/><child link="grip_right_link"/>
+    <origin rpy="1.57 0 0" xyz="0 -0.015 0.030"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="0" upper="1.57" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="tendon_left" type="revolute">
+    <parent link="hand_link"/><child link="tendon_left_link"/>
+    <origin rpy="-1.57 0 0" xyz="0 0.005 0.050"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="-1.57" upper="0" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="tendon_right" type="revolute">
+    <parent link="hand_link"/><child link="tendon_right_link"/>
+    <origin rpy="1.57 0 0" xyz="0 -0.005 0.050"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="0" upper="1.57" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="finger_left" type="revolute">
+    <parent link="grip_left_link"/><child link="finger_left_link"/>
+    <origin rpy="1.57 0 0" xyz="0 0 0.030"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="0" upper="1.57" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
+  <joint name="finger_right" type="revolute">
+    <parent link="grip_right_link"/><child link="finger_right_link"/>
+    <origin rpy="-1.57 0 0" xyz="0 0 0.030"/><axis xyz="-1 0 0"/>
+    <limit effort="1.0" lower="-1.57" upper="0" velocity="0.5"/>
+    <dynamics damping="0.02"/>
+  </joint>
   <joint name="EE_Gripper_Joint" type="fixed">
     <parent link="hand_link"/><child link="EE_Gripper_Link"/>
     <origin xyz="0 0 0.056"/>
@@ -215,7 +227,12 @@
       <command_interface name="position"/>
       <state_interface name="position"/><state_interface name="velocity"/>
     </joint>
-    
+    <joint name="Joint_Gripper"><command_interface name="position"/><state_interface name="position"/><state_interface name="velocity"/></joint>
+    <joint name="grip_right"><command_interface name="position"/><state_interface name="position"/><state_interface name="velocity"/></joint>
+    <joint name="tendon_left"><command_interface name="position"/><state_interface name="position"/><state_interface name="velocity"/></joint>
+    <joint name="tendon_right"><command_interface name="position"/><state_interface name="position"/><state_interface name="velocity"/></joint>
+    <joint name="finger_left"><command_interface name="position"/><state_interface name="position"/><state_interface name="velocity"/></joint>
+    <joint name="finger_right"><command_interface name="position"/><state_interface name="position"/><state_interface name="velocity"/></joint>
   </ros2_control>
   <gazebo>
     <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">

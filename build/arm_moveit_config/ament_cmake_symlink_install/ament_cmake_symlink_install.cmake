@@ -360,8 +360,8 @@ ament_cmake_symlink_install_files("/root/Capstone/AMD-Capstone/moveit2" FILES "/
 # install(DIRECTORY "launch" "DESTINATION" "share/arm_moveit_config" "PATTERN_EXCLUDE" "setup_assistant.launch")
 ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/moveit2" DIRECTORY "launch" "DESTINATION" "share/arm_moveit_config" "PATTERN_EXCLUDE" "setup_assistant.launch")
 
+# install(DIRECTORY "config" "DESTINATION" "share/arm_moveit_config")
+ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/moveit2" DIRECTORY "config" "DESTINATION" "share/arm_moveit_config")
+
 # install(FILES ".setup_assistant" "DESTINATION" "share/arm_moveit_config")
 ament_cmake_symlink_install_files("/root/Capstone/AMD-Capstone/moveit2" FILES ".setup_assistant" "DESTINATION" "share/arm_moveit_config")
-
-# install(DIRECTORY "launch" "config" "DESTINATION" "share/arm_moveit_config")
-ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/moveit2" DIRECTORY "launch" "config" "DESTINATION" "share/arm_moveit_config")

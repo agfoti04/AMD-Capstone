@@ -295,6 +295,15 @@ arm_moveit_config_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 arm_moveit_config_SOURCE_DIR:STATIC=/root/Capstone/AMD-Capstone/moveit2
 
+//Value Computed by CMake
+moveit2_BINARY_DIR:STATIC=/root/Capstone/AMD-Capstone/build/arm_moveit_config
+
+//Value Computed by CMake
+moveit2_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+moveit2_SOURCE_DIR:STATIC=/root/Capstone/AMD-Capstone/moveit2
+
 
 ########################
 # INTERNAL cache entries

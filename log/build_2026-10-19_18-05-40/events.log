@@ -1,4 +1,0 @@
-[0.000000] (-) TimerEvent: {}
-[0.000599] (-) JobUnselected: {'identifier': 'arm_description'}
-[0.000747] (-) JobUnselected: {'identifier': 'arm_moveit_config'}
-[0.000890] (-) EventReactorShutdown: {}

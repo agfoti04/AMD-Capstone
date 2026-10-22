@@ -2,4 +2,5 @@
 /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_control
 /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/pick_place
 /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/goto_xyz
+/root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/gripper_fan
 /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/scene_setup
