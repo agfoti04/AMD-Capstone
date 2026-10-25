@@ -15,6 +15,7 @@ def generate_launch_description():
     moveit_config = (
         MoveItConfigsBuilder('dual_arm', package_name='dual_moveit')
         .robot_description(file_path=urdf)
+        .trajectory_execution(file_path='config/moveit_controllers.yaml')
         .to_moveit_configs()
     )
     sim_time = {'use_sim_time': True}

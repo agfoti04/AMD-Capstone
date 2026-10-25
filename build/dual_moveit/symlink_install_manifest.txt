@@ -18,6 +18,7 @@
 /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/moveit_rviz.launch.py
 /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/rsp.launch.py
 /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/setup_assistant.launch.py
+/root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/sim_move_group.launch.py
 /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/spawn_controllers.launch.py
 /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/static_virtual_joint_tfs.launch.py
 /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/warehouse_db.launch.py
