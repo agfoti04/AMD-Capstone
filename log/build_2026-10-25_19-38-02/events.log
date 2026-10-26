@@ -1,0 +1,340 @@
+[0.000000] (-) TimerEvent: {}
+[0.000419] (-) JobUnselected: {'identifier': 'arm_moveit_config'}
+[0.000775] (arm_description) JobQueued: {'identifier': 'arm_description', 'dependencies': OrderedDict()}
+[0.000815] (dual_moveit) JobQueued: {'identifier': 'dual_moveit', 'dependencies': OrderedDict([('arm_description', '/root/Capstone/AMD-Capstone/install/arm_description')])}
+[0.000842] (arm_description) JobStarted: {'identifier': 'arm_description'}
+[0.006010] (arm_description) JobProgress: {'identifier': 'arm_description', 'progress': 'cmake'}
+[0.006642] (arm_description) JobProgress: {'identifier': 'arm_description', 'progress': 'build'}
+[0.007273] (arm_description) Command: {'cmd': ['/usr/bin/cmake', '--build', '/root/Capstone/AMD-Capstone/build/arm_description', '--', '-j20', '-l20'], 'cwd': '/root/Capstone/AMD-Capstone/build/arm_description', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'root'), ('GIT_ASKPASS', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('HOME', '/root'), ('OLDPWD', '/root/Capstone'), ('TERM_PROGRAM_VERSION', '1.143.1'), ('VSCODE_IPC_HOOK_CLI', '/run/user/0/vscode-ipc-aaae43e6-2ded-4be6-853d-910b52a7d406.sock'), ('GAZEBO_MASTER_URI', 'http://localhost:11345'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/node'), ('PYDEVD_DISABLE_FILE_VALIDATION', '1'), ('BUNDLED_DEBUGPY_PATH', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/libs/debugpy'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/0/bus'), ('COLORTERM', 'truecolor'), ('WSL_DISTRO_NAME', 'Ubuntu'), ('DEBUGINFOD_URLS', ''), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'root'), ('NAME', 'AFoti'), ('WSL_INTEROP', '/run/WSL/645_interop'), ('IGN_GAZEBO_MODEL_PATH', '/opt/ros/humble/share'), ('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm-256color'), ('GAZEBO_MODEL_PATH', '/usr/share/gazebo/../../share/gazebo-11/models:/opt/ros/humble/share'), ('ROS_LOCALHOST_ONLY', '0'), ('OGRE_RESOURCE_PATH', '/usr/lib/x86_64-linux-gnu/OGRE-1.9.0'), ('PATH', '/opt/ros/humble/bin:/root/.pixi/bin:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/remote-cli:/root/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/bin:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/PostgreSQL/18/bin:/mnt/c/Program Files/usbipd-win/:/mnt/c/Program Files/Tailscale/:/mnt/c/Program Files/WSL/:/mnt/c/Users/thega/.pixi/bin:/mnt/c/Users/thega/.cargo/bin:/mnt/c/Users/thega/AppData/Local/Programs/Python/Launcher/:/mnt/c/Users/thega/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/thega/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/thega/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/Users/thega/.bun/bin:/mnt/c/Users/thega/AppData/Local/Programs/cursor/resources/app/bin:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/scripts/noConfigScripts:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/copilot-shim'), ('XDG_RUNTIME_DIR', '/run/user/0'), ('DISPLAY', ':0'), ('VSCODE_DEBUGPY_ADAPTER_ENDPOINTS', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-9ced7c27ae31020f.txt'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/root/.vscode-server/data/User/workspaceStorage/215f2ec6ffde49f347059f544a851b0a/ms-python.python/pythonrc.py'), ('PERF_EXEC_PATH', '/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/libexec/perf-core'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/0/vscode-git-bd5cdd9e80.sock'), ('TERM_PROGRAM', 'vscode'), ('AMENT_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('IGN_GAZEBO_RESOURCE_PATH', '/opt/ros/humble/share'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo/../../share/gazebo-11:/opt/ros/humble/share'), ('GAZEBO_MODEL_DATABASE_URI', 'http://models.gazebosim.org'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/root/Capstone/AMD-Capstone/build/arm_description'), ('COPILOT_DEBUG_NONCE', '83ae896a950073d19a666d1b07f5d56b'), ('GAZEBO_PLUGIN_PATH', '/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('XDG_DATA_DIRS', '/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('WSL2_GUI_APPS_ENABLED', '1'), ('HOSTTYPE', 'x86_64'), ('CMAKE_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('WSLENV', 'VSCODE_WSL_EXT_LOCATION/up:VSCODE_SERVER_TAR/up')]), 'shell': False}
+[0.025693] (arm_description) StdoutLine: {'line': b'-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)\n'}
+[0.090844] (arm_description) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.095311] (arm_description) StdoutLine: {'line': b'-- Found xacro: 2.1.1 (/opt/ros/humble/share/xacro/cmake)\n'}
+[0.096143] (arm_description) StdoutLine: {'line': b'-- Found robot_state_publisher: 3.0.3 (/opt/ros/humble/share/robot_state_publisher/cmake)\n'}
+[0.099659] (-) TimerEvent: {}
+[0.199899] (-) TimerEvent: {}
+[0.300195] (-) TimerEvent: {}
+[0.400612] (-) TimerEvent: {}
+[0.450725] (arm_description) StdoutLine: {'line': b'-- Found rosidl_generator_c: 3.1.9 (/opt/ros/humble/share/rosidl_generator_c/cmake)\n'}
+[0.453560] (arm_description) StdoutLine: {'line': b'-- Found rosidl_adapter: 3.1.9 (/opt/ros/humble/share/rosidl_adapter/cmake)\n'}
+[0.461012] (arm_description) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 3.1.9 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)\n'}
+[0.471070] (arm_description) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.483406] (arm_description) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.500688] (-) TimerEvent: {}
+[0.519108] (arm_description) StdoutLine: {'line': b'-- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)\n'}
+[0.520165] (arm_description) StdoutLine: {'line': b'-- Ensuring Eigen3 include directory is part of orocos-kdl CMake target\n'}
+[0.550343] (arm_description) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 6.1.4 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)\n'}
+[0.552316] (arm_description) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)\n'}
+[0.600764] (-) TimerEvent: {}
+[0.701020] (-) TimerEvent: {}
+[0.801475] (-) TimerEvent: {}
+[0.901879] (-) TimerEvent: {}
+[1.002237] (-) TimerEvent: {}
+[1.102681] (-) TimerEvent: {}
+[1.203135] (-) TimerEvent: {}
+[1.303545] (-) TimerEvent: {}
+[1.403883] (-) TimerEvent: {}
+[1.504239] (-) TimerEvent: {}
+[1.604568] (-) TimerEvent: {}
+[1.704864] (-) TimerEvent: {}
+[1.805150] (-) TimerEvent: {}
+[1.905426] (-) TimerEvent: {}
+[2.005709] (-) TimerEvent: {}
+[2.106014] (-) TimerEvent: {}
+[2.206375] (-) TimerEvent: {}
+[2.306752] (-) TimerEvent: {}
+[2.407096] (-) TimerEvent: {}
+[2.507493] (-) TimerEvent: {}
+[2.607808] (-) TimerEvent: {}
+[2.708305] (-) TimerEvent: {}
+[2.808757] (-) TimerEvent: {}
+[2.909231] (-) TimerEvent: {}
+[3.009666] (-) TimerEvent: {}
+[3.110115] (-) TimerEvent: {}
+[3.210479] (-) TimerEvent: {}
+[3.310719] (-) TimerEvent: {}
+[3.411042] (-) TimerEvent: {}
+[3.511552] (-) TimerEvent: {}
+[3.612058] (-) TimerEvent: {}
+[3.712443] (-) TimerEvent: {}
+[3.812735] (-) TimerEvent: {}
+[3.913072] (-) TimerEvent: {}
+[4.013528] (-) TimerEvent: {}
+[4.113979] (-) TimerEvent: {}
+[4.214448] (-) TimerEvent: {}
+[4.314797] (-) TimerEvent: {}
+[4.415071] (-) TimerEvent: {}
+[4.515391] (-) TimerEvent: {}
+[4.615699] (-) TimerEvent: {}
+[4.716047] (-) TimerEvent: {}
+[4.816430] (-) TimerEvent: {}
+[4.916875] (-) TimerEvent: {}
+[5.017222] (-) TimerEvent: {}
+[5.117551] (-) TimerEvent: {}
+[5.217806] (-) TimerEvent: {}
+[5.318066] (-) TimerEvent: {}
+[5.418355] (-) TimerEvent: {}
+[5.518663] (-) TimerEvent: {}
+[5.618922] (-) TimerEvent: {}
+[5.719205] (-) TimerEvent: {}
+[5.819517] (-) TimerEvent: {}
+[5.919890] (-) TimerEvent: {}
+[6.020193] (-) TimerEvent: {}
+[6.120518] (-) TimerEvent: {}
+[6.220812] (-) TimerEvent: {}
+[6.321086] (-) TimerEvent: {}
+[6.421397] (-) TimerEvent: {}
+[6.521718] (-) TimerEvent: {}
+[6.622053] (-) TimerEvent: {}
+[6.722344] (-) TimerEvent: {}
+[6.822666] (-) TimerEvent: {}
+[6.922950] (-) TimerEvent: {}
+[7.023239] (-) TimerEvent: {}
+[7.123557] (-) TimerEvent: {}
+[7.223874] (-) TimerEvent: {}
+[7.324140] (-) TimerEvent: {}
+[7.424432] (-) TimerEvent: {}
+[7.524774] (-) TimerEvent: {}
+[7.625104] (-) TimerEvent: {}
+[7.725422] (-) TimerEvent: {}
+[7.825675] (-) TimerEvent: {}
+[7.926067] (-) TimerEvent: {}
+[8.026311] (-) TimerEvent: {}
+[8.126580] (-) TimerEvent: {}
+[8.226890] (-) TimerEvent: {}
+[8.327309] (-) TimerEvent: {}
+[8.427705] (-) TimerEvent: {}
+[8.528136] (-) TimerEvent: {}
+[8.628516] (-) TimerEvent: {}
+[8.728926] (-) TimerEvent: {}
+[8.829305] (-) TimerEvent: {}
+[8.929796] (-) TimerEvent: {}
+[9.030226] (-) TimerEvent: {}
+[9.130683] (-) TimerEvent: {}
+[9.230992] (-) TimerEvent: {}
+[9.331518] (-) TimerEvent: {}
+[9.432040] (-) TimerEvent: {}
+[9.532628] (-) TimerEvent: {}
+[9.633129] (-) TimerEvent: {}
+[9.733646] (-) TimerEvent: {}
+[9.834058] (-) TimerEvent: {}
+[9.934313] (-) TimerEvent: {}
+[10.034590] (-) TimerEvent: {}
+[10.135020] (-) TimerEvent: {}
+[10.235455] (-) TimerEvent: {}
+[10.335875] (-) TimerEvent: {}
+[10.436220] (-) TimerEvent: {}
+[10.536586] (-) TimerEvent: {}
+[10.636892] (-) TimerEvent: {}
+[10.737139] (-) TimerEvent: {}
+[10.837418] (-) TimerEvent: {}
+[10.937742] (-) TimerEvent: {}
+[11.038141] (-) TimerEvent: {}
+[11.138507] (-) TimerEvent: {}
+[11.238892] (-) TimerEvent: {}
+[11.339305] (-) TimerEvent: {}
+[11.439678] (-) TimerEvent: {}
+[11.540047] (-) TimerEvent: {}
+[11.640453] (-) TimerEvent: {}
+[11.740987] (-) TimerEvent: {}
+[11.841417] (-) TimerEvent: {}
+[11.941816] (-) TimerEvent: {}
+[12.042207] (-) TimerEvent: {}
+[12.142600] (-) TimerEvent: {}
+[12.242861] (-) TimerEvent: {}
+[12.343251] (-) TimerEvent: {}
+[12.443711] (-) TimerEvent: {}
+[12.544143] (-) TimerEvent: {}
+[12.644412] (-) TimerEvent: {}
+[12.744763] (-) TimerEvent: {}
+[12.845031] (-) TimerEvent: {}
+[12.945416] (-) TimerEvent: {}
+[13.045918] (-) TimerEvent: {}
+[13.146526] (-) TimerEvent: {}
+[13.247106] (-) TimerEvent: {}
+[13.347514] (-) TimerEvent: {}
+[13.448064] (-) TimerEvent: {}
+[13.548466] (-) TimerEvent: {}
+[13.648872] (-) TimerEvent: {}
+[13.749379] (-) TimerEvent: {}
+[13.849859] (-) TimerEvent: {}
+[13.939578] (arm_description) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[13.949919] (-) TimerEvent: {}
+[14.050171] (-) TimerEvent: {}
+[14.150479] (-) TimerEvent: {}
+[14.251092] (-) TimerEvent: {}
+[14.351640] (-) TimerEvent: {}
+[14.452255] (-) TimerEvent: {}
+[14.552898] (-) TimerEvent: {}
+[14.653393] (-) TimerEvent: {}
+[14.753855] (-) TimerEvent: {}
+[14.854285] (-) TimerEvent: {}
+[14.954667] (-) TimerEvent: {}
+[15.055093] (-) TimerEvent: {}
+[15.155395] (-) TimerEvent: {}
+[15.255779] (-) TimerEvent: {}
+[15.356342] (-) TimerEvent: {}
+[15.456595] (-) TimerEvent: {}
+[15.556867] (-) TimerEvent: {}
+[15.657167] (-) TimerEvent: {}
+[15.757465] (-) TimerEvent: {}
+[15.857754] (-) TimerEvent: {}
+[15.958070] (-) TimerEvent: {}
+[16.058521] (-) TimerEvent: {}
+[16.158839] (-) TimerEvent: {}
+[16.259311] (-) TimerEvent: {}
+[16.359744] (-) TimerEvent: {}
+[16.460151] (-) TimerEvent: {}
+[16.560505] (-) TimerEvent: {}
+[16.660926] (-) TimerEvent: {}
+[16.761388] (-) TimerEvent: {}
+[16.861802] (-) TimerEvent: {}
+[16.962120] (-) TimerEvent: {}
+[17.062523] (-) TimerEvent: {}
+[17.162777] (-) TimerEvent: {}
+[17.263076] (-) TimerEvent: {}
+[17.363540] (-) TimerEvent: {}
+[17.441345] (arm_description) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.12.15 (/opt/ros/humble/share/ament_lint_auto/cmake)\n'}
+[17.463607] (-) TimerEvent: {}
+[17.489380] (arm_description) StdoutLine: {'line': b"-- Added test 'flake8' to check Python code syntax and style conventions\n"}
+[17.489954] (arm_description) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[17.490518] (arm_description) StdoutLine: {'line': b"-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257\n"}
+[17.491659] (arm_description) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[17.493308] (arm_description) StdoutLine: {'line': b'-- Configuring done\n'}
+[17.497795] (arm_description) StdoutLine: {'line': b'-- Generating done\n'}
+[17.499909] (arm_description) StdoutLine: {'line': b'-- Build files have been written to: /root/Capstone/AMD-Capstone/build/arm_description\n'}
+[17.514869] (arm_description) CommandEnded: {'returncode': 0}
+[17.515387] (arm_description) JobProgress: {'identifier': 'arm_description', 'progress': 'install'}
+[17.520152] (arm_description) Command: {'cmd': ['/usr/bin/cmake', '--install', '/root/Capstone/AMD-Capstone/build/arm_description'], 'cwd': '/root/Capstone/AMD-Capstone/build/arm_description', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'root'), ('GIT_ASKPASS', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('HOME', '/root'), ('OLDPWD', '/root/Capstone'), ('TERM_PROGRAM_VERSION', '1.143.1'), ('VSCODE_IPC_HOOK_CLI', '/run/user/0/vscode-ipc-aaae43e6-2ded-4be6-853d-910b52a7d406.sock'), ('GAZEBO_MASTER_URI', 'http://localhost:11345'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/node'), ('PYDEVD_DISABLE_FILE_VALIDATION', '1'), ('BUNDLED_DEBUGPY_PATH', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/libs/debugpy'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/0/bus'), ('COLORTERM', 'truecolor'), ('WSL_DISTRO_NAME', 'Ubuntu'), ('DEBUGINFOD_URLS', ''), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'root'), ('NAME', 'AFoti'), ('WSL_INTEROP', '/run/WSL/645_interop'), ('IGN_GAZEBO_MODEL_PATH', '/opt/ros/humble/share'), ('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm-256color'), ('GAZEBO_MODEL_PATH', '/usr/share/gazebo/../../share/gazebo-11/models:/opt/ros/humble/share'), ('ROS_LOCALHOST_ONLY', '0'), ('OGRE_RESOURCE_PATH', '/usr/lib/x86_64-linux-gnu/OGRE-1.9.0'), ('PATH', '/opt/ros/humble/bin:/root/.pixi/bin:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/remote-cli:/root/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/bin:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/PostgreSQL/18/bin:/mnt/c/Program Files/usbipd-win/:/mnt/c/Program Files/Tailscale/:/mnt/c/Program Files/WSL/:/mnt/c/Users/thega/.pixi/bin:/mnt/c/Users/thega/.cargo/bin:/mnt/c/Users/thega/AppData/Local/Programs/Python/Launcher/:/mnt/c/Users/thega/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/thega/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/thega/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/Users/thega/.bun/bin:/mnt/c/Users/thega/AppData/Local/Programs/cursor/resources/app/bin:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/scripts/noConfigScripts:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/copilot-shim'), ('XDG_RUNTIME_DIR', '/run/user/0'), ('DISPLAY', ':0'), ('VSCODE_DEBUGPY_ADAPTER_ENDPOINTS', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-9ced7c27ae31020f.txt'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/root/.vscode-server/data/User/workspaceStorage/215f2ec6ffde49f347059f544a851b0a/ms-python.python/pythonrc.py'), ('PERF_EXEC_PATH', '/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/libexec/perf-core'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/0/vscode-git-bd5cdd9e80.sock'), ('TERM_PROGRAM', 'vscode'), ('AMENT_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('IGN_GAZEBO_RESOURCE_PATH', '/opt/ros/humble/share'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo/../../share/gazebo-11:/opt/ros/humble/share'), ('GAZEBO_MODEL_DATABASE_URI', 'http://models.gazebosim.org'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/root/Capstone/AMD-Capstone/build/arm_description'), ('COPILOT_DEBUG_NONCE', '83ae896a950073d19a666d1b07f5d56b'), ('GAZEBO_PLUGIN_PATH', '/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('XDG_DATA_DIRS', '/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('WSL2_GUI_APPS_ENABLED', '1'), ('HOSTTYPE', 'x86_64'), ('CMAKE_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('WSLENV', 'VSCODE_WSL_EXT_LOCATION/up:VSCODE_SERVER_TAR/up')]), 'shell': False}
+[17.523820] (arm_description) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[17.524134] (arm_description) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[17.524355] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro\n'}
+[17.524510] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm_macro.xacro\n'}
+[17.524635] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro\n'}
+[17.524672] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro\n'}
+[17.524837] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro\n'}
+[17.524956] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm_macro.xacro\n'}
+[17.525114] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro\n'}
+[17.525236] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro\n'}
+[17.525269] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py\n'}
+[17.525295] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py\n'}
+[17.525319] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml\n'}
+[17.525344] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/dual_controllers.yaml\n'}
+[17.525435] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL\n'}
+[17.525550] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL\n'}
+[17.525665] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL\n'}
+[17.525711] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL\n'}
+[17.525824] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL\n'}
+[17.525931] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL\n'}
+[17.526025] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL\n'}
+[17.526165] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL\n'}
+[17.526332] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/base.stl\n'}
+[17.526384] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-left.stl\n'}
+[17.526412] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-right.stl\n'}
+[17.526477] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/finger.stl\n'}
+[17.526526] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/forearm.stl\n'}
+[17.526629] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/hand.stl\n'}
+[17.526671] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/humerus.stl\n'}
+[17.526736] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/shoulder.stl\n'}
+[17.526821] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/tendon.stl\n'}
+[17.526931] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/wrist.stl\n'}
+[17.526976] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro\n'}
+[17.527003] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm_macro.xacro\n'}
+[17.527028] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro\n'}
+[17.527141] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro\n'}
+[17.527196] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py\n'}
+[17.527306] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py\n'}
+[17.527386] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml\n'}
+[17.527491] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/dual_controllers.yaml\n'}
+[17.527575] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL\n'}
+[17.527638] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL\n'}
+[17.527720] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL\n'}
+[17.527795] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL\n'}
+[17.527868] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL\n'}
+[17.527944] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL\n'}
+[17.528078] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL\n'}
+[17.528205] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL\n'}
+[17.528293] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/base.stl\n'}
+[17.528393] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-left.stl\n'}
+[17.528489] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-right.stl\n'}
+[17.528560] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/finger.stl\n'}
+[17.528628] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/forearm.stl\n'}
+[17.528726] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/hand.stl\n'}
+[17.528787] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/humerus.stl\n'}
+[17.528813] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/shoulder.stl\n'}
+[17.528876] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/tendon.stl\n'}
+[17.528978] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/wrist.stl\n'}
+[17.529063] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/grey_box.sdf\n'}
+[17.529092] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/rod.sdf\n'}
+[17.529117] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/package_run_dependencies/arm_description\n'}
+[17.529142] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/parent_prefix_path/arm_description\n'}
+[17.529167] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.sh\n'}
+[17.529190] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.dsv\n'}
+[17.529212] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.sh\n'}
+[17.529235] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.dsv\n'}
+[17.529257] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.bash\n'}
+[17.529279] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.sh\n'}
+[17.529302] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.zsh\n'}
+[17.529325] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.dsv\n'}
+[17.529347] (arm_description) StdoutLine: {'line': b'-- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.dsv\n'}
+[17.534203] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/packages/arm_description\n'}
+[17.534344] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig.cmake\n'}
+[17.534448] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig-version.cmake\n'}
+[17.534618] (arm_description) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.xml\n'}
+[17.534652] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_teleop\n'}
+[17.534682] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_control\n'}
+[17.534773] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/pick_place\n'}
+[17.534807] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/goto_xyz\n'}
+[17.534833] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/gripper_fan\n'}
+[17.534857] (arm_description) StdoutLine: {'line': b'-- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/scene_setup\n'}
+[17.534912] (arm_description) StdoutLine: {'line': b'-- Installing: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/dual_goto\n'}
+[17.535885] (arm_description) CommandEnded: {'returncode': 0}
+[17.547874] (arm_description) JobEnded: {'identifier': 'arm_description', 'rc': 0}
+[17.548741] (dual_moveit) JobStarted: {'identifier': 'dual_moveit'}
+[17.563761] (-) TimerEvent: {}
+[17.664100] (-) TimerEvent: {}
+[17.673952] (dual_moveit) JobProgress: {'identifier': 'dual_moveit', 'progress': 'cmake'}
+[17.674393] (dual_moveit) JobProgress: {'identifier': 'dual_moveit', 'progress': 'build'}
+[17.674814] (dual_moveit) Command: {'cmd': ['/usr/bin/cmake', '--build', '/root/Capstone/AMD-Capstone/build/dual_moveit', '--', '-j20', '-l20'], 'cwd': '/root/Capstone/AMD-Capstone/build/dual_moveit', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'root'), ('GIT_ASKPASS', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('HOME', '/root'), ('OLDPWD', '/root/Capstone'), ('TERM_PROGRAM_VERSION', '1.143.1'), ('VSCODE_IPC_HOOK_CLI', '/run/user/0/vscode-ipc-aaae43e6-2ded-4be6-853d-910b52a7d406.sock'), ('GAZEBO_MASTER_URI', 'http://localhost:11345'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/node'), ('PYDEVD_DISABLE_FILE_VALIDATION', '1'), ('BUNDLED_DEBUGPY_PATH', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/libs/debugpy'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/0/bus'), ('COLORTERM', 'truecolor'), ('WSL_DISTRO_NAME', 'Ubuntu'), ('DEBUGINFOD_URLS', ''), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'root'), ('NAME', 'AFoti'), ('WSL_INTEROP', '/run/WSL/645_interop'), ('IGN_GAZEBO_MODEL_PATH', '/opt/ros/humble/share'), ('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm-256color'), ('GAZEBO_MODEL_PATH', '/usr/share/gazebo/../../share/gazebo-11/models:/opt/ros/humble/share'), ('ROS_LOCALHOST_ONLY', '0'), ('OGRE_RESOURCE_PATH', '/usr/lib/x86_64-linux-gnu/OGRE-1.9.0'), ('PATH', '/opt/ros/humble/bin:/root/.pixi/bin:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/remote-cli:/root/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/bin:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/PostgreSQL/18/bin:/mnt/c/Program Files/usbipd-win/:/mnt/c/Program Files/Tailscale/:/mnt/c/Program Files/WSL/:/mnt/c/Users/thega/.pixi/bin:/mnt/c/Users/thega/.cargo/bin:/mnt/c/Users/thega/AppData/Local/Programs/Python/Launcher/:/mnt/c/Users/thega/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/thega/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/thega/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/Users/thega/.bun/bin:/mnt/c/Users/thega/AppData/Local/Programs/cursor/resources/app/bin:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/scripts/noConfigScripts:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/copilot-shim'), ('XDG_RUNTIME_DIR', '/run/user/0'), ('DISPLAY', ':0'), ('VSCODE_DEBUGPY_ADAPTER_ENDPOINTS', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-9ced7c27ae31020f.txt'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/root/.vscode-server/data/User/workspaceStorage/215f2ec6ffde49f347059f544a851b0a/ms-python.python/pythonrc.py'), ('PERF_EXEC_PATH', '/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/libexec/perf-core'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/0/vscode-git-bd5cdd9e80.sock'), ('TERM_PROGRAM', 'vscode'), ('AMENT_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('IGN_GAZEBO_RESOURCE_PATH', '/opt/ros/humble/share'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo/../../share/gazebo-11:/opt/ros/humble/share'), ('GAZEBO_MODEL_DATABASE_URI', 'http://models.gazebosim.org'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/root/Capstone/AMD-Capstone/build/dual_moveit'), ('COPILOT_DEBUG_NONCE', '83ae896a950073d19a666d1b07f5d56b'), ('GAZEBO_PLUGIN_PATH', '/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('XDG_DATA_DIRS', '/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('WSL2_GUI_APPS_ENABLED', '1'), ('HOSTTYPE', 'x86_64'), ('CMAKE_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/humble'), ('WSLENV', 'VSCODE_WSL_EXT_LOCATION/up:VSCODE_SERVER_TAR/up')]), 'shell': False}
+[17.694990] (dual_moveit) CommandEnded: {'returncode': 0}
+[17.696078] (dual_moveit) JobProgress: {'identifier': 'dual_moveit', 'progress': 'install'}
+[17.696130] (dual_moveit) Command: {'cmd': ['/usr/bin/cmake', '--install', '/root/Capstone/AMD-Capstone/build/dual_moveit'], 'cwd': '/root/Capstone/AMD-Capstone/build/dual_moveit', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'root'), ('GIT_ASKPASS', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('HOME', '/root'), ('OLDPWD', '/root/Capstone'), ('TERM_PROGRAM_VERSION', '1.143.1'), ('VSCODE_IPC_HOOK_CLI', '/run/user/0/vscode-ipc-aaae43e6-2ded-4be6-853d-910b52a7d406.sock'), ('GAZEBO_MASTER_URI', 'http://localhost:11345'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/node'), ('PYDEVD_DISABLE_FILE_VALIDATION', '1'), ('BUNDLED_DEBUGPY_PATH', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/libs/debugpy'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/0/bus'), ('COLORTERM', 'truecolor'), ('WSL_DISTRO_NAME', 'Ubuntu'), ('DEBUGINFOD_URLS', ''), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install'), ('ROS_DISTRO', 'humble'), ('LOGNAME', 'root'), ('NAME', 'AFoti'), ('WSL_INTEROP', '/run/WSL/645_interop'), ('IGN_GAZEBO_MODEL_PATH', '/opt/ros/humble/share'), ('PULSE_SERVER', 'unix:/mnt/wslg/PulseServer'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm-256color'), ('GAZEBO_MODEL_PATH', '/usr/share/gazebo/../../share/gazebo-11/models:/opt/ros/humble/share'), ('ROS_LOCALHOST_ONLY', '0'), ('OGRE_RESOURCE_PATH', '/usr/lib/x86_64-linux-gnu/OGRE-1.9.0'), ('PATH', '/opt/ros/humble/bin:/root/.pixi/bin:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/remote-cli:/root/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/bin:/mnt/c/Program Files (x86)/VMware/VMware Workstation/bin/:/mnt/c/windows/system32:/mnt/c/windows:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/PostgreSQL/18/bin:/mnt/c/Program Files/usbipd-win/:/mnt/c/Program Files/Tailscale/:/mnt/c/Program Files/WSL/:/mnt/c/Users/thega/.pixi/bin:/mnt/c/Users/thega/.cargo/bin:/mnt/c/Users/thega/AppData/Local/Programs/Python/Launcher/:/mnt/c/Users/thega/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/thega/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/thega/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/thega/AppData/Roaming/nvm:/mnt/c/Program Files/nodejs:/mnt/c/Users/thega/.bun/bin:/mnt/c/Users/thega/AppData/Local/Programs/cursor/resources/app/bin:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/bundled/scripts/noConfigScripts:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/bin/e646868227c3e3a9e3f24277c8c7220be42c0be7/bin/copilot-shim'), ('XDG_RUNTIME_DIR', '/run/user/0'), ('DISPLAY', ':0'), ('VSCODE_DEBUGPY_ADAPTER_ENDPOINTS', '/root/.vscode-server/extensions/ms-python.debugpy-2026.6.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-9ced7c27ae31020f.txt'), ('LANG', 'en_US.UTF-8'), ('PYTHONSTARTUP', '/root/.vscode-server/data/User/workspaceStorage/215f2ec6ffde49f347059f544a851b0a/ms-python.python/pythonrc.py'), ('PERF_EXEC_PATH', '/usr/lib/linux-tools/6.18.54.1-microsoft-standard-WSL2/libexec/perf-core'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/0/vscode-git-bd5cdd9e80.sock'), ('TERM_PROGRAM', 'vscode'), ('AMENT_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/root/Capstone/AMD-Capstone/install/arm_description:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('IGN_GAZEBO_RESOURCE_PATH', '/opt/ros/humble/share'), ('GAZEBO_RESOURCE_PATH', '/usr/share/gazebo/../../share/gazebo-11:/opt/ros/humble/share'), ('GAZEBO_MODEL_DATABASE_URI', 'http://models.gazebosim.org'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/root/Capstone/AMD-Capstone/build/dual_moveit'), ('COPILOT_DEBUG_NONCE', '83ae896a950073d19a666d1b07f5d56b'), ('GAZEBO_PLUGIN_PATH', '/usr/share/gazebo/../../lib/x86_64-linux-gnu/gazebo-11/plugins:'), ('XDG_DATA_DIRS', '/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('WSL2_GUI_APPS_ENABLED', '1'), ('HOSTTYPE', 'x86_64'), ('CMAKE_PREFIX_PATH', '/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/humble'), ('WSLENV', 'VSCODE_WSL_EXT_LOCATION/up:VSCODE_SERVER_TAR/up')]), 'shell': False}
+[17.700137] (dual_moveit) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[17.700710] (dual_moveit) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[17.700913] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/package_run_dependencies/dual_moveit\n'}
+[17.701031] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/parent_prefix_path/dual_moveit\n'}
+[17.701180] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/ament_prefix_path.sh\n'}
+[17.701541] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/ament_prefix_path.dsv\n'}
+[17.701771] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/path.sh\n'}
+[17.701869] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/path.dsv\n'}
+[17.702288] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.bash\n'}
+[17.702327] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.sh\n'}
+[17.702410] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.zsh\n'}
+[17.702541] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.dsv\n'}
+[17.702599] (dual_moveit) StdoutLine: {'line': b'-- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/package.dsv\n'}
+[17.707463] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/packages/dual_moveit\n'}
+[17.707620] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/cmake/dual_moveitConfig.cmake\n'}
+[17.707678] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/cmake/dual_moveitConfig-version.cmake\n'}
+[17.707799] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/package.xml\n'}
+[17.707954] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/demo.launch.py\n'}
+[17.708094] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/move_group.launch.py\n'}
+[17.708592] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/moveit_rviz.launch.py\n'}
+[17.708696] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/rsp.launch.py\n'}
+[17.708856] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/setup_assistant.launch.py\n'}
+[17.708899] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/sim_move_group.launch.py\n'}
+[17.708927] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/spawn_controllers.launch.py\n'}
+[17.708953] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/static_virtual_joint_tfs.launch.py\n'}
+[17.708980] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/warehouse_db.launch.py\n'}
+[17.709059] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.ros2_control.xacro\n'}
+[17.709124] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.srdf\n'}
+[17.709270] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.urdf.xacro\n'}
+[17.709377] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/initial_positions.yaml\n'}
+[17.709427] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/joint_limits.yaml\n'}
+[17.709493] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/kinematics.yaml\n'}
+[17.709659] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/moveit.rviz\n'}
+[17.709726] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/moveit_controllers.yaml\n'}
+[17.709762] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/pilz_cartesian_limits.yaml\n'}
+[17.709790] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/ros2_controllers.yaml\n'}
+[17.709816] (dual_moveit) StdoutLine: {'line': b'-- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/.setup_assistant\n'}
+[17.710853] (dual_moveit) CommandEnded: {'returncode': 0}
+[17.719953] (dual_moveit) JobEnded: {'identifier': 'dual_moveit', 'rc': 0}
+[17.720486] (-) EventReactorShutdown: {}

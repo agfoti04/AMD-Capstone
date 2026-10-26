@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""goto_xyz for the dual-arm robot, used to test that the arms avoid each other.
+
+Targets are for the origin of each arm's hand link, in the WORLD frame (the same frame
+for both arms). Topics:
+
+  /goto_xyz/left   geometry_msgs/Point            move the left arm only
+  /goto_xyz/right  geometry_msgs/Point            move the right arm only
+  /goto_xyz/both   std_msgs/Float64MultiArray     [lx, ly, lz, rx, ry, rz]: move BOTH
+                   arms at the same time, planned together as one `both_arms` motion,
+                   so MoveIt checks left-vs-right collisions along the whole path
+  /goto_xyz/home   std_msgs/Empty                 both arms back to all-zero joints
+
+IK is solved per arm with /compute_ik; the plan itself is a joint-space goal sent to
+MoveIt's /move_action, so MoveIt does the collision-aware planning and execution.
+"""
+import rclpy
+from geometry_msgs.msg import Point, PoseStamped
+from moveit_msgs.action import MoveGroup
+from moveit_msgs.msg import Constraints, JointConstraint
+from moveit_msgs.srv import GetPositionIK
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from std_msgs.msg import Empty, Float64MultiArray
+
+FRAME = 'world'
+BASE_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
+ARMS = {
+    side: {
+        'group': f'{side}_arm',
+        'tip': f'{side}_hand_link',
+        'joints': tuple(f'{side}_{j}' for j in BASE_JOINTS),
+    }
+    for side in ('left', 'right')
+}
+IK_TIMEOUT_S = 1.0     # KDL needs time to find solutions near the joint limits
+IK_ATTEMPTS = 3        # KDL restarts from random seeds, so a retry can succeed
+
+# MoveItErrorCodes values worth recognising
+CODES = {
+    1: 'SUCCESS',
+    -1: 'PLANNING_FAILED (no collision-free path found in the time allowed)',
+    -4: 'CONTROL_FAILED (a controller rejected or aborted the trajectory)',
+    -6: 'TIMED_OUT',
+    -10: 'START_STATE_IN_COLLISION',
+    -12: 'GOAL_IN_COLLISION (the target pose would put the arms in collision)',
+    -14: 'GOAL_CONSTRAINTS_VIOLATED',
+    -15: 'INVALID_GROUP_NAME',
+    -23: 'ROBOT_STATE_STALE (no recent /joint_states)',
+    -31: 'NO_IK_SOLUTION',
+}
+
+
+class GotoXYZDual(Node):
+    def __init__(self):
+        super().__init__('goto_xyz_dual')
+        self.request = None
+        self.ik = self.create_client(GetPositionIK, '/compute_ik')
+        self.mg = ActionClient(self, MoveGroup, '/move_action')
+        self.create_subscription(Point, '/goto_xyz/left',
+                                 lambda m: self._queue('left', m), 1)
+        self.create_subscription(Point, '/goto_xyz/right',
+                                 lambda m: self._queue('right', m), 1)
+        self.create_subscription(Float64MultiArray, '/goto_xyz/both', self._on_both, 1)
+        self.create_subscription(Empty, '/goto_xyz/home',
+                                 lambda m: self._queue('home', None), 1)
+
+    # ---------- incoming requests ----------
+    def _queue(self, kind, data):
+        self.request = (kind, data)
+
+    def _on_both(self, msg):
+        if len(msg.data) != 6:
+            self.get_logger().error(
+                '/goto_xyz/both needs 6 numbers: [lx, ly, lz, rx, ry, rz]')
+            return
+        left, right = (Point(x=msg.data[i], y=msg.data[i + 1], z=msg.data[i + 2])
+                       for i in (0, 3))
+        self._queue('both', {'left': left, 'right': right})
+
+    # ---------- IK ----------
+    def solve_ik(self, side, p, other_goal=None):
+        """Joint values {name: angle} for one arm's hand at world point p, or None.
+
+        other_goal: joints of the other arm's target; if given, the IK solution is
+        collision-checked against that pose instead of the other arm's current pose.
+        """
+        arm = ARMS[side]
+        req = GetPositionIK.Request()
+        r = req.ik_request
+        r.group_name, r.ik_link_name, r.avoid_collisions = arm['group'], arm['tip'], True
+        r.timeout.sec, r.timeout.nanosec = int(IK_TIMEOUT_S), 0
+        r.pose_stamped = PoseStamped()
+        r.pose_stamped.header.frame_id = FRAME
+        r.pose_stamped.pose.position = p
+        r.pose_stamped.pose.orientation.w = 1.0   # ignored by position_only_ik
+        if other_goal:
+            r.robot_state.is_diff = True
+            r.robot_state.joint_state.name = list(other_goal.keys())
+            r.robot_state.joint_state.position = list(other_goal.values())
+
+        for _ in range(IK_ATTEMPTS):
+            fut = self.ik.call_async(req)
+            rclpy.spin_until_future_complete(self, fut, timeout_sec=IK_TIMEOUT_S + 4.0)
+            res = fut.result()
+            if res is not None and res.error_code.val == 1:
+                sol = dict(zip(res.solution.joint_state.name,
+                               res.solution.joint_state.position))
+                return {j: sol[j] for j in arm['joints']}
+        code = None if res is None else res.error_code.val
+        self.get_logger().warn(
+            f'{side}: IK failed after {IK_ATTEMPTS} tries, code={code} '
+            f'({CODES.get(code, "see moveit_msgs/MoveItErrorCodes")})')
+        return None
+
+    # ---------- motion ----------
+    def move(self, group, joints):
+        goal = MoveGroup.Goal()
+        mpr = goal.request
+        mpr.group_name = group
+        mpr.num_planning_attempts = 10
+        mpr.allowed_planning_time = 10.0
+        mpr.max_velocity_scaling_factor = 0.3
+        mpr.max_acceleration_scaling_factor = 0.3
+        c = Constraints()
+        for name, pos in joints.items():
+            c.joint_constraints.append(JointConstraint(
+                joint_name=name, position=pos,
+                tolerance_above=0.01, tolerance_below=0.01, weight=1.0))
+        mpr.goal_constraints = [c]
+        goal.planning_options.plan_only = False
+        fut = self.mg.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self, fut, timeout_sec=10.0)
+        handle = fut.result()
+        if handle is None or not handle.accepted:
+            self.get_logger().error('MoveGroup rejected the goal')
+            return
+        res = handle.get_result_async()
+        rclpy.spin_until_future_complete(self, res)
+        code = res.result().result.error_code.val
+        self.get_logger().info(
+            f'[{group}] Done' if code == 1 else
+            f'[{group}] Planning/execution failed, code {code}: '
+            f'{CODES.get(code, "see moveit_msgs/MoveItErrorCodes")}')
+
+    def run(self):
+        self.ik.wait_for_service()
+        self.mg.wait_for_server()
+        self.get_logger().info(
+            'Ready. /goto_xyz/left and /goto_xyz/right take a Point; '
+            '/goto_xyz/both takes [lx,ly,lz,rx,ry,rz]; /goto_xyz/home takes Empty')
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            if self.request:
+                (kind, data), self.request = self.request, None
+                self.handle(kind, data)
+
+    def handle(self, kind, data):
+        if kind == 'home':
+            self.get_logger().info('Both arms home')
+            self.move('both_arms', {j: 0.0 for a in ARMS.values() for j in a['joints']})
+        elif kind in ARMS:
+            self.get_logger().info(
+                f'{kind} target ({data.x:.3f}, {data.y:.3f}, {data.z:.3f})')
+            joints = self.solve_ik(kind, data)
+            if joints is None:
+                self.get_logger().warn(f'{kind}: no IK solution, not moving')
+            else:
+                self.move(ARMS[kind]['group'], joints)
+        elif kind == 'both':
+            l, r = data['left'], data['right']
+            self.get_logger().info(
+                f'both: left ({l.x:.3f}, {l.y:.3f}, {l.z:.3f}), '
+                f'right ({r.x:.3f}, {r.y:.3f}, {r.z:.3f})')
+            left = self.solve_ik('left', l)
+            if left is None:
+                self.get_logger().warn('left: no IK solution, not moving either arm')
+                return
+            # check the right arm against where the left arm WILL be
+            right = self.solve_ik('right', r, other_goal=left)
+            if right is None:
+                self.get_logger().warn('right: no IK solution, not moving either arm')
+                return
+            self.move('both_arms', {**left, **right})
+
+
+def main():
+    rclpy.init()
+    node = GotoXYZDual()
+    try:
+        node.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

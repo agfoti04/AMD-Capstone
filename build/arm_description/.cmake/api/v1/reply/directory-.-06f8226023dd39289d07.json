@@ -183,6 +183,24 @@
 				"file" : 6,
 				"line" : 39,
 				"parent" : 27
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 61,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 29
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 30
 			}
 		]
 	},
@@ -268,6 +286,19 @@
 				{
 					"from" : "src/scene_setup.py",
 					"to" : "scene_setup"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/goto_xyz_dual.py",
+					"to" : "goto_xyz_dual"
 				}
 			],
 			"type" : "file"

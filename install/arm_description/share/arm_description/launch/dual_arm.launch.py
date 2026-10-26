@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/arm_description/launch/dual_arm.launch.py

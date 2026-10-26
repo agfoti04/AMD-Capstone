@@ -1,0 +1,41 @@
+[0.047s] Invoking command in '/root/Capstone/AMD-Capstone/build/dual_moveit': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/humble /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/dual_moveit -- -j20 -l20
+[0.065s] Invoked command in '/root/Capstone/AMD-Capstone/build/dual_moveit' returned '0': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/humble /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/dual_moveit -- -j20 -l20
+[0.067s] Invoking command in '/root/Capstone/AMD-Capstone/build/dual_moveit': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/humble /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/dual_moveit
+[0.071s] -- Install configuration: ""
+[0.071s] -- Execute custom install script
+[0.071s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/package_run_dependencies/dual_moveit
+[0.071s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/parent_prefix_path/dual_moveit
+[0.072s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/ament_prefix_path.sh
+[0.072s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/ament_prefix_path.dsv
+[0.072s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/path.sh
+[0.072s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/environment/path.dsv
+[0.073s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.bash
+[0.073s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.sh
+[0.073s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.zsh
+[0.073s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/local_setup.dsv
+[0.073s] -- Symlinking: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/package.dsv
+[0.078s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/ament_index/resource_index/packages/dual_moveit
+[0.078s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/cmake/dual_moveitConfig.cmake
+[0.078s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/cmake/dual_moveitConfig-version.cmake
+[0.079s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/package.xml
+[0.079s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/demo.launch.py
+[0.079s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/move_group.launch.py
+[0.079s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/moveit_rviz.launch.py
+[0.080s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/rsp.launch.py
+[0.080s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/setup_assistant.launch.py
+[0.080s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/sim_move_group.launch.py
+[0.080s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/spawn_controllers.launch.py
+[0.080s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/static_virtual_joint_tfs.launch.py
+[0.081s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/launch/warehouse_db.launch.py
+[0.081s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.ros2_control.xacro
+[0.081s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.srdf
+[0.081s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/dual_arm.urdf.xacro
+[0.082s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/initial_positions.yaml
+[0.082s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/joint_limits.yaml
+[0.082s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/kinematics.yaml
+[0.082s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/moveit.rviz
+[0.082s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/moveit_controllers.yaml
+[0.082s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/pilz_cartesian_limits.yaml
+[0.082s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/config/ros2_controllers.yaml
+[0.083s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/dual_moveit/share/dual_moveit/.setup_assistant
+[0.084s] Invoked command in '/root/Capstone/AMD-Capstone/build/dual_moveit' returned '0': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/humble /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/dual_moveit
