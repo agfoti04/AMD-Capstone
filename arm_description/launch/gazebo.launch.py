@@ -22,7 +22,7 @@ def generate_launch_description():
     )
 
     gazebo = IncludeLaunchDescription(PythonLaunchDescriptionSource(
-        os.path.join(get_package_share_directory('gazebo_ros'),
+        os.path.join(get_package_share_directory('ros_gz_sim'),
                      'launch', 'gazebo.launch.py')))
     rsp = Node(package='robot_state_publisher', executable='robot_state_publisher',
                parameters=[{'robot_description': robot_desc, 'use_sim_time': True}])

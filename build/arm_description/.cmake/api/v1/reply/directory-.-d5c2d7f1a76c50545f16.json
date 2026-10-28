@@ -1,0 +1,312 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"_install",
+			"install",
+			"include",
+			"find_package",
+			"ament_cmake_symlink_install_programs"
+		],
+		"files" : 
+		[
+			"/opt/ros/jazzy/share/ament_cmake_core/cmake/symlink_install/install.cmake",
+			"/opt/ros/jazzy/share/ament_cmake_core/cmake/ament_cmake_symlink_install-extras.cmake",
+			"/opt/ros/jazzy/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake",
+			"/opt/ros/jazzy/share/ament_cmake/cmake/ament_cmake_export_dependencies-extras.cmake",
+			"/opt/ros/jazzy/share/ament_cmake/cmake/ament_cmakeConfig.cmake",
+			"CMakeLists.txt",
+			"/opt/ros/jazzy/share/ament_cmake_core/cmake/symlink_install/ament_cmake_symlink_install_programs.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 5
+			},
+			{
+				"command" : 3,
+				"file" : 5,
+				"line" : 9,
+				"parent" : 0
+			},
+			{
+				"file" : 4,
+				"parent" : 1
+			},
+			{
+				"command" : 2,
+				"file" : 4,
+				"line" : 41,
+				"parent" : 2
+			},
+			{
+				"file" : 3,
+				"parent" : 3
+			},
+			{
+				"command" : 3,
+				"file" : 3,
+				"line" : 15,
+				"parent" : 4
+			},
+			{
+				"file" : 2,
+				"parent" : 5
+			},
+			{
+				"command" : 2,
+				"file" : 2,
+				"line" : 41,
+				"parent" : 6
+			},
+			{
+				"file" : 1,
+				"parent" : 7
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 47,
+				"parent" : 8
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 43,
+				"parent" : 9
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 34,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 12
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 40,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 14
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 15
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 47,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 17
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 18
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 51,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 20
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 21
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 55,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 23
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 24
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 59,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 26
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 27
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 61,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 34,
+				"parent" : 29
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 39,
+				"parent" : 30
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 10,
+			"component" : "Unspecified",
+			"scriptFile" : "/root/Capstone/AMD-Capstone/build/arm_description/ament_cmake_symlink_install/ament_cmake_symlink_install.cmake",
+			"type" : "script"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/arm_teleop.py",
+					"to" : "arm_teleop"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 16,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/arm_control.py",
+					"to" : "arm_control"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/pick_place.py",
+					"to" : "pick_place"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/goto_xyz.py",
+					"to" : "goto_xyz"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 25,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/gripper_fan.py",
+					"to" : "gripper_fan"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/scene_setup.py",
+					"to" : "scene_setup"
+				}
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 31,
+			"component" : "Unspecified",
+			"destination" : "lib/arm_description",
+			"paths" : 
+			[
+				{
+					"from" : "src/goto_xyz_dual.py",
+					"to" : "goto_xyz_dual"
+				}
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	}
+}

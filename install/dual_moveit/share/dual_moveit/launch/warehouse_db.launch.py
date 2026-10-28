@@ -1,1 +1,0 @@
-/root/Capstone/AMD-Capstone/dual_moveit/launch/warehouse_db.launch.py
