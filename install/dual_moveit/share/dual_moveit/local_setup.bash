@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/build/dual_moveit/ament_cmake_environment_hooks/local_setup.bash

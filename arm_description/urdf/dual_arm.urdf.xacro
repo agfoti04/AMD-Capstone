@@ -18,15 +18,15 @@
 
   
   <ros2_control name="GazeboSystem" type="system">
-    <hardware><plugin>gazebo_ros2_control/GazeboSystem</plugin></hardware>
+    <hardware><plugin>gz_ros2_control/GazeboSimSystem</plugin></hardware>
     <xacro:arm_ros2_control_joints prefix="left_"/>
     <xacro:arm_ros2_control_joints prefix="right_"/>
   </ros2_control>
 
   <gazebo>
-    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-      <parameters>$(find arm_description)/config/dual_controllers.yaml</parameters>
-    </plugin>
-  </gazebo>
+  <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    <parameters>$(find arm_description)/config/dual_controllers.yaml</parameters>
+  </plugin>
+</gazebo>
 
 </robot>

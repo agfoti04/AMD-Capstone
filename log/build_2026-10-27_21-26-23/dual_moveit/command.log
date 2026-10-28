@@ -1,0 +1,4 @@
+Invoking command in '/root/Capstone/AMD-Capstone/build/dual_moveit': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/dual_moveit -- -j20 -l20
+Invoked command in '/root/Capstone/AMD-Capstone/build/dual_moveit' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/dual_moveit -- -j20 -l20
+Invoking command in '/root/Capstone/AMD-Capstone/build/dual_moveit': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/dual_moveit
+Invoked command in '/root/Capstone/AMD-Capstone/build/dual_moveit' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/dual_moveit
