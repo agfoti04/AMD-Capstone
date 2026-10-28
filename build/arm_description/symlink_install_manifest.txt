@@ -10,6 +10,7 @@
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_arm.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gz_sim.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/dual_controllers.yaml
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL
@@ -38,6 +39,7 @@
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_arm.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gz_sim.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/dual_controllers.yaml
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL

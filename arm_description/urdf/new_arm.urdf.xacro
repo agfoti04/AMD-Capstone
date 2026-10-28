@@ -206,7 +206,7 @@
   </joint>
 
   <ros2_control name="GazeboSystem" type="system">
-    <hardware><plugin>gazebo_ros2_control/GazeboSystem</plugin></hardware>
+    <hardware><plugin>gz_ros2_control/GazeboSimSystem</plugin></hardware>
     <joint name="Joint_1">
       <command_interface name="position"/>
       <state_interface name="position"/><state_interface name="velocity"/>
@@ -235,10 +235,10 @@
     <joint name="finger_right"><command_interface name="position"/><state_interface name="position"/><state_interface name="velocity"/></joint>
   </ros2_control>
   <gazebo>
-    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-      <parameters>$(find arm_description)/config/controllers.yaml</parameters>
-    </plugin>
-  </gazebo>
+  <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+    <parameters>$(find arm_description)/config/controllers.yaml</parameters>
+  </plugin>
+</gazebo>
   <gazebo reference="grip_left_link">
     <mu1>10.0</mu1><mu2>10.0</mu2><kp>1e5</kp><kd>10</kd>
     <minDepth>0.001</minDepth>
