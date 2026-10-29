@@ -41,7 +41,7 @@ install(PROGRAMS src/arm_control.py
   DESTINATION lib/${PROJECT_NAME}
   RENAME arm_control)
 
-install(DIRECTORY urdf launch config meshes models
+install(DIRECTORY urdf launch config meshes models worlds
   DESTINATION share/${PROJECT_NAME})
 
 install(PROGRAMS src/pick_place.py

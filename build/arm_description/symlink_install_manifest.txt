@@ -66,6 +66,7 @@
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/wrist.stl
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/grey_box.sdf
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/rod.sdf
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/worlds/arm_world.sdf
 /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/package_run_dependencies/arm_description
 /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/parent_prefix_path/arm_description
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.sh

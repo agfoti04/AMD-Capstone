@@ -321,8 +321,8 @@ ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/arm_descripti
 # install(DIRECTORY "urdf" "launch" "config" "meshes" "DESTINATION" "share/arm_description")
 ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/arm_description" DIRECTORY "urdf" "launch" "config" "meshes" "DESTINATION" "share/arm_description")
 
-# install(DIRECTORY "urdf" "launch" "config" "meshes" "models" "DESTINATION" "share/arm_description")
-ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/arm_description" DIRECTORY "urdf" "launch" "config" "meshes" "models" "DESTINATION" "share/arm_description")
+# install(DIRECTORY "urdf" "launch" "config" "meshes" "models" "worlds" "DESTINATION" "share/arm_description")
+ament_cmake_symlink_install_directory("/root/Capstone/AMD-Capstone/arm_description" DIRECTORY "urdf" "launch" "config" "meshes" "models" "worlds" "DESTINATION" "share/arm_description")
 
 # install(FILES "/root/Capstone/AMD-Capstone/build/arm_description/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/arm_description" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")
 ament_cmake_symlink_install_files("/root/Capstone/AMD-Capstone/arm_description" FILES "/root/Capstone/AMD-Capstone/build/arm_description/ament_cmake_index/share/ament_index/resource_index/package_run_dependencies/arm_description" "DESTINATION" "share/ament_index/resource_index/package_run_dependencies")

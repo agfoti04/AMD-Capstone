@@ -14,6 +14,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     pkg = get_package_share_directory('arm_description')
+    world = os.path.join(pkg, 'worlds', 'arm_world.sdf')
     robot_desc = xacro.process_file(
         os.path.join(pkg, 'urdf', 'arm.urdf.xacro')).toxml()
 
@@ -25,7 +26,7 @@ def generate_launch_description():
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(
             get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items())
+        launch_arguments={'gz_args': f'-r {world}'}.items())
 
     rsp = Node(package='robot_state_publisher', executable='robot_state_publisher',
                parameters=[{'robot_description': robot_desc, 'use_sim_time': True}])

@@ -1,0 +1,211 @@
+[0.432s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build', '--packages-select', 'arm_description', 'arm_moveit_config', '--symlink-install']
+[0.432s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=True, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=20, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=['arm_description', 'arm_moveit_config'], packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x7bae14270e90>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7bae149aa870>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7bae149aa870>>, mixin_verb=('build',))
+[0.478s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.478s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.478s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.478s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.478s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.478s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.478s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/root/Capstone/AMD-Capstone'
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.478s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extensions ['ignore', 'ignore_ament_install']
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extension 'ignore'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extension 'ignore_ament_install'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extensions ['colcon_pkg']
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extension 'colcon_pkg'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extensions ['colcon_meta']
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extension 'colcon_meta'
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extensions ['ros']
+[0.498s] Level 1:colcon.colcon_core.package_identification:_identify(arm_description) by extension 'ros'
+[0.500s] DEBUG:colcon.colcon_core.package_identification:Package 'arm_description' with type 'ros.ament_cmake' and name 'arm_description'
+[0.500s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extensions ['ignore', 'ignore_ament_install']
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extension 'ignore'
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extension 'ignore_ament_install'
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extensions ['colcon_pkg']
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extension 'colcon_pkg'
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extensions ['colcon_meta']
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extension 'colcon_meta'
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extensions ['ros']
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(dual_moveit) by extension 'ros'
+[0.501s] DEBUG:colcon.colcon_core.package_identification:Package 'dual_moveit' with type 'ros.ament_cmake' and name 'dual_moveit'
+[0.501s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extensions ['ignore', 'ignore_ament_install']
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extension 'ignore'
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extension 'ignore_ament_install'
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extensions ['colcon_pkg']
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extension 'colcon_pkg'
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extensions ['colcon_meta']
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extension 'colcon_meta'
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extensions ['ros']
+[0.502s] Level 1:colcon.colcon_core.package_identification:_identify(moveit2) by extension 'ros'
+[0.503s] DEBUG:colcon.colcon_core.package_identification:Package 'moveit2' with type 'ros.ament_cmake' and name 'arm_moveit_config'
+[0.503s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.503s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.503s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.503s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.503s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.521s] INFO:colcon.colcon_core.package_selection:Skipping not selected package 'dual_moveit' in 'dual_moveit'
+[0.521s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.521s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.524s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 3 installed packages in /root/Capstone/AMD-Capstone/install
+[0.525s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 498 installed packages in /opt/ros/jazzy
+[0.526s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.620s] WARNING:colcon.colcon_core.package_selection:Some selected packages are already built in one or more underlay workspaces:
+	'arm_description' is in: /root/Capstone/AMD-Capstone/install/arm_description
+If a package in a merged underlay workspace is overridden and it installs headers, then all packages in the overlay must sort their include directories by workspace order. Failure to do so may result in build failures or undefined behavior at run time.
+If the overridden package is used by another package in any underlay, then the overriding package in the overlay must be API and ABI compatible or undefined behavior at run time may occur.
+
+If you understand the risks and want to override a package anyways, add the following to the command line:
+	--allow-overriding arm_description
+
+This may be promoted to an error in a future release of colcon-override-check.
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'cmake_args' from command line to 'None'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'cmake_target' from command line to 'None'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'cmake_clean_cache' from command line to 'False'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'cmake_clean_first' from command line to 'False'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'cmake_force_configure' from command line to 'False'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'ament_cmake_args' from command line to 'None'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'catkin_cmake_args' from command line to 'None'
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_description' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.621s] DEBUG:colcon.colcon_core.verb:Building package 'arm_description' with the following arguments: {'ament_cmake_args': None, 'build_base': '/root/Capstone/AMD-Capstone/build/arm_description', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/root/Capstone/AMD-Capstone/install/arm_description', 'merge_install': False, 'path': '/root/Capstone/AMD-Capstone/arm_description', 'symlink_install': True, 'test_result_base': None}
+[0.621s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'cmake_args' from command line to 'None'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'cmake_target' from command line to 'None'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'cmake_clean_cache' from command line to 'False'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'cmake_clean_first' from command line to 'False'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'cmake_force_configure' from command line to 'False'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'ament_cmake_args' from command line to 'None'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'catkin_cmake_args' from command line to 'None'
+[0.622s] Level 5:colcon.colcon_core.verb:set package 'arm_moveit_config' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.622s] DEBUG:colcon.colcon_core.verb:Building package 'arm_moveit_config' with the following arguments: {'ament_cmake_args': None, 'build_base': '/root/Capstone/AMD-Capstone/build/arm_moveit_config', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/root/Capstone/AMD-Capstone/install/arm_moveit_config', 'merge_install': False, 'path': '/root/Capstone/AMD-Capstone/moveit2', 'symlink_install': True, 'test_result_base': None}
+[0.622s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.622s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.622s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/root/Capstone/AMD-Capstone/arm_description' with build type 'ament_cmake'
+[0.623s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/root/Capstone/AMD-Capstone/arm_description'
+[0.626s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.626s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.626s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.632s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/root/Capstone/AMD-Capstone/build/arm_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20
+[1.949s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/root/Capstone/AMD-Capstone/build/arm_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20
+[1.960s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/root/Capstone/AMD-Capstone/build/arm_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_description
+[1.982s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(arm_description)
+[1.982s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/root/Capstone/AMD-Capstone/build/arm_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_description
+[1.986s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description' for CMake module files
+[1.987s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description' for CMake config files
+[1.987s] Level 1:colcon.colcon_core.shell:create_environment_hook('arm_description', 'cmake_prefix_path')
+[1.987s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/hook/cmake_prefix_path.ps1'
+[1.988s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/hook/cmake_prefix_path.dsv'
+[1.988s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/hook/cmake_prefix_path.sh'
+[1.989s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/lib'
+[1.989s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/bin'
+[1.989s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/lib/pkgconfig/arm_description.pc'
+[1.989s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/lib/python3.12/site-packages'
+[1.990s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/bin'
+[1.990s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.ps1'
+[1.990s] INFO:colcon.colcon_core.shell:Creating package descriptor '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.dsv'
+[1.991s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.sh'
+[1.991s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.bash'
+[1.992s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.zsh'
+[1.993s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/root/Capstone/AMD-Capstone/install/arm_description/share/colcon-core/packages/arm_description)
+[1.993s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(arm_description)
+[1.993s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description' for CMake module files
+[1.994s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description' for CMake config files
+[1.994s] Level 1:colcon.colcon_core.shell:create_environment_hook('arm_description', 'cmake_prefix_path')
+[1.994s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/hook/cmake_prefix_path.ps1'
+[1.994s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/hook/cmake_prefix_path.dsv'
+[1.994s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/hook/cmake_prefix_path.sh'
+[1.995s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/lib'
+[1.995s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/bin'
+[1.995s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/lib/pkgconfig/arm_description.pc'
+[1.995s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/lib/python3.12/site-packages'
+[1.995s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_description/bin'
+[1.995s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.ps1'
+[1.996s] INFO:colcon.colcon_core.shell:Creating package descriptor '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.dsv'
+[1.996s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.sh'
+[1.996s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.bash'
+[1.996s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.zsh'
+[1.996s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/root/Capstone/AMD-Capstone/install/arm_description/share/colcon-core/packages/arm_description)
+[1.997s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/root/Capstone/AMD-Capstone/moveit2' with build type 'ament_cmake'
+[1.997s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/root/Capstone/AMD-Capstone/moveit2'
+[1.997s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[1.997s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[2.050s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/root/Capstone/AMD-Capstone/build/arm_moveit_config': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_moveit_config -- -j20 -l20
+[2.069s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/root/Capstone/AMD-Capstone/build/arm_moveit_config' returned '0': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_moveit_config -- -j20 -l20
+[2.071s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/root/Capstone/AMD-Capstone/build/arm_moveit_config': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_moveit_config
+[2.090s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(arm_moveit_config)
+[2.091s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config' for CMake module files
+[2.091s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/root/Capstone/AMD-Capstone/build/arm_moveit_config' returned '0': CMAKE_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/arm_description:/root/Capstone/AMD-Capstone/install/dual_moveit:/root/Capstone/AMD-Capstone/install/arm_moveit_config:/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_moveit_config
+[2.092s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config' for CMake config files
+[2.092s] Level 1:colcon.colcon_core.shell:create_environment_hook('arm_moveit_config', 'cmake_prefix_path')
+[2.092s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/hook/cmake_prefix_path.ps1'
+[2.092s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/hook/cmake_prefix_path.dsv'
+[2.092s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/hook/cmake_prefix_path.sh'
+[2.093s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/bin'
+[2.093s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/lib/pkgconfig/arm_moveit_config.pc'
+[2.093s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/lib/python3.12/site-packages'
+[2.093s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/bin'
+[2.093s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.ps1'
+[2.093s] INFO:colcon.colcon_core.shell:Creating package descriptor '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.dsv'
+[2.094s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.sh'
+[2.094s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.bash'
+[2.094s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.zsh'
+[2.094s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/colcon-core/packages/arm_moveit_config)
+[2.095s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(arm_moveit_config)
+[2.095s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config' for CMake module files
+[2.095s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config' for CMake config files
+[2.095s] Level 1:colcon.colcon_core.shell:create_environment_hook('arm_moveit_config', 'cmake_prefix_path')
+[2.095s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/hook/cmake_prefix_path.ps1'
+[2.095s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/hook/cmake_prefix_path.dsv'
+[2.096s] INFO:colcon.colcon_core.shell:Creating environment hook '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/hook/cmake_prefix_path.sh'
+[2.096s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/bin'
+[2.096s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/lib/pkgconfig/arm_moveit_config.pc'
+[2.096s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/lib/python3.12/site-packages'
+[2.096s] Level 1:colcon.colcon_core.environment:checking '/root/Capstone/AMD-Capstone/install/arm_moveit_config/bin'
+[2.096s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.ps1'
+[2.097s] INFO:colcon.colcon_core.shell:Creating package descriptor '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.dsv'
+[2.097s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.sh'
+[2.097s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.bash'
+[2.097s] INFO:colcon.colcon_core.shell:Creating package script '/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/arm_moveit_config/package.zsh'
+[2.097s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/root/Capstone/AMD-Capstone/install/arm_moveit_config/share/colcon-core/packages/arm_moveit_config)
+[2.098s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[2.098s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[2.098s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[2.098s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[2.190s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.notify_send': Could not find 'notify-send'
+[2.191s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[2.191s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[2.191s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[2.192s] DEBUG:colcon.colcon_notification.desktop_notification.notify2:Failed to initialize notify2: org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.Notifications was not provided by any .service files
+[2.192s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[2.192s] INFO:colcon.colcon_core.shell:Creating prefix script '/root/Capstone/AMD-Capstone/install/local_setup.ps1'
+[2.193s] INFO:colcon.colcon_core.shell:Creating prefix util module '/root/Capstone/AMD-Capstone/install/_local_setup_util_ps1.py'
+[2.194s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/root/Capstone/AMD-Capstone/install/setup.ps1'
+[2.194s] INFO:colcon.colcon_core.shell:Creating prefix script '/root/Capstone/AMD-Capstone/install/local_setup.sh'
+[2.195s] INFO:colcon.colcon_core.shell:Creating prefix util module '/root/Capstone/AMD-Capstone/install/_local_setup_util_sh.py'
+[2.195s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/root/Capstone/AMD-Capstone/install/setup.sh'
+[2.196s] INFO:colcon.colcon_core.shell:Creating prefix script '/root/Capstone/AMD-Capstone/install/local_setup.bash'
+[2.196s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/root/Capstone/AMD-Capstone/install/setup.bash'
+[2.197s] INFO:colcon.colcon_core.shell:Creating prefix script '/root/Capstone/AMD-Capstone/install/local_setup.zsh'
+[2.197s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/root/Capstone/AMD-Capstone/install/setup.zsh'
