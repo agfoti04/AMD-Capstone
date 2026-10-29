@@ -50,8 +50,10 @@ def generate_launch_description():
 
     return LaunchDescription([
         SetEnvironmentVariable('GZ_SIM_RESOURCE_PATH', resource_path),
-        gazebo, clock, rsp, spawn, rod,
-        RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[jsb])),
+        gazebo, clock, rsp,
+        RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[rod])),
+        RegisterEventHandler(OnProcessExit(target_action=rod, on_exit=[jsb])),
         RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[arm])),
         RegisterEventHandler(OnProcessExit(target_action=arm, on_exit=[grip])),
+        spawn,
     ])

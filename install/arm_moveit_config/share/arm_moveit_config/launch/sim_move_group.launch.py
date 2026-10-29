@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/moveit2/launch/sim_move_group.launch.py

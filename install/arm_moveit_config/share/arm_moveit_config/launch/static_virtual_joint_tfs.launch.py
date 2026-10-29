@@ -1,0 +1,1 @@
+/root/Capstone/AMD-Capstone/moveit2/launch/static_virtual_joint_tfs.launch.py

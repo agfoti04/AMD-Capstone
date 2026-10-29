@@ -7,6 +7,7 @@
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_arm.launch.cpython-310.pyc
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/gz_sim.launch.cpython-312.pyc
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_arm.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gz_sim.launch.py
@@ -37,6 +38,7 @@
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_arm.launch.cpython-310.pyc
+/root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/gz_sim.launch.cpython-312.pyc
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_arm.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py
 /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gz_sim.launch.py
