@@ -36,7 +36,7 @@ def generate_launch_description():
 
     rod = Node(package='ros_gz_sim', executable='create', output='screen',
                arguments=['-file', os.path.join(pkg, 'models', 'rod.sdf'),
-                          '-name', 'rod'])
+                          '-name', 'rod', '-x', '0.25', '-y', '0.0', '-z', '0.06'])
 
     clock = Node(package='ros_gz_bridge', executable='parameter_bridge', output='screen',
                  arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'])
