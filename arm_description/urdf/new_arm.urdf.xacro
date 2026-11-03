@@ -184,7 +184,7 @@
   <joint name="Joint_3" type="revolute">
     <parent link="humerus_link"/><child link="forearm_link"/>
     <origin xyz="0 0 0.105"/><axis xyz="0 -1 0"/>
-    <limit effort="2.94" lower="-1.57" upper="1.57" velocity="0.5"/>
+    <limit effort="2.94" lower="-2.27" upper="2.27" velocity="0.5"/>
   </joint>
   <joint name="Joint_4" type="revolute">
     <parent link="forearm_link"/><child link="wrist_link"/>
@@ -235,6 +235,12 @@
   <joint name="EE_Gripper_Joint" type="fixed">
     <parent link="hand_link"/><child link="EE_Gripper_Link"/>
     <origin xyz="0 0 0.056"/>
+  </joint>
+  <!-- Midpoint of the closed finger span; used as the pick-and-place target. -->
+  <link name="grasp_point"/>
+  <joint name="Grasp_Point_Joint" type="fixed">
+    <parent link="hand_link"/><child link="grasp_point"/>
+    <origin xyz="0 0 0.087"/>
   </joint>
 
   <ros2_control name="GazeboSystem" type="system">

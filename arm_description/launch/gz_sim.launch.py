@@ -36,7 +36,7 @@ def generate_launch_description():
 
     rod = Node(package='ros_gz_sim', executable='create', output='screen',
                arguments=['-file', os.path.join(pkg, 'models', 'rod.sdf'),
-                          '-name', 'rod', '-x', '0.25', '-y', '0.0', '-z', '0.06'])
+                          '-name', 'rod', '-x', '0.12', '-y', '0.0', '-z', '0.08'])
 
     clock = Node(package='ros_gz_bridge', executable='parameter_bridge', output='screen',
                  arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'])
@@ -48,6 +48,8 @@ def generate_launch_description():
 
     jsb, arm, grip = (spawner('joint_state_broadcaster'),
                       spawner('arm_controller'), spawner('gripper_controller'))
+    gripper_fan = Node(package='arm_description', executable='gripper_fan',
+                       output='screen')
 
     return LaunchDescription([
         SetEnvironmentVariable('GZ_SIM_RESOURCE_PATH', resource_path),
@@ -56,5 +58,6 @@ def generate_launch_description():
         RegisterEventHandler(OnProcessExit(target_action=rod, on_exit=[jsb])),
         RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[arm])),
         RegisterEventHandler(OnProcessExit(target_action=arm, on_exit=[grip])),
+        RegisterEventHandler(OnProcessExit(target_action=grip, on_exit=[gripper_fan])),
         spawn,
     ])

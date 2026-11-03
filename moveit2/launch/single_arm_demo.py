@@ -9,6 +9,7 @@ from moveit_configs_utils import MoveItConfigsBuilder
 # Wall-clock delays (s) from launch start. Raise them if your machine is slow to start Gazebo.
 MOVEIT_DELAY = 8.0  # after Gazebo starts, so arm_controller is active
 GOTO_DELAY = 15.0   # goto_xyz also waits for the MoveIt services itself
+PICK_PLACE_DELAY = 15.0
 
 
 def generate_launch_description():
@@ -39,8 +40,11 @@ def generate_launch_description():
                          moveit_config.planning_pipelines,
                          sim_time])])
 
-    goto = TimerAction(period=GOTO_DELAY, actions=[
-        Node(package='arm_description', executable='goto_xyz',
+    # goto = TimerAction(period=GOTO_DELAY, actions=[
+    #     Node(package='arm_description', executable='goto_xyz',
+    #          output='screen', parameters=[sim_time])])
+    pick_place = TimerAction(period=PICK_PLACE_DELAY, actions=[
+        Node(package='arm_description', executable='pick_place',
              output='screen', parameters=[sim_time])])
 
-    return LaunchDescription([gazebo, moveit, goto])
+    return LaunchDescription([gazebo, moveit, pick_place])
