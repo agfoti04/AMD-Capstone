@@ -184,7 +184,7 @@
   <joint name="Joint_3" type="revolute">
     <parent link="humerus_link"/><child link="forearm_link"/>
     <origin xyz="0 0 0.105"/><axis xyz="0 -1 0"/>
-    <limit effort="2.94" lower="-2.27" upper="2.27" velocity="0.5"/>
+    <limit effort="2.94" lower="-2.20" upper="2.27" velocity="0.5"/>
   </joint>
   <joint name="Joint_4" type="revolute">
     <parent link="forearm_link"/><child link="wrist_link"/>

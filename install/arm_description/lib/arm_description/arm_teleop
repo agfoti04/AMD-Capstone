@@ -30,7 +30,7 @@ CONTROLLED_JOINTS = ARM_JOINTS
 JOINT_LIMITS = {
     'Joint_1': (-1.57, 1.57),
     'Joint_2': (-1.57, 1.57),
-    'Joint_3': (-2.27, 2.27),
+    'Joint_3': (-2.20, 2.27),
     'Joint_4': (-1.57, 1.57),
     'Joint_6': (-1.57, 1.57),
 }
