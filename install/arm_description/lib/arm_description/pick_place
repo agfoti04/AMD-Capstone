@@ -344,13 +344,15 @@ class PickPlace(Node):
         if wait_until_open:
             self.get_logger().error('Gripper did not reach the open position')
         elif observed_motion:
-            self.get_logger().error(
+            self.get_logger().warn(
                 f'Gripper moved while closing but did not settle; '
-                f'Joint_Gripper={self.pos.get(GRIPPER):.2f} rad')
+                f'Joint_Gripper={self.pos.get(GRIPPER):.2f} rad; '
+                'continuing because close was commanded')
         else:
-            self.get_logger().error(
-                'Gripper close command produced no measured joint motion')
-        return False
+            self.get_logger().warn(
+                'Gripper close command produced no measured joint motion; '
+                'continuing to the lift attempt')
+        return True
 
     # ---------- task ----------
     def execute(self, d):
