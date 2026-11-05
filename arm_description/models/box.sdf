@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<!-- Open-top box for gripper tests.
+     Outer size 150 x 100 x 100 mm (x, y, z), walls 7.5 mm, mass 468.75 g.
+     Link origin is the centre of the box, so spawn it at z = 0.05 m to sit on the ground.
+     Collision = floor + 4 separate walls (no top plate), so the box really is open.
+     Grasp it by closing the jaws on two opposite outer walls: across y = 100 mm, or across x = 150 mm. -->
+<robot name="light_box">
+
+  <material name="box_orange">
+    <color rgba="0.95 0.55 0.10 1.0"/>
+  </material>
+
+  <link name="box_link">
+    <inertial>
+      <origin xyz="0.00000 0.00000 -0.009075" rpy="0 0 0"/>
+      <mass value="0.46875"/>
+      <inertia ixx="1.12548828125e-03" ixy="0.0000e+00" ixz="0.0000e+00" iyy="1.7556640625e-03" iyz="0.0000e+00" izz="1.93603515625e-03"/>
+    </inertial>
+    <visual name="floor_visual">
+      <origin xyz="0.0000 0.0000 -0.04625" rpy="0 0 0"/>
+      <geometry><box size="0.1500 0.1000 0.0075"/></geometry>
+      <material name="box_orange"/>
+    </visual>
+    <visual name="wall_px_visual">
+      <origin xyz="0.07125 0.0000 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.0075 0.1000 0.0925"/></geometry>
+      <material name="box_orange"/>
+    </visual>
+    <visual name="wall_nx_visual">
+      <origin xyz="-0.07125 0.0000 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.0075 0.1000 0.0925"/></geometry>
+      <material name="box_orange"/>
+    </visual>
+    <visual name="wall_py_visual">
+      <origin xyz="0.0000 0.04625 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.1350 0.0075 0.0925"/></geometry>
+      <material name="box_orange"/>
+    </visual>
+    <visual name="wall_ny_visual">
+      <origin xyz="0.0000 -0.04625 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.1350 0.0075 0.0925"/></geometry>
+      <material name="box_orange"/>
+    </visual>
+    <collision name="floor_collision">
+      <origin xyz="0.0000 0.0000 -0.04625" rpy="0 0 0"/>
+      <geometry><box size="0.1500 0.1000 0.0075"/></geometry>
+    </collision>
+    <collision name="wall_px_collision">
+      <origin xyz="0.07125 0.0000 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.0075 0.1000 0.0925"/></geometry>
+    </collision>
+    <collision name="wall_nx_collision">
+      <origin xyz="-0.07125 0.0000 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.0075 0.1000 0.0925"/></geometry>
+    </collision>
+    <collision name="wall_py_collision">
+      <origin xyz="0.0000 0.04625 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.1350 0.0075 0.0925"/></geometry>
+    </collision>
+    <collision name="wall_ny_collision">
+      <origin xyz="0.0000 -0.04625 0.00375" rpy="0 0 0"/>
+      <geometry><box size="0.1350 0.0075 0.0925"/></geometry>
+    </collision>
+  </link>
+
+  <!-- Gazebo Classic contact settings. High friction so the walls do not slip in the jaws;
+       small minDepth / maxVel so the thin walls do not get pushed through each other. -->
+  <gazebo reference="box_link">
+    <material>Gazebo/Orange</material>
+    <mu1>1.5</mu1>
+    <mu2>1.5</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+    <minDepth>0.0005</minDepth>
+    <maxVel>0.1</maxVel>
+    <selfCollide>false</selfCollide>
+  </gazebo>
+
+</robot>

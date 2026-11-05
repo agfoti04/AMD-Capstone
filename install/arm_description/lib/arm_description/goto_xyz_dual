@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """goto_xyz for the dual-arm robot, used to test that the arms avoid each other.
 
-Targets are for the origin of each arm's hand link, in the WORLD frame (the same frame
+Targets are for each arm's gripper grasp point, in the WORLD frame (the same frame
 for both arms). Topics:
 
   /goto_xyz/left   geometry_msgs/Point            move the left arm only
@@ -28,7 +28,7 @@ BASE_JOINTS = ('Joint_1', 'Joint_2', 'Joint_3', 'Joint_4', 'Joint_6')
 ARMS = {
     side: {
         'group': f'{side}_arm',
-        'tip': f'{side}_hand_link',
+        'tip': f'{side}_grasp_point',
         'joints': tuple(f'{side}_{j}' for j in BASE_JOINTS),
     }
     for side in ('left', 'right')

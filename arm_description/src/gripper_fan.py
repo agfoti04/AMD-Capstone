@@ -9,9 +9,18 @@ LO, HI = -1.57, 0.0   # Joint_Gripper limits
 class GripperFanout(Node):
     def __init__(self):
         super().__init__('gripper_fanout')
+        self.declare_parameter('command_topic', '/gripper_cmd')
+        self.declare_parameter(
+            'controller_topic', '/gripper_controller/commands')
         self.pub = self.create_publisher(
-            Float64MultiArray, '/gripper_controller/commands', 10)
-        self.create_subscription(Float64, '/gripper_cmd', self.on_cmd, 10)
+            Float64MultiArray,
+            self.get_parameter('controller_topic').value,
+            10)
+        self.create_subscription(
+            Float64,
+            self.get_parameter('command_topic').value,
+            self.on_cmd,
+            10)
 
     def on_cmd(self, msg):
         q = min(max(msg.data, LO), HI)

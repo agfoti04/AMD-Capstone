@@ -15,7 +15,7 @@
         <joint name="left_Joint_3"/>
         <joint name="left_Joint_4"/>
         <joint name="left_Joint_6"/>
-        <chain base_link="left_base_link" tip_link="left_EE_Gripper_Link"/>
+        <chain base_link="left_base_link" tip_link="left_grasp_point"/>
     </group>
     <group name="right_arm">
         <joint name="right_Joint_1"/>
@@ -23,7 +23,7 @@
         <joint name="right_Joint_3"/>
         <joint name="right_Joint_4"/>
         <joint name="right_Joint_6"/>
-        <chain base_link="right_base_link" tip_link="right_EE_Gripper_Link"/>
+        <chain base_link="right_base_link" tip_link="right_grasp_point"/>
     </group>
     <group name="both_arms">
         <group name="left_arm"/>

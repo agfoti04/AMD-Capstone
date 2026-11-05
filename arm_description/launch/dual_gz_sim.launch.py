@@ -23,24 +23,34 @@ CONTROLLERS = [
 
 def generate_launch_description():
     pkg = get_package_share_directory('arm_description')
+    world = os.path.join(pkg, 'worlds', 'arm_world.sdf')
     robot_desc = xacro.process_file(
         os.path.join(pkg, 'urdf', 'dual_arm.urdf.xacro')).toxml()
-    gazebo_model_path = os.pathsep.join(
-        path for path in (os.path.dirname(pkg), os.environ.get('GAZEBO_MODEL_PATH', ''))
+    gz_resource_path = os.pathsep.join(
+        path for path in (
+            os.path.dirname(pkg),
+            os.environ.get('GZ_SIM_RESOURCE_PATH', ''),
+        )
         if path
     )
 
     gazebo = IncludeLaunchDescription(PythonLaunchDescriptionSource(
         os.path.join(get_package_share_directory('ros_gz_sim'),
-                     'launch', 'gz_sim.launch.py')))
+                     'launch', 'gz_sim.launch.py')),
+        launch_arguments={'gz_args': f'-r {world}'}.items())
     rsp = Node(package='robot_state_publisher', executable='robot_state_publisher',
                parameters=[{'robot_description': robot_desc, 'use_sim_time': True}])
     spawn = Node(package='ros_gz_sim', executable='create', output='screen',
                  arguments=['-topic', 'robot_description', '-entity', 'dual_arm'])
-    # Same obstacle as before. Delete this node (and `rod` in the list below) to remove it.
-    rod = Node(package='ros_gz_sim', executable='create', output='screen',
-               arguments=['-file', os.path.join(pkg, 'models', 'rod.sdf'),
-                          '-entity', 'rod'])
+    box = Node(package='ros_gz_sim', executable='create', output='screen',
+               arguments=['-file', os.path.join(pkg, 'models', 'box.sdf'),
+                          '-name', 'box', '-x', '0.18', '-y', '0.0', '-z', '0.05'])
+    clock = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        output='screen',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+    )
 
     def spawner(name):
         return Node(
@@ -53,11 +63,38 @@ def generate_launch_description():
         )
 
     nodes = [spawner(n) for n in CONTROLLERS]
-    chain = [RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[nodes[0]]))]
+    left_gripper_fan = Node(
+        package='arm_description',
+        executable='gripper_fan',
+        name='left_gripper_fanout',
+        output='screen',
+        parameters=[{
+            'command_topic': '/left_gripper_cmd',
+            'controller_topic': '/left_gripper_controller/commands',
+        }],
+    )
+    right_gripper_fan = Node(
+        package='arm_description',
+        executable='gripper_fan',
+        name='right_gripper_fanout',
+        output='screen',
+        parameters=[{
+            'command_topic': '/right_gripper_cmd',
+            'controller_topic': '/right_gripper_controller/commands',
+        }],
+    )
+    chain = [
+        RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[box])),
+        RegisterEventHandler(OnProcessExit(target_action=box, on_exit=[nodes[0]])),
+    ]
     for prev, nxt in zip(nodes, nodes[1:]):
         chain.append(RegisterEventHandler(OnProcessExit(target_action=prev, on_exit=[nxt])))
+    chain.append(RegisterEventHandler(OnProcessExit(
+        target_action=nodes[-1],
+        on_exit=[left_gripper_fan, right_gripper_fan],
+    )))
 
     return LaunchDescription([
-        SetEnvironmentVariable('GAZEBO_MODEL_PATH', gazebo_model_path),
-        gazebo, rsp, spawn, rod, *chain,
+        SetEnvironmentVariable('GZ_SIM_RESOURCE_PATH', gz_resource_path),
+        gazebo, clock, rsp, spawn, *chain,
     ])

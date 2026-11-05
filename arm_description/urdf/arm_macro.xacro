@@ -20,6 +20,7 @@
     <visual>
       <origin xyz="0 0 0.006903"/>
       <geometry><mesh filename="package://arm_description/meshes/base.stl"/></geometry>
+      <material name="base_slate"><color rgba="0.22 0.27 0.32 1"/></material>
     </visual>
     <collision>
       <origin xyz="0 0 0.006903"/>
@@ -33,7 +34,10 @@
       <inertia ixx="0.000032567811" ixy="0" ixz="0"
                iyy="0.000032568110" iyz="0" izz="0.000052867674"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/shoulder.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/shoulder.stl"/></geometry>
+      <material name="shoulder_blue"><color rgba="0.12 0.35 0.72 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/shoulder.stl"/></geometry></collision>
   </link>
   <link name="${prefix}humerus_link">
@@ -43,7 +47,10 @@
       <inertia ixx="0.000032031340" ixy="0" ixz="0"
                iyy="0.000027964460" iyz="0" izz="0.000006091413"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/humerus.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/humerus.stl"/></geometry>
+      <material name="humerus_orange"><color rgba="0.92 0.35 0.10 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/humerus.stl"/></geometry></collision>
   </link>
   <link name="${prefix}forearm_link">
@@ -53,7 +60,10 @@
       <inertia ixx="0.000053758808" ixy="0" ixz="0"
                iyy="0.000045024344" iyz="0" izz="0.000013082564"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/forearm.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/forearm.stl"/></geometry>
+      <material name="forearm_teal"><color rgba="0.05 0.58 0.52 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/forearm.stl"/></geometry></collision>
   </link>
   <link name="${prefix}wrist_link">
@@ -63,7 +73,10 @@
       <inertia ixx="0.000018547630" ixy="0" ixz="0"
                iyy="0.000021977992" iyz="0" izz="0.000014241720"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/wrist.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/wrist.stl"/></geometry>
+      <material name="wrist_gold"><color rgba="0.92 0.68 0.12 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/wrist.stl"/></geometry></collision>
   </link>
   <link name="${prefix}hand_link">
@@ -73,7 +86,10 @@
       <inertia ixx="0.000008924167" ixy="0" ixz="0"
                iyy="0.000008729011" iyz="0" izz="0.000008671204"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/hand.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/hand.stl"/></geometry>
+      <material name="hand_purple"><color rgba="0.48 0.20 0.68 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/hand.stl"/></geometry></collision>
   </link>
   <link name="${prefix}grip_left_link">
@@ -83,7 +99,10 @@
       <inertia ixx="0.000000588817" ixy="0" ixz="0"
                iyy="0.000000449149" iyz="0" izz="0.000000142956"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/carpal-left.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/carpal-left.stl"/></geometry>
+      <material name="gripper_gray"><color rgba="0.38 0.42 0.47 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/carpal-left.stl"/></geometry></collision>
   </link>
   <link name="${prefix}grip_right_link">
@@ -93,7 +112,10 @@
       <inertia ixx="0.000000729147" ixy="0" ixz="0"
                iyy="0.000000568082" iyz="0" izz="0.000000191833"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/carpal-right.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/carpal-right.stl"/></geometry>
+      <material name="gripper_gray"><color rgba="0.38 0.42 0.47 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/carpal-right.stl"/></geometry></collision>
   </link>
   <link name="${prefix}tendon_left_link">
@@ -103,7 +125,10 @@
       <inertia ixx="0.000000087159" ixy="0" ixz="0"
                iyy="0.000000093216" iyz="0" izz="0.000000012587"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry>
+      <material name="tendon_dark"><color rgba="0.16 0.18 0.20 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></collision>
   </link>
   <link name="${prefix}tendon_right_link">
@@ -113,7 +138,10 @@
       <inertia ixx="0.000000087159" ixy="0" ixz="0"
                iyy="0.000000093216" iyz="0" izz="0.000000012587"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry>
+      <material name="tendon_dark"><color rgba="0.16 0.18 0.20 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/tendon.stl"/></geometry></collision>
   </link>
   <link name="${prefix}finger_left_link">
@@ -123,7 +151,10 @@
       <inertia ixx="0.000000986502" ixy="0" ixz="0"
                iyy="0.000000890885" iyz="0" izz="0.000000113650"/>
     </inertial>
-    <visual><geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry></visual>
+    <visual>
+      <geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry>
+      <material name="finger_blue"><color rgba="0.18 0.48 0.78 1"/></material>
+    </visual>
     <collision><geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry></collision>
   </link>
   <link name="${prefix}finger_right_link">
@@ -136,6 +167,7 @@
     <visual>
       <origin rpy="0 0 3.14159"/>
       <geometry><mesh filename="package://arm_description/meshes/finger.stl"/></geometry>
+      <material name="finger_blue"><color rgba="0.18 0.48 0.78 1"/></material>
     </visual>
     <collision>
       <origin rpy="0 0 3.14159"/>
@@ -208,6 +240,11 @@
   <joint name="${prefix}EE_Gripper_Joint" type="fixed">
     <parent link="${prefix}hand_link"/><child link="${prefix}EE_Gripper_Link"/>
     <origin xyz="0 0 0.056"/>
+  </joint>
+  <link name="${prefix}grasp_point"/>
+  <joint name="${prefix}Grasp_Point_Joint" type="fixed">
+    <parent link="${prefix}hand_link"/><child link="${prefix}grasp_point"/>
+    <origin xyz="0 0 0.087"/>
   </joint>
 
   <gazebo reference="${prefix}grip_left_link">
