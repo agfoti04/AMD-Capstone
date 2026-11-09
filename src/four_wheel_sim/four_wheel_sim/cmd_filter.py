@@ -1,6 +1,6 @@
+from geometry_msgs.msg import Twist
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
 
 MIN_W, MIN_V = 0.7, 0.10   # smallest commands that actually move the robot
 DEAD_W, DEAD_V = 0.03, 0.02  # below this, treat as "stop"

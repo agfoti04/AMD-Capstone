@@ -1,6 +1,7 @@
-from setuptools import find_packages, setup
-import os
 from glob import glob
+import os
+
+from setuptools import find_packages, setup
 
 package_name = 'four_wheel_sim'
 
@@ -14,13 +15,15 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
         (os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.rviz')),
+        (os.path.join('share', package_name, 'config', 'bt'), glob('config/bt/*.xml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='x',
-    description='Sim testing package for basic control theory',
-    license='TODO: License declaration',
+    maintainer='AMD Capstone Team',
+    maintainer_email='agfoti04@tamu.edu',
+    description='Four-wheel rover simulation, mapping, and navigation',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',

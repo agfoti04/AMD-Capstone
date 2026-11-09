@@ -3,16 +3,37 @@
 <package format="3">
   <name>four_wheel_sim</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="agfoti04@tamu.edu">root</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Four-wheel rover simulation, mapping, and navigation.</description>
+  <maintainer email="agfoti04@tamu.edu">AMD Capstone Team</maintainer>
+  <license>Apache-2.0</license>
 
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
   <depend>rclpy</depend>
   <depend>rcl_interfaces</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>tf2_ros</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>xacro</depend>
+  <depend>controller_manager</depend>
+  <depend>joint_state_broadcaster</depend>
+  <depend>diff_drive_controller</depend>
+  <depend>position_controllers</depend>
+  <depend>ros_gz_sim</depend>
+  <depend>ros_gz_bridge</depend>
+  <depend>gz_ros2_control</depend>
+  <depend>rosgraph_msgs</depend>
+  <depend>rtabmap_launch</depend>
+  <depend>rtabmap_odom</depend>
+  <depend>rtabmap_slam</depend>
+  <depend>rtabmap_viz</depend>
+  <depend>nav2_bringup</depend>
+  <depend>nav2_simple_commander</depend>
+  <depend>robot_localization</depend>
+  <exec_depend>python3-numpy</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

@@ -1,4 +1,5 @@
 import os
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
@@ -51,14 +52,17 @@ def generate_launch_description():
                 'autostart': 'true',
             }.items())])
 
-    # 4. RViz, optional
-    # rviz = TimerAction(period=30.0, actions=[
-    #     Node(package='rviz2', executable='rviz2',
-    #          parameters=[{'use_sim_time': True}],
-    #          condition=IfCondition(LaunchConfiguration('rviz')))])
+    rviz = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', os.path.join(pkg, 'config', 'slam.rviz')],
+        parameters=[{'use_sim_time': True}],
+        condition=IfCondition(LaunchConfiguration('rviz')))
 
     return LaunchDescription([
-        DeclareLaunchArgument('rviz', default_value='false'),
+        DeclareLaunchArgument('rviz', default_value='true'),
         DeclareLaunchArgument('viz', default_value='true'),
-        gazebo, rtabmap, nav2,
+        gazebo, rtabmap, nav2, rviz,
     ])

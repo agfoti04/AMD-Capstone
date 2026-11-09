@@ -1,5 +1,4 @@
 import os
-os.environ.setdefault('SIM_WORLD', 'survey')   # before any world import
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -10,6 +9,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    os.environ.setdefault('SIM_WORLD', 'survey')
     pkg = get_package_share_directory('four_wheel_sim')
     rtab = get_package_share_directory('rtabmap_launch')
 
@@ -28,8 +28,8 @@ def generate_launch_description():
                                 '--Vis/MinInliers 28 --RGBD/OptimizeMaxError 0.5 '
                                 '--Grid/FromDepth true --Grid/RayTracing true '
                                 '--Grid/RangeMax 6.0 --Grid/MaxGroundHeight 0.05 '
-                                '--Grid/MaxObstacleHeight 1.0 --Grid/CellSize 0.05', 
-                              
+                                '--Grid/MaxObstacleHeight 1.0 --Grid/CellSize 0.05',
+
                 'rgb_topic': '/oak/image_raw',
                 'depth_topic': '/oak/depth/image_raw',
                 'camera_info_topic': '/oak/camera_info',

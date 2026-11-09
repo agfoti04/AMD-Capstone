@@ -1,9 +1,9 @@
-import math
 from collections import deque
+import math
 
-import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -27,7 +27,7 @@ class DriveController(Node):
         self.tol = math.radians(self.get_parameter('angle_tolerance_deg').value)
 
         self.wz = 0.0
-        self.settle = 0 
+        self.settle = 0
 
         self.goal = 0.0
 
@@ -86,7 +86,7 @@ class DriveController(Node):
     def tick(self):
         if not self.have_odom:
             return
-        #Settle Phase
+        # Settle phase
         if self.settle > 0:
             self.settle += 1
             self.send_sides(0.0, 0.0)
@@ -94,8 +94,8 @@ class DriveController(Node):
             if stopped or self.settle > 150:   # 3 s timeout
                 self.settle = 0
             return
-        
-         # Pop the next command
+
+        # Pop the next command
         if self.active is None:
             if not self.queue:
                 return

@@ -1,0 +1,55 @@
+Warning: A plugin raised an exception during an old-style hookwrapper teardown.
+Plugin: helpconfig, Hook: pytest_cmdline_parse
+PluginValidationError: Plugin 'launch_ros' for hook 'pytest_launch_collect_makemodule'
+hookimpl definition: pytest_launch_collect_makemodule(module_path, parent, entrypoint)
+Argument(s) {'module_path'} are declared in the hookimpl but can not be found in the hookspec
+For more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/usr/lib/python3/dist-packages/pytest/__main__.py", line 5, in <module>
+    raise SystemExit(pytest.console_main())
+                     ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 192, in console_main
+    code = main()
+           ^^^^^^
+  File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 150, in main
+    config = _prepareconfig(args, plugins)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 331, in _prepareconfig
+    config = pluginmanager.hook.pytest_cmdline_parse(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pluggy/_hooks.py", line 501, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 119, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pluggy/_callers.py", line 155, in _multicall
+    teardown[0].send(outcome)
+  File "/usr/lib/python3/dist-packages/_pytest/helpconfig.py", line 104, in pytest_cmdline_parse
+    config: Config = outcome.get_result()
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pluggy/_result.py", line 99, in get_result
+    raise exc.with_traceback(exc.__traceback__)
+  File "/usr/lib/python3/dist-packages/pluggy/_callers.py", line 102, in _multicall
+    res = hook_impl.function(*args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 1075, in pytest_cmdline_parse
+    self.parse(args)
+  File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 1425, in parse
+    self._preparse(args, addopts=addopts)
+  File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 1305, in _preparse
+    self.pluginmanager.load_setuptools_entrypoints("pytest11")
+  File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 415, in load_setuptools_entrypoints
+    self.register(plugin, name=ep.name)
+  File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 491, in register
+    ret: Optional[str] = super().register(plugin, name)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 167, in register
+    self._verify_hook(hook, hookimpl)
+  File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 342, in _verify_hook
+    raise PluginValidationError(
+pluggy._manager.PluginValidationError: Plugin 'launch_ros' for hook 'pytest_launch_collect_makemodule'
+hookimpl definition: pytest_launch_collect_makemodule(module_path, parent, entrypoint)
+Argument(s) {'module_path'} are declared in the hookimpl but can not be found in the hookspec

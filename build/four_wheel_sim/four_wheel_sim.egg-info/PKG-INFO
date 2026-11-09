@@ -1,13 +1,8 @@
 Metadata-Version: 2.1
 Name: four-wheel-sim
 Version: 0.0.0
-Summary: Sim testing package for basic control theory
-Home-page: UNKNOWN
-Maintainer: root
-Maintainer-email: x
-License: TODO: License declaration
-Platform: UNKNOWN
+Summary: Four-wheel rover simulation, mapping, and navigation
+Maintainer: AMD Capstone Team
+Maintainer-email: agfoti04@tamu.edu
+License: Apache-2.0
 Provides-Extra: test
-
-UNKNOWN
-

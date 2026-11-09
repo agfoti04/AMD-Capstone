@@ -4,9 +4,9 @@ from std_msgs.msg import String
 
 COMMANDS = [
     'forward 0.3 25 1.0',
-    #'turn 90',
+    # 'turn 90',
     'forward 0.3 -25 1.0',
-    #'turn -90',
+    # 'turn -90',
     'forward 0.3 0 1.0',
 ]
 

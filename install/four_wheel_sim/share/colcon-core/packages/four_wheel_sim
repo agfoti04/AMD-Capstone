@@ -1,1 +1,1 @@
-geometry_msgs:nav_msgs:rcl_interfaces:rclpy:sensor_msgs:tf2_ros
+ament_index_python:controller_manager:diff_drive_controller:geometry_msgs:gz_ros2_control:joint_state_broadcaster:launch:launch_ros:nav2_bringup:nav2_simple_commander:nav_msgs:position_controllers:python3-numpy:rcl_interfaces:rclpy:robot_localization:robot_state_publisher:ros_gz_bridge:ros_gz_sim:rosgraph_msgs:rtabmap_launch:rtabmap_odom:rtabmap_slam:rtabmap_viz:sensor_msgs:tf2_ros:xacro

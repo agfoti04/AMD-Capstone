@@ -1,0 +1,57 @@
+[0.358s] Invoking command in '/root/Capstone/AMD-Capstone/src/four_wheel_sim': AMENT_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/four_wheel_sim:/root/Capstone/AMD-Capstone/install_jazzy/four_wheel_sim:/opt/ros/humble:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTEST_ADDOPTS=--tb=short --junit-xml=/root/Capstone/AMD-Capstone/build/four_wheel_sim/pytest.xml --junit-prefix=four_wheel_sim -o cache_dir=/root/Capstone/AMD-Capstone/build/four_wheel_sim/.pytest_cache PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/root/Capstone/AMD-Capstone/build/four_wheel_sim:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages:/root/Capstone/AMD-Capstone/build_jazzy/four_wheel_sim:/root/Capstone/AMD-Capstone/install_jazzy/four_wheel_sim/lib/python3.12/site-packages:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages /usr/bin/python3 -m pytest
+[0.547s] Warning: A plugin raised an exception during an old-style hookwrapper teardown.
+[0.547s] Plugin: helpconfig, Hook: pytest_cmdline_parse
+[0.547s] PluginValidationError: Plugin 'launch_ros' for hook 'pytest_launch_collect_makemodule'
+[0.547s] hookimpl definition: pytest_launch_collect_makemodule(module_path, parent, entrypoint)
+[0.547s] Argument(s) {'module_path'} are declared in the hookimpl but can not be found in the hookspec
+[0.547s] For more information see https://pluggy.readthedocs.io/en/stable/api_reference.html#pluggy.PluggyTeardownRaisedWarning
+[0.563s] Traceback (most recent call last):
+[0.564s]   File "<frozen runpy>", line 198, in _run_module_as_main
+[0.564s]   File "<frozen runpy>", line 88, in _run_code
+[0.564s]   File "/usr/lib/python3/dist-packages/pytest/__main__.py", line 5, in <module>
+[0.564s]     raise SystemExit(pytest.console_main())
+[0.564s]                      ^^^^^^^^^^^^^^^^^^^^^
+[0.564s]   File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 192, in console_main
+[0.564s]     code = main()
+[0.564s]            ^^^^^^
+[0.564s]   File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 150, in main
+[0.564s]     config = _prepareconfig(args, plugins)
+[0.564s]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.565s]   File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 331, in _prepareconfig
+[0.565s]     config = pluginmanager.hook.pytest_cmdline_parse(
+[0.565s]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_hooks.py", line 501, in __call__
+[0.565s]     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+[0.565s]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 119, in _hookexec
+[0.565s]     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+[0.565s]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_callers.py", line 155, in _multicall
+[0.565s]     teardown[0].send(outcome)
+[0.565s]   File "/usr/lib/python3/dist-packages/_pytest/helpconfig.py", line 104, in pytest_cmdline_parse
+[0.565s]     config: Config = outcome.get_result()
+[0.565s]                      ^^^^^^^^^^^^^^^^^^^^
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_result.py", line 99, in get_result
+[0.565s]     raise exc.with_traceback(exc.__traceback__)
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_callers.py", line 102, in _multicall
+[0.565s]     res = hook_impl.function(*args)
+[0.565s]           ^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.565s]   File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 1075, in pytest_cmdline_parse
+[0.565s]     self.parse(args)
+[0.565s]   File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 1425, in parse
+[0.565s]     self._preparse(args, addopts=addopts)
+[0.565s]   File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 1305, in _preparse
+[0.565s]     self.pluginmanager.load_setuptools_entrypoints("pytest11")
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 415, in load_setuptools_entrypoints
+[0.565s]     self.register(plugin, name=ep.name)
+[0.565s]   File "/usr/lib/python3/dist-packages/_pytest/config/__init__.py", line 491, in register
+[0.565s]     ret: Optional[str] = super().register(plugin, name)
+[0.565s]                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 167, in register
+[0.565s]     self._verify_hook(hook, hookimpl)
+[0.565s]   File "/usr/lib/python3/dist-packages/pluggy/_manager.py", line 342, in _verify_hook
+[0.565s]     raise PluginValidationError(
+[0.565s] pluggy._manager.PluginValidationError: Plugin 'launch_ros' for hook 'pytest_launch_collect_makemodule'
+[0.565s] hookimpl definition: pytest_launch_collect_makemodule(module_path, parent, entrypoint)
+[0.566s] Argument(s) {'module_path'} are declared in the hookimpl but can not be found in the hookspec
+[0.585s] Invoked command in '/root/Capstone/AMD-Capstone/src/four_wheel_sim' returned '1': AMENT_PREFIX_PATH=/root/Capstone/AMD-Capstone/install/four_wheel_sim:/root/Capstone/AMD-Capstone/install_jazzy/four_wheel_sim:/opt/ros/humble:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTEST_ADDOPTS=--tb=short --junit-xml=/root/Capstone/AMD-Capstone/build/four_wheel_sim/pytest.xml --junit-prefix=four_wheel_sim -o cache_dir=/root/Capstone/AMD-Capstone/build/four_wheel_sim/.pytest_cache PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/root/Capstone/AMD-Capstone/build/four_wheel_sim:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages:/root/Capstone/AMD-Capstone/build_jazzy/four_wheel_sim:/root/Capstone/AMD-Capstone/install_jazzy/four_wheel_sim/lib/python3.12/site-packages:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages /usr/bin/python3 -m pytest

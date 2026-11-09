@@ -1,7 +1,7 @@
+from geometry_msgs.msg import TransformStamped
+from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.node import Node
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
 
 
@@ -25,7 +25,6 @@ class OdomGT(Node):
         t.transform.translation.y = p.position.y
         t.transform.translation.z = p.position.z
         t.transform.rotation = p.orientation
-        #self.pub = self.create_publisher(Odometry, 'odom_truth', 10)
         self.tf.sendTransform(t)
 
 

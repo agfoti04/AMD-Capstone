@@ -1,8 +1,8 @@
 import math
 
+from geometry_msgs.msg import Twist
 import numpy as np
 import rclpy
-from geometry_msgs.msg import Twist
 from rclpy.node import Node
 from rclpy.time import Time
 from sensor_msgs.msg import Image
@@ -13,7 +13,6 @@ TURN_MIN, TURN_MAX = 0.5, 1.0  # rad/s, spin speeds that actually move the robot
 PULSE_SEC = 0.22   # length of each fine-turn pulse
 
 
-
 def wrap(a):
     return math.atan2(math.sin(a), math.cos(a))
 
@@ -21,8 +20,10 @@ def wrap(a):
 class Rover(Node):
     def __init__(self):
         super().__init__('rover_mission')
-        defaults = dict(target_x=2.0, target_y=-3.0, grid_w=8.0, grid_h=6.0,
-                lane_spacing=2.0, speed=0.2, sweep=True, frame='odom')
+        defaults = {
+            'target_x': 2.0, 'target_y': -3.0, 'grid_w': 8.0, 'grid_h': 6.0,
+            'lane_spacing': 2.0, 'speed': 0.2, 'sweep': True, 'frame': 'odom',
+        }
         for k, v in defaults.items():
             self.declare_parameter(k, v)
         self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
@@ -109,7 +110,6 @@ class Rover(Node):
                     self.send(w=math.copysign(TURN_MIN, err))
                     self.tick()
                 self.hold(0.5)
-            
 
     def move(self, v, dist, watch=False):
         p0 = self.pose()

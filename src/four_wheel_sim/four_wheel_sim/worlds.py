@@ -1,5 +1,6 @@
 import os
-from . import maze, field, survey
+
+from . import field, maze, survey
 
 _WORLDS = {'maze': maze, 'field': field, 'survey': survey}
 _w = _WORLDS[os.environ.get('SIM_WORLD', 'survey')]

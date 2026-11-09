@@ -1,7 +1,7 @@
 # AMD Capstone Rover
 
 ROS 2 workspace for a four-wheel rover prototype. The project includes a
-Gazebo Classic simulation, robot description and controllers, several test
+Gazebo Harmonic simulation, robot description and controllers, several test
 worlds, RTAB-Map mapping/localization, and rover navigation/mission nodes.
 There is also a separate launch file for using an OAK camera with a
 host-computed RTAB-Map visual odometry pipeline.
@@ -10,9 +10,10 @@ The ROS package in this workspace is `four_wheel_sim`.
 
 ## Requirements
 
-The current launch files target **ROS 2 Humble on Ubuntu 22.04** and use
-Gazebo Classic. Install ROS 2 Humble and initialize `rosdep` using the
-[official ROS 2 installation instructions](https://docs.ros.org/en/humble/Installation.html)
+The current launch files target **ROS 2 Jazzy on Ubuntu 24.04** and use
+Gazebo Harmonic through `ros_gz_sim`, `ros_gz_bridge`, and `gz_ros2_control`.
+Install ROS 2 Jazzy and initialize `rosdep` using the
+[official ROS 2 installation instructions](https://docs.ros.org/en/jazzy/Installation.html)
 before installing the project dependencies.
 
 ### ROS 2 and system packages
@@ -23,24 +24,24 @@ sudo apt install -y \
   python3-colcon-common-extensions \
   python3-rosdep \
   python3-numpy \
-  ros-humble-gazebo-ros-pkgs \
-  ros-humble-robot-state-publisher \
-  ros-humble-rviz2 \
-  ros-humble-xacro \
-  ros-humble-ros2-control \
-  ros-humble-ros2-controllers \
-  ros-humble-navigation2 \
-  ros-humble-nav2-bringup \
-  ros-humble-nav2-simple-commander \
-  ros-humble-rtabmap-ros \
-  ros-humble-robot-localization \
-  ros-humble-ament-copyright \
-  ros-humble-ament-flake8 \
-  ros-humble-ament-pep257 \
+  ros-jazzy-ros-gz \
+  ros-jazzy-gz-ros2-control \
+  ros-jazzy-robot-state-publisher \
+  ros-jazzy-rviz2 \
+  ros-jazzy-xacro \
+  ros-jazzy-ros2-controllers \
+  ros-jazzy-navigation2 \
+  ros-jazzy-nav2-bringup \
+  ros-jazzy-nav2-simple-commander \
+  ros-jazzy-rtabmap-ros \
+  ros-jazzy-robot-localization \
+  ros-jazzy-ament-copyright \
+  ros-jazzy-ament-flake8 \
+  ros-jazzy-ament-pep257 \
   python3-pytest
 ```
 
-The ROS 2 Humble desktop/base installation supplies the core ROS client
+The ROS 2 Jazzy desktop/base installation supplies the core ROS client
 libraries, messages, TF, and launch system used by the package. `python3-numpy`
 is used by the depth-image rover mission.
 
@@ -68,8 +69,8 @@ and this workspace:
 
 ```bash
 cd /path/to/AMD-Capstone
-source /opt/ros/humble/setup.bash
-colcon build --symlink-install
+source /opt/ros/jazzy/setup.bash
+colcon build
 source install/setup.bash
 ```
 
@@ -79,13 +80,16 @@ After rebuilding in the same terminal:
 source install/setup.bash
 ```
 
-`rosdep` installs dependencies declared in package manifests. The explicit
-package list above is included because some launch/runtime dependencies used
-by this project are not currently declared in `package.xml`.
+The runtime dependencies are declared in `package.xml`. They can also be
+installed from the workspace with:
+
+```bash
+rosdep install --from-paths src --ignore-src -r -y --rosdistro jazzy
+```
 
 ## Run the simulation
 
-Start Gazebo Classic with the default `survey` world:
+Start Gazebo Harmonic with the default `survey` world:
 
 ```bash
 ros2 launch four_wheel_sim gazebo.launch.py
@@ -139,11 +143,17 @@ terminal.
 The following console scripts are registered by `four_wheel_sim`:
 
 ```bash
+ros2 run four_wheel_sim my_teleop
 ros2 run four_wheel_sim rover_mission
 ros2 run four_wheel_sim maze_waypoints
 ros2 run four_wheel_sim cmd_filter
 ros2 run four_wheel_sim odom_gt
 ```
+
+Run `my_teleop` in a separate terminal while the Gazebo simulation is active.
+Use `i` to drive forward, `,` to reverse, `j`/`l` to turn, `k` to stop, and
+`q` to quit. The node republishes commands while a key is repeating and stops
+automatically if keyboard input stops.
 
 `maze_waypoints` expects Nav2 to already be running. `rover_mission` expects a
 depth image on `/oak/depth/image_raw` and a usable transform from its configured
@@ -171,7 +181,7 @@ the base frame published by the driver. The launch starts the camera driver,
 
 ## Useful ROS 2 commands
 
-Run these in a terminal where `/opt/ros/humble/setup.bash` and
+Run these in a terminal where `/opt/ros/jazzy/setup.bash` and
 `install/setup.bash` have been sourced:
 
 ```bash
@@ -212,14 +222,9 @@ custom_launch/  Hardware-oriented OAK/RTAB-Map launch
 testing/       Separate projector/device experiments and Python requirements
 ```
 
-The simulation world is generated at launch from the selected world definition.
+The Gazebo Sim world is generated at launch from the selected world definition.
 `gazebo.launch.py` defaults to `survey`; `maze`, `field`, and `survey` are
 implemented in `four_wheel_sim`.
 
-## Configuration note
-
-`config/nav2_params.yaml` currently refers to the custom behavior tree using an
-absolute path under `/root/Capstone/AMD-Capstone`. If your checkout is in a
-different location and you use `slam.launch.py`, update
-`default_nav_to_pose_bt_xml` in that file to the local path of
-`src/four_wheel_sim/config/bt/nav_bt.xml` before launching.
+The custom Nav2 behavior tree is installed with the package and resolved from
+the package share directory when Nav2 loads its parameters.
