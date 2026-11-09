@@ -153,7 +153,10 @@ ros2 run four_wheel_sim odom_gt
 Run `my_teleop` in a separate terminal while the Gazebo simulation is active.
 Use `i` to drive forward, `,` to reverse, `j`/`l` to turn, `k` to stop, and
 `q` to quit. The node republishes commands while a key is repeating and stops
-automatically if keyboard input stops.
+automatically if keyboard input stops. It publishes timestamped
+`geometry_msgs/TwistStamped` commands directly to the controller's
+`/diff_drive_controller/cmd_vel` input using Gazebo simulated time, bypassing
+the `/cmd_vel` filter relay.
 
 `maze_waypoints` expects Nav2 to already be running. `rover_mission` expects a
 depth image on `/oak/depth/image_raw` and a usable transform from its configured

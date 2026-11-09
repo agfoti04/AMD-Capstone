@@ -1,0 +1,49 @@
+[0.000000] (-) TimerEvent: {}
+[0.000129] (four_wheel_sim) JobQueued: {'identifier': 'four_wheel_sim', 'dependencies': OrderedDict()}
+[0.000895] (four_wheel_sim) JobStarted: {'identifier': 'four_wheel_sim'}
+[0.100303] (-) TimerEvent: {}
+[0.200499] (-) TimerEvent: {}
+[0.302106] (-) TimerEvent: {}
+[0.402688] (-) TimerEvent: {}
+[0.502848] (-) TimerEvent: {}
+[0.603007] (-) TimerEvent: {}
+[0.703411] (-) TimerEvent: {}
+[0.803606] (-) TimerEvent: {}
+[0.903721] (-) TimerEvent: {}
+[0.941483] (four_wheel_sim) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', '-W', 'ignore:easy_install command is deprecated', 'setup.py', 'egg_info', '--egg-base', '../../build/four_wheel_sim', 'build', '--build-base', '/root/Capstone/AMD-Capstone/build/four_wheel_sim/build', 'install', '--record', '/root/Capstone/AMD-Capstone/build/four_wheel_sim/install.log', '--install-scripts', '$base/lib/four_wheel_sim', '--single-version-externally-managed', 'install_data'], 'cwd': '/root/Capstone/AMD-Capstone/src/four_wheel_sim', 'env': OrderedDict({'GZ_SIM_SYSTEM_PLUGIN_PATH': '/opt/ros/jazzy/lib', 'GZ_SIM_RESOURCE_PATH': '/opt/ros/jazzy/share', 'GZ_CONFIG_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz', 'SHLVL': '0', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor/lib:/opt/ros/jazzy/opt/gz_sensors_vendor/lib:/opt/ros/jazzy/opt/gz_physics_vendor/lib:/opt/ros/jazzy/opt/sdformat_vendor/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_gui_vendor/lib:/opt/ros/jazzy/opt/gz_transport_vendor/lib:/opt/ros/jazzy/opt/gz_rendering_vendor/lib:/opt/ros/jazzy/opt/gz_plugin_vendor/lib:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/lib:/opt/ros/jazzy/opt/gz_msgs_vendor/lib:/opt/ros/jazzy/opt/gz_common_vendor/lib:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_tools_vendor/lib:/opt/ros/jazzy/opt/gz_ogre_next_vendor/lib:/opt/ros/jazzy/opt/gz_dartsim_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/root', 'OLDPWD': '/root/Capstone/AMD-Capstone', 'ROS_PYTHON_VERSION': '3', 'LC_CTYPE': 'C.UTF-8', 'ROS_DISTRO': 'jazzy', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'TERM': 'xterm', 'PATH': '/opt/ros/jazzy/opt/gz_msgs_vendor/bin:/opt/ros/jazzy/opt/gz_tools_vendor/bin:/opt/ros/jazzy/opt/gz_ogre_next_vendor/bin:/opt/ros/jazzy/bin:/usr/bin:/bin', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'PWD': '/root/Capstone/AMD-Capstone/build/four_wheel_sim', 'PYTHONPATH': '/root/Capstone/AMD-Capstone/build/four_wheel_sim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages:/opt/ros/jazzy/opt/gz_sim_vendor/lib/python:/opt/ros/jazzy/opt/sdformat_vendor/lib/python:/opt/ros/jazzy/opt/gz_transport_vendor/lib/python:/opt/ros/jazzy/opt/gz_msgs_vendor/lib/python:/opt/ros/jazzy/opt/gz_math_vendor/lib/python:/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_sim_vendor:/opt/ros/jazzy/opt/gz_sensors_vendor:/opt/ros/jazzy/opt/gz_physics_vendor:/opt/ros/jazzy/opt/sdformat_vendor:/opt/ros/jazzy/opt/gz_gui_vendor:/opt/ros/jazzy/opt/gz_transport_vendor:/opt/ros/jazzy/opt/gz_rendering_vendor:/opt/ros/jazzy/opt/gz_plugin_vendor:/opt/ros/jazzy/opt/gz_fuel_tools_vendor:/opt/ros/jazzy/opt/gz_msgs_vendor:/opt/ros/jazzy/opt/gz_common_vendor:/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_tools_vendor:/opt/ros/jazzy/opt/gz_ogre_next_vendor:/opt/ros/jazzy/opt/gz_dartsim_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor'}), 'shell': False}
+[1.003825] (-) TimerEvent: {}
+[1.103997] (-) TimerEvent: {}
+[1.204193] (-) TimerEvent: {}
+[1.227134] (four_wheel_sim) StdoutLine: {'line': b'running egg_info\n'}
+[1.250147] (four_wheel_sim) StdoutLine: {'line': b'writing ../../build/four_wheel_sim/four_wheel_sim.egg-info/PKG-INFO\n'}
+[1.252133] (four_wheel_sim) StdoutLine: {'line': b'writing dependency_links to ../../build/four_wheel_sim/four_wheel_sim.egg-info/dependency_links.txt\n'}
+[1.252466] (four_wheel_sim) StdoutLine: {'line': b'writing entry points to ../../build/four_wheel_sim/four_wheel_sim.egg-info/entry_points.txt\n'}
+[1.252624] (four_wheel_sim) StdoutLine: {'line': b'writing requirements to ../../build/four_wheel_sim/four_wheel_sim.egg-info/requires.txt\n'}
+[1.252672] (four_wheel_sim) StdoutLine: {'line': b'writing top-level names to ../../build/four_wheel_sim/four_wheel_sim.egg-info/top_level.txt\n'}
+[1.292219] (four_wheel_sim) StdoutLine: {'line': b"reading manifest file '../../build/four_wheel_sim/four_wheel_sim.egg-info/SOURCES.txt'\n"}
+[1.293274] (four_wheel_sim) StdoutLine: {'line': b"writing manifest file '../../build/four_wheel_sim/four_wheel_sim.egg-info/SOURCES.txt'\n"}
+[1.293703] (four_wheel_sim) StdoutLine: {'line': b'running build\n'}
+[1.293792] (four_wheel_sim) StdoutLine: {'line': b'running build_py\n'}
+[1.294021] (four_wheel_sim) StdoutLine: {'line': b'copying four_wheel_sim/my_teleop.py -> /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim\n'}
+[1.297555] (four_wheel_sim) StdoutLine: {'line': b'running install\n'}
+[1.300548] (four_wheel_sim) StdoutLine: {'line': b'running install_lib\n'}
+[1.304305] (-) TimerEvent: {}
+[1.321447] (four_wheel_sim) StdoutLine: {'line': b'copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/my_teleop.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim\n'}
+[1.324024] (four_wheel_sim) StdoutLine: {'line': b'byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/my_teleop.py to my_teleop.cpython-312.pyc\n'}
+[1.325894] (four_wheel_sim) StdoutLine: {'line': b'running install_data\n'}
+[1.327243] (four_wheel_sim) StdoutLine: {'line': b'running install_egg_info\n'}
+[1.349545] (four_wheel_sim) StdoutLine: {'line': b"removing '/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim-0.0.0-py3.12.egg-info' (and everything under it)\n"}
+[1.349743] (four_wheel_sim) StdoutLine: {'line': b'Copying ../../build/four_wheel_sim/four_wheel_sim.egg-info to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim-0.0.0-py3.12.egg-info\n'}
+[1.349842] (four_wheel_sim) StdoutLine: {'line': b'running install_scripts\n'}
+[1.405044] (-) TimerEvent: {}
+[1.485143] (four_wheel_sim) StdoutLine: {'line': b'Installing cmd_filter script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim\n'}
+[1.485645] (four_wheel_sim) StdoutLine: {'line': b'Installing head_scanner script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim\n'}
+[1.486127] (four_wheel_sim) StdoutLine: {'line': b'Installing maze_waypoints script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim\n'}
+[1.486541] (four_wheel_sim) StdoutLine: {'line': b'Installing my_teleop script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim\n'}
+[1.486813] (four_wheel_sim) StdoutLine: {'line': b'Installing odom_gt script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim\n'}
+[1.486926] (four_wheel_sim) StdoutLine: {'line': b'Installing rover_mission script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim\n'}
+[1.486994] (four_wheel_sim) StdoutLine: {'line': b"writing list of installed files to '/root/Capstone/AMD-Capstone/build/four_wheel_sim/install.log'\n"}
+[1.505234] (-) TimerEvent: {}
+[1.522285] (four_wheel_sim) CommandEnded: {'returncode': 0}
+[1.531763] (four_wheel_sim) JobEnded: {'identifier': 'four_wheel_sim', 'rc': 0}
+[1.532611] (-) EventReactorShutdown: {}

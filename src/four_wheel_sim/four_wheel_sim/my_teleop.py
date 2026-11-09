@@ -4,7 +4,7 @@ import termios
 import time
 import tty
 
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import TwistStamped
 import rclpy
 from rclpy.node import Node
 
@@ -20,8 +20,12 @@ KEY_BINDINGS = {
 
 class Teleop(Node):
     def __init__(self):
-        super().__init__('my_teleop')
-        self.publisher = self.create_publisher(Twist, '/cmd_vel', 10)
+        super().__init__(
+            'my_teleop',
+            parameter_overrides=[
+                rclpy.parameter.Parameter('use_sim_time', value=True)])
+        self.publisher = self.create_publisher(
+            TwistStamped, '/diff_drive_controller/cmd_vel', 10)
 
 
 def main():
@@ -61,15 +65,20 @@ def main():
                 linear_x = angular_z = 0.0
                 last_key_time = 0.0
 
-            command = Twist()
-            command.linear.x = linear_x
-            command.angular.z = angular_z
+            command = TwistStamped()
+            command.header.stamp = node.get_clock().now().to_msg()
+            command.header.frame_id = 'base_link'
+            command.twist.linear.x = linear_x
+            command.twist.angular.z = angular_z
             node.publisher.publish(command)
             rclpy.spin_once(node, timeout_sec=0.0)
     except KeyboardInterrupt:
         pass
     finally:
-        node.publisher.publish(Twist())
+        stop = TwistStamped()
+        stop.header.stamp = node.get_clock().now().to_msg()
+        stop.header.frame_id = 'base_link'
+        node.publisher.publish(stop)
         node.destroy_node()
         rclpy.shutdown()
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, terminal_settings)

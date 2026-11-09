@@ -1,4 +1,4 @@
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistStamped
 import rclpy
 from rclpy.node import Node
 
@@ -10,7 +10,7 @@ class CmdFilter(Node):
     def __init__(self):
         super().__init__('cmd_filter')
         self.pub = self.create_publisher(
-            Twist, '/diff_drive_controller/cmd_vel_unstamped', 10)
+            TwistStamped, '/diff_drive_controller/cmd_vel', 10)
         self.create_subscription(Twist, '/cmd_vel', self.cb, 10)
 
     def cb(self, m):
@@ -23,7 +23,11 @@ class CmdFilter(Node):
             m.linear.x = 0.0
         elif abs(v) < MIN_V:
             m.linear.x = MIN_V if v > 0 else -MIN_V
-        self.pub.publish(m)
+        command = TwistStamped()
+        command.header.stamp = self.get_clock().now().to_msg()
+        command.header.frame_id = 'base_link'
+        command.twist = m
+        self.pub.publish(command)
 
 
 def main():

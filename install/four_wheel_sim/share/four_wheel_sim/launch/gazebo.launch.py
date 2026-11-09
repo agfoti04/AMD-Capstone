@@ -134,7 +134,7 @@ def generate_launch_description():
                parameters=[{'robot_description': robot_desc, 'use_sim_time': True}])
     spawn = Node(package='ros_gz_sim', executable='create', output='screen',
                  arguments=['-name', 'four_wheel_bot', '-topic', 'robot_description',
-                            '-x', '0', '-y', '0', '-z', '0.09'])
+                            '-x', '0', '-y', '0', '-z', '0.08'])
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
