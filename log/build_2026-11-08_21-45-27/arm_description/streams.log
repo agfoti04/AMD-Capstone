@@ -1,0 +1,121 @@
+[0.007s] Invoking command in '/root/Capstone/AMD-Capstone/build/arm_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20
+[0.096s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.236s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.249s] -- Found xacro: 2.1.1 (/opt/ros/jazzy/share/xacro/cmake)
+[0.249s] -- Found robot_state_publisher: 3.3.4 (/opt/ros/jazzy/share/robot_state_publisher/cmake)
+[0.472s] -- Found rosidl_generator_c: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.477s] -- Found rosidl_generator_cpp: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.487s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.498s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.555s] -- Found rmw_implementation_cmake: 7.3.4 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[0.558s] -- Found rmw_fastrtps_cpp: 8.4.4 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[0.729s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.006s] -- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[1.070s] -- Added test 'flake8' to check Python code syntax and style conventions
+[1.070s] -- Configured 'flake8' exclude dirs and/or files: 
+[1.070s] -- Added test 'lint_cmake' to check CMake code style
+[1.071s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[1.072s] -- Added test 'xmllint' to check XML markup files
+[1.073s] -- Configuring done (1.0s)
+[1.076s] -- Generating done (0.0s)
+[1.078s] -- Build files have been written to: /root/Capstone/AMD-Capstone/build/arm_description
+[1.094s] Invoked command in '/root/Capstone/AMD-Capstone/build/arm_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /root/Capstone/AMD-Capstone/build/arm_description -- -j20 -l20
+[1.099s] Invoking command in '/root/Capstone/AMD-Capstone/build/arm_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_description
+[1.108s] -- Install configuration: ""
+[1.108s] -- Execute custom install script
+[1.108s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro
+[1.108s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm_macro.xacro
+[1.108s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro
+[1.108s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro
+[1.108s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro
+[1.109s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm_macro.xacro
+[1.109s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro
+[1.109s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro
+[1.109s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_arm.launch.cpython-310.pyc
+[1.109s] -- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_gazebo.launch.cpython-312.pyc
+[1.109s] -- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_gz_sim.launch.cpython-312.pyc
+[1.113s] -- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/gz_sim.launch.cpython-312.pyc
+[1.118s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_arm.launch.py
+[1.118s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py
+[1.118s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gz_sim.launch.py
+[1.118s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py
+[1.118s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gz_sim.launch.py
+[1.118s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/dual_controllers.yaml
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/base.stl
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-left.stl
+[1.119s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-right.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/finger.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/forearm.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/hand.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/humerus.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/shoulder.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/tendon.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/wrist.stl
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm.urdf.xacro
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/arm_macro.xacro
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/dual_arm.urdf.xacro
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/urdf/new_arm.urdf.xacro
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_arm.launch.cpython-310.pyc
+[1.120s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_gazebo.launch.cpython-312.pyc
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/dual_gz_sim.launch.cpython-312.pyc
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/__pycache__/gz_sim.launch.cpython-312.pyc
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_arm.launch.py
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gazebo.launch.py
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/dual_gz_sim.launch.py
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gazebo.launch.py
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/launch/gz_sim.launch.py
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/controllers.yaml
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/config/dual_controllers.yaml
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Gripper.STL
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_0.STL
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_1.STL
+[1.121s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_2.STL
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_3.STL
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_4.STL
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_5.STL
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/Link_6.STL
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/base.stl
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-left.stl
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/carpal-right.stl
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/finger.stl
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/forearm.stl
+[1.122s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/hand.stl
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/humerus.stl
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/shoulder.stl
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/tendon.stl
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/meshes/wrist.stl
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/box.sdf
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/models/rod.sdf
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/worlds/arm_world.sdf
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/package_run_dependencies/arm_description
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/parent_prefix_path/arm_description
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.sh
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/ament_prefix_path.dsv
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.sh
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/environment/path.dsv
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.bash
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.sh
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.zsh
+[1.123s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/local_setup.dsv
+[1.123s] -- Symlinking: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.dsv
+[1.128s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/ament_index/resource_index/packages/arm_description
+[1.128s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig.cmake
+[1.128s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/cmake/arm_descriptionConfig-version.cmake
+[1.128s] -- Up-to-date symlink: /root/Capstone/AMD-Capstone/install/arm_description/share/arm_description/package.xml
+[1.128s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_teleop
+[1.128s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/arm_control
+[1.128s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/pick_place
+[1.129s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/goto_xyz
+[1.129s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/gripper_fan
+[1.129s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/scene_setup
+[1.129s] -- Up-to-date: /root/Capstone/AMD-Capstone/install/arm_description/lib/arm_description/goto_xyz_dual
+[1.129s] Invoked command in '/root/Capstone/AMD-Capstone/build/arm_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /root/Capstone/AMD-Capstone/build/arm_description

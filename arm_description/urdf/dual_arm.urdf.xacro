@@ -26,6 +26,7 @@
   <gazebo>
   <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
     <parameters>$(find arm_description)/config/dual_controllers.yaml</parameters>
+    <position_proportional_gain>0.5</position_proportional_gain>
   </plugin>
 </gazebo>
 

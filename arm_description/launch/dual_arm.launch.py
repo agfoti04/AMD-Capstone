@@ -25,7 +25,7 @@ def generate_launch_description():
     sim_time = {'use_sim_time': True}
 
     gazebo = IncludeLaunchDescription(PythonLaunchDescriptionSource(
-        os.path.join(arm_pkg, 'launch', 'dual_gazebo.launch.py')))
+        os.path.join(arm_pkg, 'launch', 'dual_gz_sim.launch.py')))
 
     moveit = TimerAction(period=MOVEIT_DELAY, actions=[
         Node(package='moveit_ros_move_group', executable='move_group',

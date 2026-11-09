@@ -176,6 +176,21 @@
   </link>
   <link name="${prefix}EE_Gripper_Link"/>
 
+  <gazebo reference="${prefix}base_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}shoulder_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}humerus_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}forearm_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}wrist_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}hand_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}grip_left_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}grip_right_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}tendon_left_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}tendon_right_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}finger_left_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}finger_right_link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}EE_Gripper_Link"><gravity>false</gravity></gazebo>
+  <gazebo reference="${prefix}grasp_point"><gravity>false</gravity></gazebo>
+
   <joint name="${prefix}Joint_1" type="revolute">
     <parent link="${prefix}base_link"/><child link="${prefix}shoulder_link"/>
     <origin xyz="0 0 0.059"/><axis xyz="0 0 1"/>
@@ -189,7 +204,7 @@
   <joint name="${prefix}Joint_3" type="revolute">
     <parent link="${prefix}humerus_link"/><child link="${prefix}forearm_link"/>
     <origin xyz="0 0 0.105"/><axis xyz="0 -1 0"/>
-    <limit effort="2.94" lower="-2.20" upper="2.27" velocity="0.5"/>
+    <limit effort="2.94" lower="-2.30" upper="2.27" velocity="0.5"/>
   </joint>
   <joint name="${prefix}Joint_4" type="revolute">
     <parent link="${prefix}forearm_link"/><child link="${prefix}wrist_link"/>
