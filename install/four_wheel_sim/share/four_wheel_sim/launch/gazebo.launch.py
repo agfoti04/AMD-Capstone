@@ -153,6 +153,9 @@ def generate_launch_description():
     cmd_relay = Node(
         package='four_wheel_sim', executable='cmd_filter',
         parameters=[{'use_sim_time': True}])
+    wheel_command_bridge = Node(
+        package='four_wheel_sim', executable='whl_to_term', output='screen',
+        parameters=[{'use_sim_time': True}])
     odom_relay = Node(
         package='four_wheel_sim', executable='odom_gt',
         parameters=[{'use_sim_time': True}])
@@ -162,5 +165,5 @@ def generate_launch_description():
         RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[jsb])),
         RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[ddc])),
         RegisterEventHandler(OnProcessExit(target_action=ddc, on_exit=[head])),
-        cmd_relay, odom_relay,
+        cmd_relay, wheel_command_bridge, odom_relay,
     ])

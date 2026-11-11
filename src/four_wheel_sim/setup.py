@@ -32,6 +32,7 @@ setup(
     entry_points={
         'console_scripts': [
             'my_teleop = four_wheel_sim.my_teleop:main',
+            'whl_to_term = four_wheel_sim.whl_to_term:main',
             'maze_waypoints = four_wheel_sim.maze_waypoints:main',
             'odom_gt = four_wheel_sim.odom_gt:main',
             'cmd_filter = four_wheel_sim.cmd_filter:main',

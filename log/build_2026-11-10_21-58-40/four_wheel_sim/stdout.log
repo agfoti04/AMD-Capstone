@@ -1,0 +1,71 @@
+running develop
+Removing /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four-wheel-sim.egg-link (link to .)
+running egg_info
+writing ../../build/four_wheel_sim/four_wheel_sim.egg-info/PKG-INFO
+writing dependency_links to ../../build/four_wheel_sim/four_wheel_sim.egg-info/dependency_links.txt
+writing entry points to ../../build/four_wheel_sim/four_wheel_sim.egg-info/entry_points.txt
+writing requirements to ../../build/four_wheel_sim/four_wheel_sim.egg-info/requires.txt
+writing top-level names to ../../build/four_wheel_sim/four_wheel_sim.egg-info/top_level.txt
+reading manifest file '../../build/four_wheel_sim/four_wheel_sim.egg-info/SOURCES.txt'
+writing manifest file '../../build/four_wheel_sim/four_wheel_sim.egg-info/SOURCES.txt'
+running build
+running build_py
+copying four_wheel_sim/whl_to_term.py -> /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim
+running install
+running install_lib
+creating /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/__init__.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/base_controller.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/worlds.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/odom_gt.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/field.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/survey.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/path_runner.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/my_teleop.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/rover_mission.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/maze_waypoints.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/whl_to_term.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/maze.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+copying /root/Capstone/AMD-Capstone/build/four_wheel_sim/build/lib/four_wheel_sim/cmd_filter.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/__init__.py to __init__.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/base_controller.py to base_controller.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/worlds.py to worlds.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/odom_gt.py to odom_gt.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/field.py to field.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/survey.py to survey.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/path_runner.py to path_runner.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/my_teleop.py to my_teleop.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/rover_mission.py to rover_mission.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/maze_waypoints.py to maze_waypoints.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/whl_to_term.py to whl_to_term.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/maze.py to maze.cpython-312.pyc
+byte-compiling /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim/cmd_filter.py to cmd_filter.cpython-312.pyc
+running install_data
+copying resource/four_wheel_sim -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/ament_index/resource_index/packages
+copying package.xml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim
+copying launch/gazebo.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+copying launch/rtab_demo.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+copying launch/slam.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+copying launch/localization.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+copying launch/camera_control.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+copying launch/rover.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+copying launch/sim.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+copying urdf/robot.urdf.xacro -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/urdf
+copying config/ros_gz_bridge.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+copying config/ekf.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+copying config/controllers.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+copying config/maze.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+copying config/nav2_params.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+copying config/slam.rviz -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+copying config/bt/nav_bt.xml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config/bt
+running install_egg_info
+Copying ../../build/four_wheel_sim/four_wheel_sim.egg-info to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four_wheel_sim-0.0.0-py3.12.egg-info
+running install_scripts
+Installing cmd_filter script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+Installing head_scanner script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+Installing maze_waypoints script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+Installing my_teleop script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+Installing odom_gt script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+Installing rover_mission script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+Installing whl_to_term script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+writing list of installed files to '/root/Capstone/AMD-Capstone/build/four_wheel_sim/install.log'

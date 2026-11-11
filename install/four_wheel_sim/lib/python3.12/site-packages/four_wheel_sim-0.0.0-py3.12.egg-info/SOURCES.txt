@@ -26,6 +26,7 @@ four_wheel_sim/odom_gt.py
 four_wheel_sim/path_runner.py
 four_wheel_sim/rover_mission.py
 four_wheel_sim/survey.py
+four_wheel_sim/whl_to_term.py
 four_wheel_sim/worlds.py
 launch/camera_control.py
 launch/gazebo.launch.py

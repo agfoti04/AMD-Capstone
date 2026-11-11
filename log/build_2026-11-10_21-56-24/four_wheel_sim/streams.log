@@ -1,0 +1,40 @@
+[0.905s] Invoking command in '/root/Capstone/AMD-Capstone/build/four_wheel_sim': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/root/Capstone/AMD-Capstone/build/four_wheel_sim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /root/Capstone/AMD-Capstone/build/four_wheel_sim/build --no-deps symlink_data --force
+[1.103s] running develop
+[1.223s] running egg_info
+[1.235s] writing four_wheel_sim.egg-info/PKG-INFO
+[1.235s] writing dependency_links to four_wheel_sim.egg-info/dependency_links.txt
+[1.235s] writing entry points to four_wheel_sim.egg-info/entry_points.txt
+[1.235s] writing requirements to four_wheel_sim.egg-info/requires.txt
+[1.235s] writing top-level names to four_wheel_sim.egg-info/top_level.txt
+[1.258s] reading manifest file 'four_wheel_sim.egg-info/SOURCES.txt'
+[1.258s] writing manifest file 'four_wheel_sim.egg-info/SOURCES.txt'
+[1.270s] running build_ext
+[1.270s] Creating /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages/four-wheel-sim.egg-link (link to .)
+[1.271s] Installing cmd_filter script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[1.271s] Installing head_scanner script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[1.271s] Installing maze_waypoints script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[1.271s] Installing my_teleop script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[1.271s] Installing odom_gt script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[1.271s] Installing rover_mission script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[1.271s] Installing whl_to_term script to /root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/four_wheel_sim
+[1.272s] 
+[1.272s] Installed /root/Capstone/AMD-Capstone/build/four_wheel_sim
+[1.272s] running symlink_data
+[1.272s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/resource/four_wheel_sim -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/ament_index/resource_index/packages
+[1.272s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/package.xml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim
+[1.273s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/launch/gazebo.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+[1.273s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/launch/rtab_demo.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+[1.273s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/launch/slam.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+[1.273s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/launch/localization.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+[1.273s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/launch/camera_control.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+[1.273s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/launch/rover.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+[1.273s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/launch/sim.launch.py -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/launch
+[1.274s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/urdf/robot.urdf.xacro -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/urdf
+[1.274s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/config/ros_gz_bridge.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+[1.274s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/config/ekf.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+[1.274s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/config/controllers.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+[1.275s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/config/maze.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+[1.275s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/config/nav2_params.yaml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+[1.275s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/config/slam.rviz -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config
+[1.275s] symbolically linking /root/Capstone/AMD-Capstone/build/four_wheel_sim/config/bt/nav_bt.xml -> /root/Capstone/AMD-Capstone/install/four_wheel_sim/share/four_wheel_sim/config/bt
+[1.293s] Invoked command in '/root/Capstone/AMD-Capstone/build/four_wheel_sim' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/root/Capstone/AMD-Capstone/build/four_wheel_sim/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/root/Capstone/AMD-Capstone/install/four_wheel_sim/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /root/Capstone/AMD-Capstone/build/four_wheel_sim/build --no-deps symlink_data --force
