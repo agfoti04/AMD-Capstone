@@ -80,7 +80,7 @@ static const std::vector<JointConfig> JOINTS = {
     // arm_teleop.py). center_us is the OPEN pulse, so this range maps to
     // 1500 us (open) down to 600 us (closed). Tune center_us and pmin to your
     // gripper's real open/closed positions, and flip sign if it moves backwards.
-    {"Gripper",   "G",    5, -1.57,  0.00,   1.0, 1500.0, 600.0, 1500.0, GRIPPER_STEP_RADIANS},
+    {"Gripper",   "G",    5, 0,  1.57,   1.0, 1500.0, 600.0, 1500.0, GRIPPER_STEP_RADIANS},
 };
 
 struct KeyBinding {
