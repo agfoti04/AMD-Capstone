@@ -11,7 +11,9 @@
 // Controls:
 //   Joint_1: q / a     Joint_2: w / s     Joint_3: e / d
 //   Joint_4: r / f     Joint_6: y / h
-//   c: go to every joint's zero position      x / Ctrl+C: quit
+//   Gripper: u (open) / j (close)
+//   c: go to every joint's zero position (opens the gripper)
+//   x / Ctrl+C: quit
 
 #include <algorithm>
 #include <cerrno>
@@ -40,7 +42,8 @@ static const double PWM_FREQ_HZ = 50.0;
 static const double OSC_HZ      = 25000000.0;
 
 // Teleop
-static const double STEP_RADIANS = 0.02;    // same as arm_teleop.py
+static const double ARM_STEP_RADIANS     = 0.02;   // same as arm_teleop.py
+static const double GRIPPER_STEP_RADIANS = 0.05;   // same as arm_teleop.py
 
 // Pulse width change per radian of joint motion. 900 us per 1.57 rad is the
 // scale used in the earlier two-joint version, so jog behaviour is unchanged.
@@ -57,6 +60,7 @@ struct JointConfig {
     double center_us;         // pulse at 0 rad (the joint's "straight" position)
     double pulse_min_us;      // never command a pulse below this
     double pulse_max_us;      // never command a pulse above this
+    double step_rad;          // radians moved per key press
 };
 
 // One row per joint. Limits match JOINT_LIMITS in arm_teleop.py.
@@ -66,12 +70,17 @@ struct JointConfig {
 // The pulse limits are clamped, so a joint's real travel is the overlap of its
 // URDF limits and what these pulse limits allow (reported at startup).
 static const std::vector<JointConfig> JOINTS = {
-    // name       label  ch   min     max    sign  center  pmin    pmax
-    {"Joint_1",   "J1",   0, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0},
-    {"Joint_2",   "J2",   1, -1.57,  1.57,   1.0, 1260.0, 600.0, 2400.0},
-    {"Joint_3",   "J3",   2, -2.20,  2.27,   1.0, 1500.0, 600.0, 2400.0},
-    {"Joint_4",   "J4",   3, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0},
-    {"Joint_6",   "J6",   4, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0},
+    // name       label  ch   min     max    sign  center  pmin    pmax   step
+    {"Joint_1",   "J1",   0, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
+    {"Joint_2",   "J2",   1, -1.57,  1.57,   1.0, 1260.0, 600.0, 2400.0, ARM_STEP_RADIANS},
+    {"Joint_3",   "J3",   2, -2.20,  2.27,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
+    {"Joint_4",   "J4",   3, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
+    {"Joint_6",   "J6",   4, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
+    // Gripper: 0 rad = fully open, -1.57 rad = closed (u opens / j closes, as in
+    // arm_teleop.py). center_us is the OPEN pulse, so this range maps to
+    // 1500 us (open) down to 600 us (closed). Tune center_us and pmin to your
+    // gripper's real open/closed positions, and flip sign if it moves backwards.
+    {"Gripper",   "G",    5, -1.57,  0.00,   1.0, 1500.0, 600.0, 1500.0, GRIPPER_STEP_RADIANS},
 };
 
 struct KeyBinding {
@@ -86,6 +95,7 @@ static const std::vector<KeyBinding> KEY_BINDINGS = {
     {'e', 2, +1}, {'d', 2, -1},
     {'r', 3, +1}, {'f', 3, -1},
     {'y', 4, +1}, {'h', 4, -1},
+    {'u', 5, +1}, {'j', 5, -1},   // gripper: u opens, j closes
 };
 
 // ----------------------------- PCA9685 driver ------------------------------
@@ -215,12 +225,13 @@ static bool enter_raw_mode() {
 }
 
 static void print_controls(const std::vector<Range>& ranges) {
-    std::printf("PCA9685 arm teleop (each key jogs %.2f rad, about %.2f deg)\n",
-                STEP_RADIANS, STEP_RADIANS * 180.0 / M_PI);
+    std::printf("PCA9685 arm teleop (arm keys jog %.2f rad, about %.2f deg; gripper %.2f rad)\n",
+                ARM_STEP_RADIANS, ARM_STEP_RADIANS * 180.0 / M_PI, GRIPPER_STEP_RADIANS);
     std::printf("Positive / negative joint jogs:\n");
     std::printf("  Joint_1: q / a     Joint_2: w / s     Joint_3: e / d\n");
     std::printf("  Joint_4: r / f     Joint_6: y / h\n");
-    std::printf("  c: zero all joints\n");
+    std::printf("  Gripper: u opens / j closes\n");
+    std::printf("  c: zero all joints (this opens the gripper)\n");
     std::printf("Press x or Ctrl+C to quit (servos keep holding their last position).\n\n");
     std::printf("Usable range per joint (URDF limits narrowed by servo pulse limits):\n");
     for (size_t i = 0; i < JOINTS.size(); ++i) {
@@ -238,7 +249,7 @@ static void print_status(const std::vector<double>& angles, const std::string& n
     std::printf("\r");
     for (size_t i = 0; i < JOINTS.size(); ++i)
         std::printf("%s:%+6.1f  ", JOINTS[i].label, angles[i] * 180.0 / M_PI);
-    std::printf("%-22s", note.c_str());
+    std::printf("%-12s", note.c_str());
     std::fflush(stdout);
 }
 
@@ -310,7 +321,7 @@ int main() {
             if (kb.key != key) continue;
             const JointConfig& j = JOINTS[kb.joint];
             const Range& rg = ranges[kb.joint];
-            double requested = angles[kb.joint] + kb.direction * STEP_RADIANS;
+            double requested = angles[kb.joint] + kb.direction * j.step_rad;
             double target = std::min(std::max(requested, rg.lo), rg.hi);
             angles[kb.joint] = target;
             if (!command_joint(pca, kb.joint, target)) { exit_code = 1; break; }
