@@ -1,15 +1,15 @@
 import numpy as np
 import open3d as o3d
 import depthai as dai
-
+from typing import Any
 from depth_config import configure_depth_post_processing
 
 
 COLOR = True
 RESOLUTION = (640, 400)
 MAP_VOXEL_SIZE = 0.04
-MIN_DISTANCE = 0.0
-MAX_DISTANCE = 2.0
+MIN_DISTANCE = 0.1
+MAX_DISTANCE = 3.0
 
 
 class BasicPointCloudMapper:
@@ -26,7 +26,7 @@ class BasicPointCloudMapper:
 
         new_cloud = o3d.geometry.PointCloud()
         new_cloud.points = o3d.utility.Vector3dVector(points)
-        new_cloud, _ = new_cloud.remove_non_finite_points()
+        new_cloud = new_cloud.remove_non_finite_points()
 
         valid_points = np.asarray(new_cloud.points)
         if len(valid_points) == 0:
@@ -61,7 +61,7 @@ class BasicPointCloudMapper:
         self.vis.destroy_window()
 
 
-def create_pipeline() -> tuple[dai.Pipeline, dai.DataOutputQueue]:
+def create_pipeline() -> tuple[dai.Pipeline, Any]:
     pipeline = dai.Pipeline()
 
     left = pipeline.create(dai.node.Camera).build(dai.CameraBoardSocket.CAM_B)

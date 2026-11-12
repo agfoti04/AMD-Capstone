@@ -36,7 +36,7 @@ class PointCloudVisualizer():
         # 3. Downsample
         if downsample:
             pcd = pcd.voxel_down_sample(
-                voxel_size=0.04
+                voxel_size=0.03
             )
 
         # 4. Remove statistical outliers

@@ -19,7 +19,7 @@ def configure_depth_post_processing(stereo_depth_node: dai.node.StereoDepth) -> 
     config.postProcessing.speckleFilter.speckleRange = 28
     config.postProcessing.temporalFilter.enable = True
     config.postProcessing.spatialFilter.holeFillingRadius = 2
-    config.postProcessing.spatialFilter.numIterations = 1
+    config.postProcessing.spatialFilter.numIterations = 3
     config.postProcessing.thresholdFilter.minRange = 0
     config.postProcessing.thresholdFilter.maxRange = 2000
     config.censusTransform.enableMeanMode = True
