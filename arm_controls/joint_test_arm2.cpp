@@ -72,7 +72,7 @@ struct JointConfig {
 static const std::vector<JointConfig> JOINTS = {
     // name       label  ch   min     max    sign  center  pmin    pmax   step
     {"Joint_1",   "J1",   0, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
-    {"Joint_2",   "J2",   1, -1.57,  1.57,   1.0, 1260.0, 600.0, 2400.0, ARM_STEP_RADIANS},
+    {"Joint_2",   "J2",   1, -1.57,  1.57,   1.0, 1660.0, 600.0, 2400.0, ARM_STEP_RADIANS},
     {"Joint_3",   "J3",   2, -2.20,  2.27,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
     {"Joint_4",   "J4",   3, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
     {"Joint_6",   "J6",   4, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
