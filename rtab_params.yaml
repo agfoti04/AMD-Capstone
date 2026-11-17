@@ -1,0 +1,20 @@
+/oak:
+  ros__parameters:
+    driver:
+      i_enable_ir: true
+      i_usb_speed: HIGH
+    pipeline_gen:
+      i_nn_type: none
+      i_pipeline_type: rgbd
+      i_enable_vio: false
+    stereo:
+      i_synced: true
+      i_depth_preset: DEFAULT
+    rgb:
+      i_synced: true
+      i_set_man_focus: true
+      i_manual_focus: 230 
+    imu:
+      i_batch_report_threshold: 1
+      i_max_batch_reports: 10
+      i_enable_rotation: false

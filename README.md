@@ -148,7 +148,15 @@ ros2 run four_wheel_sim rover_mission
 ros2 run four_wheel_sim maze_waypoints
 ros2 run four_wheel_sim cmd_filter
 ros2 run four_wheel_sim odom_gt
+ros2 run four_wheel_sim odom_distance
 ```
+
+For a physical-camera RTAB-Map run, start `odom_distance` in a second sourced
+terminal while the launch is running. It waits for the first valid `/odom`
+pose, then reports signed x/y/z displacement from that starting pose once per
+second, plus straight-line displacement and accumulated path length. The
+reported axes are in the odometry frame; accumulated path length can drift as
+odometry errors accumulate.
 
 Run `my_teleop` in a separate terminal while the Gazebo simulation is active.
 Use `i` to drive forward, `,` to reverse, `j`/`l` to turn, `k` to stop, and

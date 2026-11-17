@@ -22,6 +22,7 @@ four_wheel_sim/field.py
 four_wheel_sim/maze.py
 four_wheel_sim/maze_waypoints.py
 four_wheel_sim/my_teleop.py
+four_wheel_sim/odom_distance.py
 four_wheel_sim/odom_gt.py
 four_wheel_sim/path_runner.py
 four_wheel_sim/rover_mission.py
@@ -38,5 +39,6 @@ launch/slam.launch.py
 resource/four_wheel_sim
 test/test_copyright.py
 test/test_flake8.py
+test/test_odom_distance.py
 test/test_pep257.py
 urdf/robot.urdf.xacro

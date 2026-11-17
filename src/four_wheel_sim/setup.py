@@ -38,6 +38,7 @@ setup(
             'cmd_filter = four_wheel_sim.cmd_filter:main',
             'head_scanner = four_wheel_sim.camera_control:main',
             'rover_mission = four_wheel_sim.rover_mission:main',
+            'odom_distance = four_wheel_sim.odom_distance:main',
         ],
     },
 )
