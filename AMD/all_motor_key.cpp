@@ -1,36 +1,40 @@
-// Keyboard-controlled VNH5019 motor test for Raspberry Pi 3 (C++ / lgpio)
+// Keyboard teleop for four VNH5019 motor drivers, Raspberry Pi 3 (C++ / lgpio)
 //
 // Pins are BCM / GPIO numbers (NOT physical header pin numbers):
-//`Front left 
-//   GPIO 4 -> INA
-//   GPIO 17 -> INB 
+//
+// 1: Front Left
+//   GPIO 4  -> INA
+//   GPIO 17 -> INB
 //   GPIO 27 -> PWM
-// Front right
-//   GPIO 24-> PWM
-//   GPIO 22-> INA 
-//   GPIO  23-> INB
-// Back Left
-//   GPIO 11-> PWM
-//   GPIO 10-> INA 
-//   GPIO  9-> INB
-// Back Right
-//   GPIO  7 -> PWM
+// 2: Front Right
+//   GPIO 24 -> PWM
+//   GPIO 22 -> INA
+//   GPIO 23 -> INB
+// 3: Back Left
+//   GPIO 11 -> PWM
+//   GPIO 10 -> INA
+//   GPIO 9  -> INB
+// 4: Back Right
+//   GPIO 7  -> PWM
 //   GPIO 25 -> INA
-//   GPIO 8 -> INB
+//   GPIO 8  -> INB
 //
 // Controls:
-//   Up arrow   (or W)  : increase duty cycle
-//   Down arrow (or S)  : decrease duty cycle
-//   Space              : motor ON / OFF (OFF = brake)
-//   R                  : toggle direction (only while motor is OFF)
+//   1 / 2 / 3 / 4      : select motor (the previously selected motor is stopped)
+//   Up arrow   (or W)  : increase duty cycle of the selected motor
+//   Down arrow (or S)  : decrease duty cycle of the selected motor
+//   Space              : selected motor ON / OFF (OFF = brake)
+//   R                  : toggle direction of selected motor (only while it is OFF)
+//   X                  : stop ALL motors immediately
 //   Q (or Ctrl+C)      : quit
 //
-// The motor always starts OFF. Duty can be adjusted while OFF; it takes
-// effect when you press Space.
+// All motors start OFF. Only one motor runs at a time: selecting a different
+// motor brakes the one you were on. Each motor remembers its own duty and
+// direction settings.
 //
 // Install: sudo apt install liblgpio-dev g++
-// Build:   g++ -o vnh5019_keyboard vnh5019_keyboard.cpp -llgpio
-// Run:     ./vnh5019_keyboard   (run it in a real terminal; use sudo if needed)
+// Build:   g++ -o vnh5019_teleop vnh5019_teleop.cpp -llgpio
+// Run:     ./vnh5019_teleop   (run it in a real terminal; use sudo if needed)
 
 #include <lgpio.h>
 #include <termios.h>
@@ -39,16 +43,31 @@
 #include <csignal>
 #include <iostream>
 
-// ---- Pins (BCM numbering) ----
-constexpr int PWM_PIN = 13;
-constexpr int INA_PIN = 6;
-constexpr int INB_PIN = 5;
-
 // ---- Settings (adjust to taste) ----
 constexpr float PWM_FREQ_HZ = 1000.0f;
 constexpr int INITIAL_DUTY = 2;  // percent
 constexpr int MAX_DUTY = 30;     // safety cap in percent; raise it when you're ready
 constexpr int DUTY_STEP = 1;     // percent per key press
+
+// ---- Motors ----
+struct Motor {
+    const char* name;
+    int pwm;
+    int ina;
+    int inb;
+    bool running = false;
+    bool forward = true;
+    int duty = INITIAL_DUTY;
+};
+
+constexpr int NUM_MOTORS = 4;
+
+static Motor g_motors[NUM_MOTORS] = {
+    {"Front Left",  27, 4,  17},  // {name, PWM, INA, INB}
+    {"Front Right", 24, 22, 23},
+    {"Back Left",   11, 10, 9},
+    {"Back Right",  7,  25, 8},
+};
 
 static volatile std::sig_atomic_t g_stop = 0;
 static int g_h = -1;  // lgpio chip handle
@@ -74,7 +93,8 @@ struct RawTerminal {
     }
 };
 
-enum class Key { None, Up, Down, Space, Reverse, Quit };
+enum class Key { None, Up, Down, Space, Reverse, StopAll, Quit,
+                 Select1, Select2, Select3, Select4 };
 
 static Key readKey() {
     char c;
@@ -96,35 +116,47 @@ static Key readKey() {
         case 's': case 'S': return Key::Down;
         case ' ':           return Key::Space;
         case 'r': case 'R': return Key::Reverse;
+        case 'x': case 'X': return Key::StopAll;
         case 'q': case 'Q': return Key::Quit;
+        case '1':           return Key::Select1;
+        case '2':           return Key::Select2;
+        case '3':           return Key::Select3;
+        case '4':           return Key::Select4;
         default:            return Key::None;
     }
 }
 
 // ---- Motor helpers ----
-static void applyDuty(int percent) {
+static void applyDuty(const Motor& m) {
     // pwmCycles = 0 means run until changed
-    lgTxPwm(g_h, PWM_PIN, PWM_FREQ_HZ, static_cast<float>(percent), 0, 0);
+    lgTxPwm(g_h, m.pwm, PWM_FREQ_HZ, static_cast<float>(m.duty), 0, 0);
 }
 
 // PWM off, INA = INB = 0 (brake to ground).
-static void brake() {
-    lgTxPwm(g_h, PWM_PIN, PWM_FREQ_HZ, 0.0f, 0, 0);
-    lgGpioWrite(g_h, PWM_PIN, 0);
-    lgGpioWrite(g_h, INA_PIN, 0);
-    lgGpioWrite(g_h, INB_PIN, 0);
+static void brake(Motor& m) {
+    m.running = false;
+    lgTxPwm(g_h, m.pwm, PWM_FREQ_HZ, 0.0f, 0, 0);
+    lgGpioWrite(g_h, m.pwm, 0);
+    lgGpioWrite(g_h, m.ina, 0);
+    lgGpioWrite(g_h, m.inb, 0);
 }
 
-static void applyDirection(bool forward) {
-    lgGpioWrite(g_h, INA_PIN, forward ? 1 : 0);
-    lgGpioWrite(g_h, INB_PIN, forward ? 0 : 1);
+static void brakeAll() {
+    for (Motor& m : g_motors) brake(m);
 }
 
-static void printStatus(bool running, bool forward, int duty, const char* msg = "") {
+static void applyDirection(const Motor& m) {
+    lgGpioWrite(g_h, m.ina, m.forward ? 1 : 0);
+    lgGpioWrite(g_h, m.inb, m.forward ? 0 : 1);
+}
+
+static void printStatus(int sel, const char* msg = "") {
+    const Motor& m = g_motors[sel];
     std::cout << "\r\033[K"
-              << (running ? "[ ON ] " : "[ OFF] ")
-              << (forward ? "FORWARD  " : "REVERSE  ")
-              << "duty = " << duty << "% (max " << MAX_DUTY << "%)  "
+              << "Motor " << (sel + 1) << " (" << m.name << ")  "
+              << (m.running ? "[ ON ] " : "[ OFF] ")
+              << (m.forward ? "FORWARD  " : "REVERSE  ")
+              << "duty = " << m.duty << "% (max " << MAX_DUTY << "%)  "
               << msg << std::flush;
 }
 
@@ -139,32 +171,44 @@ int main() {
     std::signal(SIGINT, onSignal);
     std::signal(SIGTERM, onSignal);
 
-    if (lgGpioClaimOutput(g_h, 0, PWM_PIN, 0) < 0 ||
-        lgGpioClaimOutput(g_h, 0, INA_PIN, 0) < 0 ||
-        lgGpioClaimOutput(g_h, 0, INB_PIN, 0) < 0) {
-        std::cerr << "Failed to claim GPIO pins. Is another program using them?\n";
-        lgGpiochipClose(g_h);
-        return 1;
+    // Claim every pin as an output, starting low
+    for (const Motor& m : g_motors) {
+        const int pins[3] = {m.pwm, m.ina, m.inb};
+        for (int pin : pins) {
+            int rc = lgGpioClaimOutput(g_h, 0, pin, 0);
+            if (rc < 0) {
+                std::cerr << "Failed to claim GPIO" << pin << " (" << m.name
+                          << ", error " << rc << ").\n"
+                          << "Is another program using it, or is SPI/1-Wire "
+                             "enabled on that pin?\n";
+                lgGpiochipClose(g_h);
+                return 1;
+            }
+        }
     }
 
-    std::cout << "VNH5019 keyboard control\n"
-              << "PWM=GPIO" << PWM_PIN << "  INA=GPIO" << INA_PIN
-              << "  INB=GPIO" << INB_PIN << "\n\n"
+    std::cout << "VNH5019 4-motor keyboard teleop\n\n";
+    for (int i = 0; i < NUM_MOTORS; ++i) {
+        const Motor& m = g_motors[i];
+        std::cout << "  " << (i + 1) << " : " << m.name
+                  << "  (PWM=GPIO" << m.pwm << " INA=GPIO" << m.ina
+                  << " INB=GPIO" << m.inb << ")\n";
+    }
+    std::cout << "\n"
+              << "  1-4     : select motor (stops the previous one)\n"
               << "  Up/W    : duty +" << DUTY_STEP << "%\n"
               << "  Down/S  : duty -" << DUTY_STEP << "%\n"
-              << "  Space   : motor ON/OFF\n"
+              << "  Space   : selected motor ON/OFF\n"
               << "  R       : toggle direction (motor must be OFF)\n"
+              << "  X       : stop all motors\n"
               << "  Q       : quit\n\n";
 
     RawTerminal term;
     term.enable();
 
-    bool running = false;
-    bool forward = true;
-    int duty = INITIAL_DUTY;
-
-    brake();
-    printStatus(running, forward, duty);
+    int sel = 0;  // currently selected motor index
+    brakeAll();
+    printStatus(sel);
 
     while (!g_stop) {
         Key key = readKey();
@@ -172,49 +216,70 @@ int main() {
         if (key == Key::Quit) break;
 
         const char* msg = "";
+        Motor& m = g_motors[sel];
 
         switch (key) {
+            case Key::Select1:
+            case Key::Select2:
+            case Key::Select3:
+            case Key::Select4: {
+                int newSel = static_cast<int>(key) - static_cast<int>(Key::Select1);
+                if (newSel != sel) {
+                    if (m.running) {
+                        brake(m);
+                        msg = "(previous motor stopped)";
+                    }
+                    sel = newSel;
+                }
+                break;
+            }
+
             case Key::Up:
-                if (duty < MAX_DUTY) duty += DUTY_STEP;
+                if (m.duty < MAX_DUTY) m.duty += DUTY_STEP;
                 else msg = "(at max)";
-                if (duty > MAX_DUTY) duty = MAX_DUTY;
-                if (running) applyDuty(duty);
+                if (m.duty > MAX_DUTY) m.duty = MAX_DUTY;
+                if (m.running) applyDuty(m);
                 break;
 
             case Key::Down:
-                if (duty > 0) duty -= DUTY_STEP;
+                if (m.duty > 0) m.duty -= DUTY_STEP;
                 else msg = "(at min)";
-                if (duty < 0) duty = 0;
-                if (running) applyDuty(duty);
+                if (m.duty < 0) m.duty = 0;
+                if (m.running) applyDuty(m);
                 break;
 
             case Key::Space:
-                running = !running;
-                if (running) {
-                    applyDirection(forward);
-                    applyDuty(duty);
+                if (!m.running) {
+                    m.running = true;
+                    applyDirection(m);
+                    applyDuty(m);
                 } else {
-                    brake();
+                    brake(m);
                 }
                 break;
 
             case Key::Reverse:
-                if (running) {
+                if (m.running) {
                     msg = "(stop the motor first)";
                 } else {
-                    forward = !forward;
+                    m.forward = !m.forward;
                 }
+                break;
+
+            case Key::StopAll:
+                brakeAll();
+                msg = "(all motors stopped)";
                 break;
 
             default:
                 break;
         }
 
-        printStatus(running, forward, duty, msg);
+        printStatus(sel, msg);
     }
 
-    brake();
+    brakeAll();
     lgGpiochipClose(g_h);
-    std::cout << "\nMotor stopped. Bye.\n";
+    std::cout << "\nAll motors stopped. Bye.\n";
     return 0;
 }
