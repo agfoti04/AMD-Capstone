@@ -1,9 +1,22 @@
 // Keyboard-controlled VNH5019 motor test for Raspberry Pi 3 (C++ / lgpio)
 //
 // Pins are BCM / GPIO numbers (NOT physical header pin numbers):
-//   GPIO21 -> PWM
-//   GPIO22 -> INA
-//   GPIO23 -> INB
+//`Front left 
+//   GPIO 4 -> INA
+//   GPIO 17 -> INB 
+//   GPIO 27 -> PWM
+// Front right
+//   GPIO 24-> PWM
+//   GPIO 22-> INA 
+//   GPIO  23-> INB
+// Back Left
+//   GPIO 11-> PWM
+//   GPIO 10-> INA 
+//   GPIO  9-> INB
+// Back Right
+//   GPIO  7 -> PWM
+//   GPIO 25 -> INA
+//   GPIO 8 -> INB
 //
 // Controls:
 //   Up arrow   (or W)  : increase duty cycle
