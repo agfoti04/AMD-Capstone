@@ -73,7 +73,7 @@ static const std::vector<JointConfig> JOINTS = {
     // name       label  ch   min     max    sign  center  pmin    pmax   step
     {"Joint_1",   "J1",   0, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
     {"Joint_2",   "J2",   1, -1.57,  1.57,   1.0, 1408.0, 600.0, 2400.0, ARM_STEP_RADIANS},
-    {"Joint_3",   "J3",   2, -1.57,  1.57,   1.0, 1408.0, 600.0, 2400.0, ARM_STEP_RADIANS},
+    {"Joint_3",   "J3",   2, -1.57,  1.57,   1.0, 1488.0, 600.0, 2400.0, ARM_STEP_RADIANS},
     {"Joint_4",   "J4",   3, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
     {"Joint_6",   "J6",   4, -1.57,  1.57,   1.0, 1500.0, 600.0, 2400.0, ARM_STEP_RADIANS},
     // Gripper: 0 rad = fully open, -1.57 rad = closed (u opens / j closes, as in
