@@ -67,9 +67,9 @@ constexpr int NUM_MOTORS = 4;
 // to flip a side if it spins the wrong way, then update these defaults.
 static Motor g_motors[NUM_MOTORS] = {
     {"Front Left",  "FL", 27, 4,  17, true,  false},
-    {"Front Right", "FR", 24, 22, 23, false, true},
+    {"Front Right", "FR", 24, 23, 22, false, true},
     {"Back Left",   "BL", 11, 10, 9,  true,  false},
-    {"Back Right",  "BR", 7,  25, 8,  false, true},
+    {"Back Right",  "BR", 7,  8, 25,  false, true},
 };
 
 static volatile std::sig_atomic_t g_stop = 0;
