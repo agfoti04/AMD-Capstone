@@ -1,6 +1,13 @@
 // Basic VNH5019 motor driver test for Raspberry Pi 3 (C++ / lgpio)
 //
-// Pins are BCM / GPIO numbers (NOT physical header pin numbers):
+// Pins are BCM / GPIO numbers (NOT physical header pin numbers)
+//Front-Left
+//   GPIO 4 -> INA
+//    GPIO 17 -> INB
+//    GPIO 27 -> PWM
+//
+//`Front Right
+
 //   GPIO21 -> PWM
 //   GPIO22 -> INA
 //   GPIO23 -> INB
